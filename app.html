@@ -45,4 +45,171 @@
     .hero-side{padding:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-content:start}
     .stat{background:rgba(6,14,26,.55);border:1px solid rgba(72,114,167,.25);border-radius:16px;padding:16px}
     .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:1.8px;color:var(--muted);font-weight:800}
-    .stat .v{f
+    .stat .v{font-family:"Barlow Condensed",sans-serif;font-size:34px;line-height:1;margin-top:8px}
+    .stat .s{color:#b9cbdf;font-size:12px;margin-top:8px;line-height:1.45}
+    .section-title{display:flex;justify-content:space-between;align-items:end;gap:10px;margin:20px 0 10px}
+    .section-title h2{margin:0;font-family:"Barlow Condensed",sans-serif;font-size:30px;letter-spacing:1px;text-transform:uppercase}
+    .section-title .meta{color:var(--muted);font-size:13px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .games{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+    .game{padding:16px;cursor:pointer;transition:.18s transform,.18s border-color;background:linear-gradient(180deg,rgba(8,17,31,.55),rgba(7,14,24,.15));border-radius:18px;border:1px solid rgba(74,114,166,.24)}
+    .game:hover{transform:translateY(-2px);border-color:#376291}
+    .game.active{outline:2px solid rgba(0,229,170,.45);border-color:rgba(0,229,170,.55)}
+    .row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+    .teams{display:grid;gap:10px;margin:14px 0}
+    .teamrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .abbr{font-family:"Barlow Condensed",sans-serif;font-size:30px;letter-spacing:1px}
+    .name{font-size:13px;color:#bfd0e4}
+    .score{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:22px}
+    .pill{padding:7px 10px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+    .pill.live{color:#07101c;background:linear-gradient(135deg,var(--red),#ff8f70);border:none}
+    .pill.preview{color:#07101c;background:linear-gradient(135deg,var(--gold),#ffb74d);border:none}
+    .pill.final{color:#07101c;background:linear-gradient(135deg,#9ad0ff,#7fffd4);border:none}
+    .mini{font-size:12px;color:var(--muted)}
+    .mono{font-family:"JetBrains Mono",monospace}
+    .table-wrap{overflow:auto;border-radius:16px}
+    table{width:100%;border-collapse:collapse;min-width:720px}
+    th,td{padding:12px 14px;border-bottom:1px solid rgba(103,136,175,.18);text-align:left}
+    th{font-size:11px;text-transform:uppercase;letter-spacing:1.8px;color:#9db4d0;background:rgba(4,9,18,.28)}
+    td{font-size:14px}
+    tbody tr:hover td{background:rgba(255,255,255,.02)}
+    .tag{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}
+    .tag.smash{background:rgba(0,212,106,.13);color:#73ffbb}
+    .tag.strong{background:rgba(255,213,74,.13);color:#ffe280}
+    .tag.watch{background:rgba(89,169,255,.13);color:#8fc6ff}
+    .tag.fade{background:rgba(255,95,109,.13);color:#ff98a2}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .team-panel{padding:16px}
+    .panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .panel-title h3{margin:0;font-family:"Barlow Condensed",sans-serif;font-size:24px;letter-spacing:1px;text-transform:uppercase}
+    .player-card{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px;border-radius:14px;border:1px solid rgba(88,124,171,.23);background:rgba(7,14,24,.28);margin-bottom:10px}
+    .player-name{font-weight:800;font-size:16px}
+    .player-meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .grade{font-family:"Barlow Condensed",sans-serif;font-size:34px;line-height:.9;text-align:right}
+    .grade-sub{font-size:12px;color:var(--muted);font-family:"JetBrains Mono",monospace}
+    .reasons{margin-top:8px;font-size:12px;color:#c5d4e5;line-height:1.5}
+    .lift{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .callout{padding:16px}
+    .callout h3{margin:0 0 8px;font-family:"Barlow Condensed",sans-serif;font-size:24px;letter-spacing:1px;text-transform:uppercase}
+    .callout p{margin:0;color:#c2d2e2;line-height:1.6;font-size:14px}
+    .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .price-card{padding:18px;border:1px solid rgba(88,124,171,.23);border-radius:16px;background:rgba(7,14,24,.28)}
+    .price-card.featured{outline:2px solid rgba(0,229,170,.38);background:linear-gradient(180deg,rgba(0,229,170,.08),rgba(7,14,24,.26))}
+    .price-card h3{margin:0;font-family:"Barlow Condensed",sans-serif;font-size:28px;letter-spacing:1px;text-transform:uppercase}
+    .price{font-family:"Barlow Condensed",sans-serif;font-size:48px;line-height:1;margin:12px 0}
+    ul.clean{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px;color:#c9d8e7;font-size:14px}
+    .notes{padding:16px}
+    textarea{width:100%;min-height:160px;background:#091321;color:var(--text);border:1px solid var(--line);border-radius:14px;padding:14px;resize:vertical}
+    .empty,.loading{padding:30px;text-align:center;color:#a7bdd8}
+    .loading strong{color:var(--text)}
+    .footer{padding:30px 0 12px;color:#8ea5c1;font-size:12px;text-align:center}
+    .toolbar-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .watch-btn{min-width:88px}
+    .watch-btn.active{background:linear-gradient(135deg,var(--gold),#ff9f43);color:#07101c;border:none}
+    .signal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .signal-card{padding:16px}
+    .signal-card h3{margin:0 0 8px;font-family:"Barlow Condensed",sans-serif;font-size:24px;letter-spacing:1px;text-transform:uppercase}
+    .small-field{padding:9px 12px;min-height:38px;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-radius:12px}
+    .shell-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+    .shell-form{padding:16px}
+    .shell-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+    .shell-form-grid .full{grid-column:1/-1}
+    .label{display:grid;gap:6px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.4px}
+    .weather-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(89,169,255,.12);color:#9fd0ff;border:1px solid rgba(89,169,255,.22)}
+    .weather-chip.good{background:rgba(0,212,106,.12);color:#7effbe;border-color:rgba(0,212,106,.25)}
+    .weather-chip.bad{background:rgba(255,95,109,.12);color:#ff9aa5;border-color:rgba(255,95,109,.25)}
+    .tiny{font-size:11px;color:var(--muted);line-height:1.45}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;place-items:center;z-index:120}
+    .modal-backdrop.open{display:grid}
+    .modal{width:min(560px,calc(100vw - 24px));padding:22px;border-radius:20px;background:linear-gradient(180deg,#102038,#091321);border:1px solid rgba(94,134,184,.35);box-shadow:var(--shadow)}
+    .modal h3{margin:0 0 10px;font-family:"Barlow Condensed",sans-serif;font-size:34px;letter-spacing:1px;text-transform:uppercase}
+    .modal p{margin:0 0 12px;color:#c8d8e7;line-height:1.55}
+    .modal-grid{display:grid;gap:12px}
+    .account-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    #authGate{position:fixed;inset:0;z-index:10000;background:rgba(5,11,20,.97);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+    #authGate.hidden{display:none}
+    .ag-box{background:linear-gradient(180deg,#0f2038,#091525);border:1px solid rgba(0,229,170,.25);border-radius:22px;padding:36px 32px 28px;max-width:480px;width:100%;box-shadow:0 32px 80px rgba(0,0,0,.6)}
+    .ag-box h2{margin:0 0 6px;font-family:"Barlow Condensed",sans-serif;font-size:34px;letter-spacing:1px;text-transform:uppercase;color:#e8f0fa}
+    .ag-box p{color:#9ab0c9;font-size:14px;line-height:1.5;margin:0 0 20px}
+    .ag-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:#6d8fac;font-weight:800;margin-bottom:5px}
+    .ag-input{width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(55,98,145,.5);background:#060f1c;color:#e8f0fa;font-size:14px;margin-bottom:13px;box-sizing:border-box}
+    .ag-input:focus{outline:none;border-color:rgba(0,229,170,.5)}
+    .ag-row{display:flex;gap:10px;flex-wrap:wrap}
+    .ag-btn{flex:1;padding:13px 16px;border-radius:12px;border:none;font-weight:800;font-size:14px;cursor:pointer}
+    .ag-btn.primary{background:linear-gradient(135deg,#00e5aa,#32c7ff);color:#06101c}
+    .ag-btn.secondary{background:rgba(255,255,255,.07);color:#e8f0fa;border:1px solid rgba(255,255,255,.12)}
+    .ag-btn.full{width:100%;margin-top:10px;background:rgba(255,255,255,.05);color:#c8d8ea;border:1px solid rgba(255,255,255,.1)}
+    .ag-divider{text-align:center;color:#3a5570;font-size:12px;margin:14px 0 12px}
+    #agMsg{margin-top:12px;font-size:13px;padding:8px 12px;border-radius:8px;display:none}
+    .ag-note{margin-top:12px;font-size:11px;color:#3a5570;text-align:center}
+    #planBadge{display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;background:rgba(0,229,170,.1);color:#00e5aa;border:1px solid rgba(0,229,170,.2);cursor:pointer;margin-right:4px}
+    #planBadge.visible{display:inline-flex}
+    @media(max-width:1100px){.hero,.grid-3,.grid-2,.split,.pricing,.lift,.signal-grid{grid-template-columns:1fr}.hero-side{grid-template-columns:1fr 1fr}}
+    @media(max-width:720px){.hero-title{font-size:40px}.topbar-inner{padding:12px}.app{padding:14px}.hero-side{grid-template-columns:1fr}.toolbar{margin-left:0}}
+  </style>
+</head>
+<body>
+<div style="position:sticky;top:0;z-index:9999;background:#08111f;border-bottom:1px solid rgba(255,255,255,.08);padding:10px 16px;font-family:Inter,system-ui,sans-serif;display:flex;gap:10px;justify-content:space-between;align-items:center"><div style="font-weight:800;color:#e8f0fa">ALLDAY MLB EDGE</div><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="planBadge" title="Sign out">⚡ <span id="planBadgeLabel">pro</span></span><a href="./index.html" style="color:#9ad7ff;text-decoration:none">Home</a><a href="./optimizer.html" style="color:#9ad7ff;text-decoration:none">Optimizer</a></div></div>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="logo">⚾</div>
+        <div>
+          <div class="title">ALLDAY MLB EDGE</div>
+          <div class="subtitle">Sharper board · matchup lab · splits · travel · bullpen intelligence</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input id="dateInput" class="field" type="date" />
+        <button id="refreshBtn" class="button primary">Load Slate</button>
+        <button id="exportBtn" class="button">Export Edge CSV</button>
+        <div class="toolbar-group">
+          <input id="edgeSearch" class="small-field" type="text" placeholder="Filter team" />
+          <button id="autoBtn" class="button">Auto Refresh: Off</button>
+        </div>
+        <div id="clockPill" class="pill mono">--:--:--</div>
+      </div>
+    </div>
+  </div>
+  <div class="app">
+    <div class="tabs" id="tabs"></div>
+    <section class="hero">
+      <div class="card hero-main">
+        <div class="eyebrow">Live slate control room</div>
+        <div class="hero-title">ALLDAY MLB EDGE<br>OPENING DAY</div>
+        <div class="hero-copy">Live slate board, stack ranking, hitter grades, odds proxy, weather sync, AI picks, and notes — all in one place.</div>
+        <div class="hero-actions">
+          <button class="button primary" id="jumpGames">Open Games</button>
+          <button class="button warn" id="jumpStacks">Stack Lab</button>
+          <button class="button" id="jumpPricing">Pricing</button>
+          <button class="button" id="jumpLaunch">Launchpad</button>
+          <button class="button primary" id="goProBtn">Go Pro</button>
+          <button class="button" id="accountBtn">Account</button>
+        </div>
+      </div>
+      <div class="card hero-side" id="heroStats"></div>
+    </section>
+    <main id="view"></main>
+    <div class="modal-backdrop" id="accountModal">
+      <div class="modal">
+        <h3>ALLDAY MLB EDGE Access</h3>
+        <p>Save your billing email and point the app at your live backend.</p>
+        <div class="modal-grid">
+          <label class="label">Billing email<input id="billingEmail" class="field" placeholder="you@example.com" /></label>
+          <label class="label">Backend API base<input id="billingApiBase" class="field" placeholder="https://newest-mlb.onrender.com" /></label>
+          <div class="account-row">
+            <button class="button primary" id="saveAccountBtn">Save</button>
+            <button class="button" id="startProCheckout">Start Pro Checkout</button>
+            <button class="button" id="openPortalBtn">Billing Portal</button>
+            <button class="button" id="closeAccountBtn">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer">ALLDAY MLB EDGE · MLB Stats API · Private proxy for odds + weather · AI by Claude</div>
+  </div>
+<script src="./assets/app-core.js"></script>
+<script src="./assets/app-main.js"></script>
+</body>
+</html>
