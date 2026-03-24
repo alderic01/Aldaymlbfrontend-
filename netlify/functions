@@ -1,11 +1,20 @@
-export default async (req, context) => {
-  const ANTHROPIC_API_KEY = Netlify.env.get("ANTHROPIC_API_KEY");
+export async function handler(event) {
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
   if (!ANTHROPIC_API_KEY) {
-    return Response.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" })
+    };
   }
 
-  let body;
-  try { body = await req.json(); } catch { body = {}; }
+  let body = {};
+  try {
+    body = event.body ? JSON.parse(event.body) : {};
+  } catch {
+    body = {};
+  }
+
   const { games = [], date = "", mode = "picks" } = body;
 
   const slateContext = games.length
@@ -66,23 +75,37 @@ Identify 3 sharp edges:
       body: JSON.stringify({
         model: "claude-sonnet-4-5-20250929",
         max_tokens: 1024,
-        messages: [{ role: "user", content: prompts[mode] || prompts.picks }]
+        messages: [
+          { role: "user", content: prompts[mode] || prompts.picks }
+        ]
       })
     });
 
     if (!response.ok) {
-      return Response.json({ error: `Anthropic error: ${response.status}` }, { status: 502 });
+      return {
+        statusCode: 502,
+        body: JSON.stringify({ error: `Anthropic error: ${response.status}` })
+      };
     }
 
     const data = await response.json();
-    return Response.json({
-      ok: true, mode, date,
-      analysis: data.content?.[0]?.text || ""
-    });
 
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ok: true,
+        mode,
+        date,
+        analysis: data.content?.[0]?.text || ""
+      })
+    };
   } catch (e) {
-    return Response.json({ error: e.message }, { status: 500 });
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: e.message })
+    };
   }
-};
-
-export const config = { path: "/api/ai-picks" };
+}
