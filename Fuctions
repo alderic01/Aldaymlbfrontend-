@@ -1,0 +1,41 @@
+export default async (req, context) => {
+  const ANTHROPIC_API_KEY = Netlify.env.get("ANTHROPIC_API_KEY");
+  if (!ANTHROPIC_API_KEY) {
+    return Response.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
+  }
+
+  let body;
+  try { body = await req.json(); } catch { body = {}; }
+  const { games = [], date = "", mode = "picks" } = body;
+
+  const slateContext = games.length
+    ? games.map(g =>
+        `${g.away?.abbr} @ ${g.home?.abbr} | Venue: ${g.venue?.name} | ` +
+        `Away P: ${g.awayPitcher?.name} (ERA ${g.awayPitcher?.era}, WHIP ${g.awayPitcher?.whip}) | ` +
+        `Home P: ${g.homePitcher?.name} (ERA ${g.homePitcher?.era}, WHIP ${g.homePitcher?.whip})`
+      ).join("\n")
+    : "No slate data — give general MLB DFS advice for today.";
+
+  const prompts = {
+    picks: `You are an elite MLB DFS analyst. Given today's slate, provide sharp concise picks.
+
+SLATE (${date}):
+${slateContext}
+
+Respond with:
+1. TOP STACK (best team to stack, why)
+2. TOP ONE-OFF HITTER (best GPP one-off, why)
+3. PITCHER TO TARGET (best SP play, why)
+4. PITCHER TO FADE (avoid, why)
+5. MARKET ALERT (sharp observation about the slate)
+
+Be direct and specific. No fluff.`,
+
+    stacks: `You are an elite MLB DFS GPP stack specialist.
+
+SLATE (${date}):
+${slateContext}
+
+Rank top 3 GPP stacks. For each:
+- Team and opposing pitcher
+- Core 3-4 hitters to target​​​​​​​​​​​​​​​​
