@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALLDAY MLB EDGE</title>
+  <meta name="description" content="Live MLB slate control room for DFS, props, stacks, hitters, odds, and weather." />
+  <meta name="theme-color" content="#08111f" />
+  <link rel="stylesheet" href="./assets/site.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="wrap navin">
+      <div class="brand"><div class="logo">⚾</div><div>ALLDAY MLB EDGE</div></div>
+      <div class="row" style="margin-top:0">
+        <a class="btn" href="./app.html">Launch App</a>
+        <a class="btn primary" href="#pricing">Get Access</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="hero">
+      <div class="card hero-copy">
+        <div class="eyebrow">Live MLB Slate Control Room</div>
+        <h1>ALLDAY MLB EDGE</h1>
+        <div class="sub">Stacks, hitters, odds, weather, splits, bullpen intelligence — plus Claude AI picks. All in one slate board.</div>
+        <div class="row">
+          <a class="btn primary" href="./app.html">Open the App</a>
+          <a class="btn" href="#pricing">Get Access</a>
+        </div>
+      </div>
+      <div class="card hero-stat-grid">
+        <div class="stat"><div class="k">Live slate board</div><div class="v">Matchup Engine</div><div class="s">Grades hitters with park, splits, travel, pitcher tendencies, and bullpen projections.</div></div>
+        <div class="stat"><div class="k">AI powered</div><div class="v">Claude Picks</div><div class="s">Claude Sonnet analyzes your live slate — stacks, edges, fades, and market alerts.</div></div>
+        <div class="stat"><div class="k">Private backend</div><div class="v">Odds Proxy</div><div class="s">Your odds key stays server-side. Frontend only talks to your backend.</div></div>
+        <div class="stat"><div class="k">Auth protected</div><div class="v">JWT Access</div><div class="s">Subscription-gated. Webhook-driven entitlement, 30-day tokens.</div></div>
+      </div>
+    </section>
+
+    <section id="setup">
+      <div class="card config-card">
+        <h2>Connect your backend</h2>
+        <div class="muted">Your backend is pre-configured below.</div>
+        <div class="flex" style="margin-top:10px">
+          <div>
+            <label for="backendUrl">Backend URL</label>
+            <input id="backendUrl" placeholder="https://newest-mlb.onrender.com" value="https://newest-mlb.onrender.com" />
+          </div>
+          <div style="align-self:end">
+            <button class="btn primary" onclick="ALLDAY.saveBackendUrl()">Save &amp; Check</button>
+          </div>
+        </div>
+        <div class="row">
+          <small id="healthStatus" class="status">Not checked yet</small>
+          <span class="code">Stored in browser localStorage</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <h2>Pricing</h2>
+      <div class="muted">Buttons call your backend checkout session. Configure Stripe price IDs in your backend env first.</div>
+      <label for="emailCapture">Your email</label>
+      <input id="emailCapture" type="email" placeholder="you@example.com" />
+      <div class="pricing" style="margin-top:14px">
+        <div class="card price-card">
+          <div class="eyebrow">Starter</div>
+          <div class="price">$19<span style="font-size:18px;font-weight:400">/mo</span></div>
+          <ul>
+            <li>Dashboard + stack board</li>
+            <li>Hitter lab</li>
+            <li>Notes and saved workflow</li>
+            <li>App access</li>
+          </ul>
+          <button class="btn primary" onclick="ALLDAY.checkout('starter')">Start Starter</button>
+        </div>
+        <div class="card price-card featured">
+          <div class="eyebrow">Pro</div>
+          <div class="price">$49<span style="font-size:18px;font-weight:400">/mo</span></div>
+          <ul>
+            <li>Everything in Starter</li>
+            <li>Live odds + weather sync</li>
+            <li>⚡ Claude AI picks</li>
+            <li>Private API routing</li>
+          </ul>
+          <button class="btn primary" onclick="ALLDAY.checkout('pro')">Start Pro</button>
+        </div>
+        <div class="card price-card">
+          <div class="eyebrow">Elite</div>
+          <div class="price">$99<span style="font-size:18px;font-weight:400">/mo</span></div>
+          <ul>
+            <li>Everything in Pro</li>
+            <li>Elite workflow positioning</li>
+            <li>Priority support</li>
+            <li>Future private releases</li>
+          </ul>
+          <button class="btn primary" onclick="ALLDAY.checkout('elite')">Start Elite</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="claimSection" style="display:none">
+      <div class="card config-card">
+        <h2>🎉 Payment complete — activate your access</h2>
+        <div class="muted">Enter the email you used at checkout to get your access token.</div>
+        <form onsubmit="ALLDAY.handleClaimSubmit(event)" style="margin-top:14px">
+          <label for="claimEmail">Email used at checkout</label>
+          <input id="claimEmail" type="email" placeholder="you@example.com" required />
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" type="submit">Activate Access &amp; Open App</button>
+            <small id="claimStatus" class="status">Enter your email above</small>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section>
+      <div class="card config-card">
+        <h2>Book a demo</h2>
+        <div class="muted">Saves a lead directly to the backend.</div>
+        <form onsubmit="ALLDAY.submitLead(event)">
+          <div class="flex">
+            <div><label for="leadName">Name</label><input id="leadName" placeholder="Your name" /></div>
+            <div><label for="leadEmail">Email</label><input id="leadEmail" placeholder="you@example.com" /></div>
+          </div>
+          <label for="leadNote">Note</label>
+          <textarea id="leadNote" rows="3" placeholder="Which plan or feature are you interested in?"></textarea>
+          <div class="row">
+            <button class="btn primary" type="submit">Save Demo Request</button>
+            <small id="leadStatus" class="status">No lead submitted yet</small>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <div class="footer">ALLDAY MLB EDGE · Frontend on Netlify · Backend on Render · AI by Claude</div>
+  </div>
+  <script src="./assets/site.js"></script>
+</body>
+</html>
