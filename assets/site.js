@@ -8,22 +8,20 @@ async function apiFetch(path, options={}){
   const base = normalizeBackend(state.backendUrl);
   if(!base) throw new Error('Backend URL not set.');
   const res = await fetch(base + path, {
-    headers: {'Content-Type':'application/json', ...(options.headers||{})},
-    ...options,
+    headers: {'Content-Type':'application/json', ...(options.headers||{})}, ...options,
   });
   const data = await res.json().catch(()=>({}));
-  if(!res.ok) throw new Error(data.error || data.detail || `Request failed (${res.status})`);
+  if(!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 }
 
 async function refreshHealth(){
   const el = byId('healthStatus');
   if(!el) return;
-  if(!state.backendUrl){ el.textContent='Backend not set'; el.className='status error'; return; }
   el.textContent='Checking…'; el.className='status';
   try {
     const d = await apiFetch('/health');
-    el.textContent = `Backend live · odds ${d.oddsKeyLoaded?'on':'off'} · stripe ${d.stripeEnabled?'on':'off'} · auth ${d.jwtSecretSet?'on':'⚠ set JWT_SECRET'}`;
+    el.textContent = `Backend live · odds ${d.oddsKeyLoaded?'on':'off'} · stripe ${d.stripeEnabled?'on':'off'} · auth ${d.jwtSecretSet?'on':'⚠'}`;
     el.className = 'status success';
   } catch(err){ el.textContent=err.message; el.className='status error'; }
 }
@@ -40,12 +38,10 @@ async function checkout(plan){
   const customerEmail = byId('emailCapture')?.value?.trim()||'';
   try {
     const data = await apiFetch('/api/checkout/session', {
-      method: 'POST',
-      body: JSON.stringify({
-        plan, customerEmail,
+      method:'POST',
+      body: JSON.stringify({ plan, customerEmail,
         successUrl: window.location.origin+'/app.html?checkout=success',
-        cancelUrl:  window.location.origin+'/index.html#pricing'
-      })
+        cancelUrl: window.location.origin+'/index.html#pricing' })
     });
     if(data.url) window.location.href = data.url;
   } catch(err){ alert(err.message); }
@@ -59,10 +55,7 @@ async function submitLead(event){
   const out=byId('leadStatus');
   if(!name||!email){ out.textContent='Name and email required.'; out.className='status error'; return; }
   try {
-    const data = await apiFetch('/api/leads', {
-      method:'POST',
-      body: JSON.stringify({name, email, note, source:'homepage'})
-    });
+    const data = await apiFetch('/api/leads', {method:'POST', body:JSON.stringify({name,email,note,source:'homepage'})});
     out.textContent=`Saved lead #${data.lead?.id}`; out.className='status success';
     event.target.reset();
   } catch(err){ out.textContent=err.message; out.className='status error'; }
@@ -72,16 +65,11 @@ async function claimAccessToken(email){
   const out = byId('claimStatus');
   if(out){ out.textContent='Activating…'; out.className='status'; }
   try {
-    const data = await apiFetch('/api/auth/claim', {
-      method:'POST',
-      body: JSON.stringify({email})
-    });
+    const data = await apiFetch('/api/auth/claim', {method:'POST', body:JSON.stringify({email})});
     localStorage.setItem('allday-mlb-edge-token', data.token);
     const existing = JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}');
-    localStorage.setItem('allday-mlb-edge-access', JSON.stringify({
-      ...existing, email:data.email, plan:data.plan
-    }));
-    if(out){ out.textContent=`Access activated! Plan: ${data.plan}. Redirecting…`; out.className='status success'; }
+    localStorage.setItem('allday-mlb-edge-access', JSON.stringify({...existing, email:data.email, plan:data.plan}));
+    if(out){ out.textContent=`Activated! Plan: ${data.plan}. Redirecting…`; out.className='status success'; }
     setTimeout(()=>{ window.location.href='./app.html'; }, 1400);
   } catch(err){ if(out){ out.textContent=err.message; out.className='status error'; } }
 }
