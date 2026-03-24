@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALLDAY MLB EDGE — Optimizer</title>
+  <meta name="theme-color" content="#08111f" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:linear-gradient(180deg,#07101c,#091322);color:#e8f0fa;font-family:Inter,system-ui,sans-serif;min-height:100vh;padding:20px}
+    .nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .brand{font-weight:800;font-size:18px}
+    .links{display:flex;gap:16px}
+    .links a{color:#9ad7ff;text-decoration:none;font-size:14px}
+    .card{background:linear-gradient(180deg,rgba(18,34,56,.95),rgba(11,22,37,.98));border:1px solid rgba(63,101,147,.35);border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 12px 30px rgba(0,0,0,.32)}
+    h1{font-size:28px;font-weight:800;margin-bottom:6px}
+    h2{font-size:20px;font-weight:800;margin-bottom:12px}
+    p{color:#9ab0c9;line-height:1.6;font-size:14px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#00e5aa,#32c7ff);color:#07101c;font-weight:800;cursor:pointer;font-size:14px;margin-top:12px}
+    textarea{width:100%;min-height:120px;background:#091321;color:#e8f0fa;border:1px solid #1b3150;border-radius:12px;padding:14px;resize:vertical;font-family:inherit;font-size:13px}
+    label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#89a0bd;font-weight:800;margin-bottom:6px;margin-top:14px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .result{background:#060f1c;border-radius:12px;padding:16px;font-family:monospace;font-size:13px;line-height:1.7;color:#c8d8e8;min-height:120px;margin-top:12px;white-space:pre-wrap}
+    @media(max-width:700px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <div class="brand">⚾ ALLDAY MLB EDGE</div>
+    <div class="links">
+      <a href="./index.html">Home</a>
+      <a href="./app.html">App</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h1>Optimizer Beta</h1>
+    <p>Paste your DFS salary data below, set your constraints, and generate lineup shells. This is a fast iteration tool — not a full solver. Use the Stack Lab in the main app to validate your stacks first.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Salary Input</h2>
+      <label>Paste CSV data (Name, Position, Salary, Team)</label>
+      <textarea id="salaryInput" placeholder="Mike Trout, OF, 5800, LAA&#10;Shohei Ohtani, SP, 11200, LAD&#10;..."></textarea>
+      <label>Salary Cap</label>
+      <input id="salaryCap" type="number" value="50000" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid #1b3150;background:#091321;color:#e8f0fa;font-size:14px" />
+      <label>Lineup Size</label>
+      <input id="lineupSize" type="number" value="10" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid #1b3150;background:#091321;color:#e8f0fa;font-size:14px" />
+      <button class="btn" onclick="optimize()">Generate Lineup Shell</button>
+    </div>
+    <div class="card">
+      <h2>Output</h2>
+      <p>Your lineup shell will appear here. Stack picks come from the main app — use this to fill remaining slots.</p>
+      <div class="result" id="result">Paste salary data and tap Generate.</div>
+    </div>
+  </div>
+
+  <script>
+  function optimize(){
+    const raw = document.getElementById('salaryInput').value.trim();
+    const cap = Number(document.getElementById('salaryCap').value) || 50000;
+    const size = Number(document.getElementById('lineupSize').value) || 10;
+    const result = document.getElementById('result');
+    if(!raw){ result.textContent = 'Paste salary data first.'; return; }
+    const lines = raw.split('\n').filter(l=>l.trim());
+    const players = lines.map(line=>{
+      const parts = line.split(',').map(s=>s.trim());
+      return { name:parts[0]||'', pos:parts[1]||'', salary:Number(parts[2])||0, team:parts[3]||'' };
+    }).filter(p=>p.name&&p.salary>0).sort((a,b)=>b.salary-a.salary);
+    if(!players.length){ result.textContent = 'Could not parse players. Use: Name, Position, Salary, Team'; return; }
+    const lineup = [];
+    let remaining = cap;
+    const used = new Set();
+    for(const p of players){
+      if(lineup.length >= size) break;
+      const avgSalaryNeeded = remaining / (size - lineup.length);
+      if(p.salary <= remaining && !used.has(p.name)){
+        lineup.push(p);
+        remaining -= p.salary;
+        used.add(p.name);
+      }
+    }
+    const total = lineup.reduce((a,p)=>a+p.salary,0);
+    const lines2 = lineup.map((p,i)=>`${String(i+1).padStart(2,' ')}. ${p.name.padEnd(20,' ')} ${p.pos.padEnd(4,' ')} $${p.salary.toLocaleString()} ${p.team}`);
+    lines2.push('');
+    lines2.push(`Total: $${total.toLocaleString()} / $${cap.toLocaleString()} cap`);
+    lines2.push(`Remaining: $${(cap-total).toLocaleString()}`);
+    result.textContent = lines2.join('\n');
+  }
+  </script>
+</body>
+</html>
