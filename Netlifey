@@ -1,0 +1,5 @@
+netlify.toml
+_headers
+index.html
+app.html
+optimizer.html
