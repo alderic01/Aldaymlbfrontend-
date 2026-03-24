@@ -18,7 +18,6 @@
       </div>
     </div>
   </div>
-
   <div class="wrap">
     <section class="hero">
       <div class="card hero-copy">
@@ -53,48 +52,32 @@
         </div>
         <div class="row">
           <small id="healthStatus" class="status">Not checked yet</small>
-          <span class="code">Stored in browser localStorage</span>
         </div>
       </div>
     </section>
 
     <section id="pricing">
       <h2>Pricing</h2>
-      <div class="muted">Buttons call your backend checkout session. Configure Stripe price IDs in your backend env first.</div>
+      <div class="muted">Buttons call your backend checkout session.</div>
       <label for="emailCapture">Your email</label>
       <input id="emailCapture" type="email" placeholder="you@example.com" />
       <div class="pricing" style="margin-top:14px">
         <div class="card price-card">
           <div class="eyebrow">Starter</div>
           <div class="price">$19<span style="font-size:18px;font-weight:400">/mo</span></div>
-          <ul>
-            <li>Dashboard + stack board</li>
-            <li>Hitter lab</li>
-            <li>Notes and saved workflow</li>
-            <li>App access</li>
-          </ul>
+          <ul><li>Dashboard + stack board</li><li>Hitter lab</li><li>Notes</li><li>App access</li></ul>
           <button class="btn primary" onclick="ALLDAY.checkout('starter')">Start Starter</button>
         </div>
         <div class="card price-card featured">
           <div class="eyebrow">Pro</div>
           <div class="price">$49<span style="font-size:18px;font-weight:400">/mo</span></div>
-          <ul>
-            <li>Everything in Starter</li>
-            <li>Live odds + weather sync</li>
-            <li>⚡ Claude AI picks</li>
-            <li>Private API routing</li>
-          </ul>
+          <ul><li>Everything in Starter</li><li>Live odds + weather</li><li>⚡ Claude AI picks</li><li>Private API routing</li></ul>
           <button class="btn primary" onclick="ALLDAY.checkout('pro')">Start Pro</button>
         </div>
         <div class="card price-card">
           <div class="eyebrow">Elite</div>
           <div class="price">$99<span style="font-size:18px;font-weight:400">/mo</span></div>
-          <ul>
-            <li>Everything in Pro</li>
-            <li>Elite workflow positioning</li>
-            <li>Priority support</li>
-            <li>Future private releases</li>
-          </ul>
+          <ul><li>Everything in Pro</li><li>Priority support</li><li>Future releases</li></ul>
           <button class="btn primary" onclick="ALLDAY.checkout('elite')">Start Elite</button>
         </div>
       </div>
@@ -103,7 +86,7 @@
     <section id="claimSection" style="display:none">
       <div class="card config-card">
         <h2>🎉 Payment complete — activate your access</h2>
-        <div class="muted">Enter the email you used at checkout to get your access token.</div>
+        <div class="muted">Enter the email you used at checkout.</div>
         <form onsubmit="ALLDAY.handleClaimSubmit(event)" style="margin-top:14px">
           <label for="claimEmail">Email used at checkout</label>
           <input id="claimEmail" type="email" placeholder="you@example.com" required />
@@ -118,14 +101,13 @@
     <section>
       <div class="card config-card">
         <h2>Book a demo</h2>
-        <div class="muted">Saves a lead directly to the backend.</div>
         <form onsubmit="ALLDAY.submitLead(event)">
           <div class="flex">
             <div><label for="leadName">Name</label><input id="leadName" placeholder="Your name" /></div>
             <div><label for="leadEmail">Email</label><input id="leadEmail" placeholder="you@example.com" /></div>
           </div>
           <label for="leadNote">Note</label>
-          <textarea id="leadNote" rows="3" placeholder="Which plan or feature are you interested in?"></textarea>
+          <textarea id="leadNote" rows="3" placeholder="Which plan are you interested in?"></textarea>
           <div class="row">
             <button class="btn primary" type="submit">Save Demo Request</button>
             <small id="leadStatus" class="status">No lead submitted yet</small>
