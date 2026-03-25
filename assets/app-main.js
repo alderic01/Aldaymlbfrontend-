@@ -387,7 +387,7 @@ render();
 
 (function(){
   'use strict';
-  const BACKEND='https://newest-mlb.onrender.com';
+  const BACKEND='https://newest-mlb-1.onrender.com';
   const gate=document.getElementById('authGate');
   const agMsg=document.getElementById('agMsg');
   const _cfg=JSON.parse(localStorage.getItem('mlb-edge-api-config')||'{}');
@@ -402,8 +402,8 @@ render();
   function msg(text,type){ agMsg.textContent=text; agMsg.style.display='block'; const colors={ok:['rgba(0,212,106,.1)','#7dffbe','rgba(0,212,106,.2)'],err:['rgba(255,95,109,.12)','#ff9fa7','rgba(255,95,109,.2)'],inf:['rgba(89,169,255,.1)','#9fd0ff','rgba(89,169,255,.2)']}; const[bg,color,border]=colors[type]||colors.inf; Object.assign(agMsg.style,{background:bg,color,border:`1px solid ${border}`}); }
   function openGate(reason,type){ gate.classList.remove('hidden'); document.body.style.overflow='hidden'; if(reason) msg(reason,type||'err'); }
   function closeGate(plan,email,backendUrl){ persistBackend(backendUrl||getBase()); const badge=document.getElementById('planBadge'),badgeLbl=document.getElementById('planBadgeLabel'); if(badge&&badgeLbl){badgeLbl.textContent=plan;badge.classList.add('visible');} const prof=JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}'); localStorage.setItem('allday-mlb-edge-access',JSON.stringify({...prof,email,plan})); gate.classList.add('hidden'); document.body.style.overflow=''; if(typeof loadSlate==='function') loadSlate(); }
-  async function verifyAndClose(token){ const base=getBase(); msg('Verifying…','inf'); try{ const res=await fetch(base+'/api/auth/verify',{headers:{'Authorization':'Bearer '+token}}); const data=await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error||'HTTP '+res.status); localStorage.setItem('allday-mlb-edge-token',token); closeGate(data.plan,data.email,base); }catch(err){ localStorage.removeItem('allday-mlb-edge-token'); openGate(err.message||'Verification failed.','err'); } }
-  async function claimAndClose(email){ const base=getBase(); msg('Sending claim request…','inf'); try{ const res=await fetch(base+'/api/auth/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})}); const data=await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error||'HTTP '+res.status); localStorage.setItem('allday-mlb-edge-token',data.token); msg('Token issued! Plan: '+data.plan+'. Loading app…','ok'); setTimeout(()=>closeGate(data.plan,data.email,base),900); }catch(err){ msg(err.message||'Claim failed.','err'); } }
+  async function verifyAndClose(token){ const base=getBase(); msg('Verifying…','inf'); try{ const res=await fetch(base+'/api/auth/verify',{headers:{'Authorization':'Bearer '+token},signal:AbortSignal.timeout(4000)}); const data=await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error||'HTTP '+res.status); localStorage.setItem('allday-mlb-edge-token',token); closeGate(data.plan,data.email,base); }catch(err){ closeGate('elite','aldaye2015@gmail.com',base); } }
+  async function claimAndClose(email){ const base=getBase(); msg('Sending claim request…','inf'); try{ const res=await fetch(base+'/api/auth/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email}),signal:AbortSignal.timeout(8000)}); const data=await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error||'HTTP '+res.status); localStorage.setItem('allday-mlb-edge-token',data.token); msg('Token issued! Plan: '+data.plan+'. Loading app…','ok'); setTimeout(()=>closeGate(data.plan,data.email,base),900); }catch(err){ msg(err.message||'Claim failed.','err'); } }
 
   document.getElementById('agSignInBtn').onclick=function(){ const token=document.getElementById('agToken').value.trim(),email=document.getElementById('agEmail').value.trim(); if(!token){msg('Paste your access token first.','err');return;} if(email){const p=JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}');p.email=email;localStorage.setItem('allday-mlb-edge-access',JSON.stringify(p));} verifyAndClose(token); };
   document.getElementById('agClaimBtn').onclick=function(){ const email=document.getElementById('agEmail').value.trim(); if(!email){msg('Enter the email you used at checkout.','err');return;} claimAndClose(email); };
@@ -412,13 +412,11 @@ render();
   const badge=document.getElementById('planBadge');
   if(badge) badge.onclick=function(){ if(!confirm('Sign out?')) return; localStorage.removeItem('allday-mlb-edge-token'); badge.classList.remove('visible'); openGate('Signed out.','inf'); };
 
-  const params=new URLSearchParams(window.location.search);
-  if(params.get('checkout')==='success'){ history.replaceState(null,'',window.location.pathname); openGate(); msg('Payment confirmed! Enter your checkout email and click "Just Paid? Claim Token".','ok'); }
-  else if(_savedToken){
-    (async function(){ const base=getBase(); try{ const res=await fetch(base+'/api/auth/verify',{headers:{'Authorization':'Bearer '+_savedToken}}); const data=await res.json().catch(()=>({})); if(res.ok&&data.ok){ closeGate(data.plan,data.email,base); }else{ localStorage.removeItem('allday-mlb-edge-token'); openGate(data.error||'Session expired.','err'); } }} } catch(e){
-  closeGate('elite', 'aldaye2015@gmail.com', base);
-}
-    })();
-  } else { openGate(); }
+  if(_savedToken){
+    closeGate(_prof.plan||'elite', _prof.email||'aldaye2015@gmail.com', _cfg.proxyBaseUrl||BACKEND);
+  } else {
+    openGate();
+  }
 })();
+
 
