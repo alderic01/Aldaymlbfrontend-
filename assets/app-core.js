@@ -10,7 +10,7 @@ const TABS = [
   {id:'ai', label:'⚡ AI Picks'},
   {id:'market', label:'Odds + Weather'},
   {id:'launch', label:'Launchpad'},
-  {id:'pricing', label:'Pricing'},
+  {id:'pricing', label:'Pricing'},h
   {id:'notes', label:'Notes'}
 ];
 const PARKS = {
@@ -53,7 +53,7 @@ const state={
   watchlist:JSON.parse(localStorage.getItem('mlb-edge-watchlist')||'[]'),
   edgeFilter:'',autoRefresh:false,autoRefreshMs:120000,
   oddsWeather:JSON.parse(localStorage.getItem('mlb-edge-odds-weather')||'{}'),
-  apiConfig:JSON.parse(localStorage.getItem('mlb-edge-api-config')||'{"proxyBaseUrl":"https://newest-mlb.onrender.com","oddsRegion":"us","oddsBookmaker":"","autoSyncWeather":true,"autoSyncOdds":true}'),
+  apiConfig:JSON.parse(localStorage.getItem('mlb-edge-api-config')||'{"proxyBaseUrl":"https://newest-mlb-1.onrender.com","oddsRegion":"us","oddsBookmaker":"","autoSyncWeather":true,"autoSyncOdds":true}'),
   liveSync:{weather:{status:'idle',updatedAt:null,error:''},odds:{status:'idle',updatedAt:null,error:''}},
   teamHittersCache:{},teamPitchingCache:{},recentGamesCache:{},gameContextCache:{},
   aiMode:'picks',aiLoading:false,aiResult:'',aiResultMode:'',aiResultDate:'',aiError:''
@@ -149,9 +149,9 @@ function parseIP(ip){if(ip==null||ip==='')return 0;const s=String(ip);if(!s.incl
 function haversineMiles(lat1,lon1,lat2,lon2){const R=3958.8,toRad=d=>d*Math.PI/180,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1),a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(a));}
 function classifyTravel(miles,restDays){if(!miles)return{hours:0,label:'No travel',penalty:0};const hours=Math.round((miles/500+1.5)*10)/10;let penalty=miles>1800?7:miles>1000?4:miles>450?2:0;if(restDays<=1&&miles>900)penalty+=3;else if(restDays<=1&&miles>450)penalty+=1;return{hours,label:miles>1800?'Cross-country':miles>900?'Flight spot':miles>250?'Road hop':'Short turn',penalty};}
 
-async function fetchJson(url){const base=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb.onrender.com').replace(/\/$/,'');const isProxy=base&&String(url).startsWith(base);const token=localStorage.getItem('allday-mlb-edge-token')||'';const headers=(isProxy&&token)?{'Authorization':`Bearer ${token}`}:{};const res=await fetch(url,{headers});if(!res.ok)throw new Error(`HTTP ${res.status}`);return res.json();}
-function saveApiConfig(patch={}){state.apiConfig={proxyBaseUrl:'https://newest-mlb.onrender.com',oddsRegion:'us',oddsBookmaker:'',autoSyncWeather:true,autoSyncOdds:true,...state.apiConfig,...patch};localStorage.setItem('mlb-edge-api-config',JSON.stringify(state.apiConfig));}
-function proxyUrl(path,params={}){const base=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb.onrender.com').replace(/\/$/,'');const url=new URL(base+path);Object.entries(params).forEach(([k,v])=>{if(v!==undefined&&v!==null&&String(v)!=='')url.searchParams.set(k,v);});return url.toString();}
+async function fetchJson(url){const base=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');const isProxy=base&&String(url).startsWith(base);const token=localStorage.getItem('allday-mlb-edge-token')||'';const headers=(isProxy&&token)?{'Authorization':`Bearer ${token}`}:{};const res=await fetch(url,{headers});if(!res.ok)throw new Error(`HTTP ${res.status}`);return res.json();}
+function saveApiConfig(patch={}){state.apiConfig={proxyBaseUrl:'https://newest-mlb-1.onrender.com',oddsRegion:'us',oddsBookmaker:'',autoSyncWeather:true,autoSyncOdds:true,...state.apiConfig,...patch};localStorage.setItem('mlb-edge-api-config',JSON.stringify(state.apiConfig));}
+function proxyUrl(path,params={}){const base=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');const url=new URL(base+path);Object.entries(params).forEach(([k,v])=>{if(v!==undefined&&v!==null&&String(v)!=='')url.searchParams.set(k,v);});return url.toString();}
 function inferWindDir(deg){if(deg==null||Number.isNaN(Number(deg)))return'Calm';const d=Number(deg);if((d>=315&&d<=360)||(d>=0&&d<45))return'Out';if(d>=135&&d<225)return'In';return'Cross';}
 function pickForecastForGame(game,payload={}){const rows=payload.hourly||[];if(!rows.length)return null;const target=new Date(game.gameDate).getTime();let best=rows[0],bestDiff=Infinity;for(const row of rows){const t=new Date(row.time).getTime(),diff=Math.abs(t-target);if(diff<bestDiff){best=row;bestDiff=diff;}}return best;}
 function findMatchingOddsEvent(game,events=[]){const away=normTeamName(game.away.name),home=normTeamName(game.home.name);return events.find(ev=>normTeamName(ev.away_team||ev.awayTeam||'')===away&&normTeamName(ev.home_team||ev.homeTeam||'')===home);}
