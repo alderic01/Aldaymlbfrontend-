@@ -10,7 +10,7 @@ const TABS = [
   {id:'ai', label:'⚡ AI Picks'},
   {id:'market', label:'Odds + Weather'},
   {id:'launch', label:'Launchpad'},
-  {id:'pricing', label:'Pricing'},h
+  {id:'pricing', label:'Pricing'},
   {id:'notes', label:'Notes'}
 ];
 const PARKS = {
