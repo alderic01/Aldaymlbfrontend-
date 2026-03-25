@@ -25,7 +25,6 @@ function renderEdges(){
     </section>
   `;
 }
-
 function renderStacks(){
   const top = state.stackRows.slice(0,12);
   return `
@@ -40,7 +39,6 @@ function renderStacks(){
     </section>
   `;
 }
-
 function playerCards(players){
   if(!players.length) return '<div class="empty">Could not load hitter pool for this team.</div>';
   return players.map(p => `
@@ -66,12 +64,10 @@ function playerCards(players){
     </div>
   `).join('');
 }
-
 function bullpenRoleBlock(title,rows=[]){ if(!rows||!rows.length) return `<div class="trend-item"><strong>${title}:</strong> none projected</div>`; return `<div class="trend-item"><strong>${title}:</strong> ${rows.map(p=>`${escapeHtml(p.name)} (${p.availability})`).join(' · ')}</div>`; }
 function renderTravelPanel(label,travel){ return `<div class="insight"><div class="k">${escapeHtml(label)} travel</div><div class="v">${travel?.miles?`${travel.miles} mi`:'0 mi'}</div><div class="s">${escapeHtml(travel?.label||'No travel signal')} · ${travel?.hours?`${fmtNum(travel.hours,1)}h est.`:'settled spot'}${travel?.previousVenue?` · from ${travel.previousVenue}`:''}</div></div>`; }
 function renderPitcherPanel(label,pitcher,tendencies){ return `<div class="insight"><div class="k">${escapeHtml(label)} starter</div><div class="v">${tendencies.profile}</div><div class="s">${escapeHtml(pitcher.name)} · ERA ${fmtNum(pitcher.era,2)} · WHIP ${fmtNum(pitcher.whip,2)} · K/9 ${fmtNum(pitcher.k9,1)} · exp ${fmtNum(tendencies.expIP,1)} IP</div></div>`; }
 function renderBullpenPanel(label,proj){ return `<div class="insight"><div class="k">${escapeHtml(label)} bullpen</div><div class="v">${fmtNum(proj?.projectedInnings||0,1)} IP</div><div class="s">${escapeHtml(proj?.closer?`Closer: ${proj.closer.name} (${proj.closer.availability})`:'No closer projected')}</div></div>`; }
-
 function renderHitterLab(){
   const g = state.selectedGameData;
   if(!g) return '<section><div class="card empty">Choose a game first.</div></section>';
@@ -123,7 +119,6 @@ function renderHitterLab(){
     </section>
   `;
 }
-
 function renderSignals(){
   const attackable=getTopAttackablePitchers();
   const watchTeams=state.watchlist.filter(x=>x.type==='team').slice(0,8);
@@ -145,7 +140,6 @@ function renderSignals(){
     </section>
   `;
 }
-
 function renderAI(){
   return `
     <section>
@@ -172,7 +166,6 @@ function renderAI(){
     </section>
   `;
 }
-
 function renderMarket(){
   const selected=state.selectedGameData||state.games[0];
   if(!selected) return `<section><div class="card empty">Load a slate first.</div></section>`;
@@ -187,7 +180,7 @@ function renderMarket(){
         <div class="card callout">
           <h3>API controls</h3>
           <div class="shell-form-grid">
-            <label class="label full">Backend proxy URL<input id="proxyBaseUrl" class="field" value="${escapeHtml(state.apiConfig.proxyBaseUrl||'https://newest-mlb.onrender.com')}" /></label>
+            <label class="label full">Backend proxy URL<input id="proxyBaseUrl" class="field" value="${escapeHtml(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com')}" /></label>
             <label class="label">Region<select id="oddsRegion" class="field">${['us','us2','uk','eu','au'].map(x=>`<option value="${x}" ${state.apiConfig.oddsRegion===x?'selected':''}>${x.toUpperCase()}</option>`).join('')}</select></label>
             <label class="label">Bookmaker<input id="oddsBookmaker" class="field" value="${escapeHtml(state.apiConfig.oddsBookmaker||'')}" placeholder="e.g. draftkings" /></label>
             <label class="label"><span class="tiny">Auto weather</span><br><input id="autoSyncWeather" type="checkbox" ${state.apiConfig.autoSyncWeather?'checked':''}/> Open-Meteo</label>
@@ -243,9 +236,8 @@ function renderMarket(){
     </section>
   `;
 }
-
 function renderLaunchpad(){
-  const proxy=state.apiConfig?.proxyBaseUrl||'https://newest-mlb.onrender.com';
+  const proxy=state.apiConfig?.proxyBaseUrl||'https://newest-mlb-1.onrender.com';
   const oddsReady=state.liveSync.odds?.status==='ok';
   const weatherReady=state.liveSync.weather?.status==='ok';
   const selected=state.selectedGameData||state.games[0]||null;
@@ -279,7 +271,6 @@ function renderLaunchpad(){
     </section>
   `;
 }
-
 function renderPricing(){
   return `
     <section id="pricingSection">
@@ -292,7 +283,6 @@ function renderPricing(){
     </section>
   `;
 }
-
 function renderNotes(){
   return `
     <section>
@@ -307,7 +297,6 @@ function renderNotes(){
     </section>
   `;
 }
-
 function render(){
   renderTabs();
   if(state.loading){ view.innerHTML=`<div class="card loading"><strong>Loading slate...</strong><br><br>Pulling schedule, probable pitchers, and active hitter pools.</div>`; return; }
@@ -323,14 +312,12 @@ function render(){
   if(state.tab==='launch') view.innerHTML=renderLaunchpad();
   if(state.tab==='pricing') view.innerHTML=renderPricing();
   if(state.tab==='notes') view.innerHTML=renderNotes();
-
   document.querySelectorAll('[data-game]').forEach(el=>el.onclick=async()=>{ state.tab='hitterlab'; render(); view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`; await loadSelectedGame(Number(el.dataset.game)); });
   document.querySelectorAll('[data-gamepick]').forEach(el=>el.onclick=async()=>{ state.tab='hitterlab'; render(); view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`; await loadSelectedGame(Number(el.dataset.gamepick)); });
   document.querySelectorAll('[data-watch-team]').forEach(el=>el.onclick=e=>{ e.stopPropagation(); toggleWatch({type:'team',name:el.dataset.watchTeam,gamePk:Number(el.dataset.watchGame)}); });
   document.querySelectorAll('[data-watch-hitter]').forEach(el=>el.onclick=e=>{ e.stopPropagation(); toggleWatch({type:'hitter',name:el.dataset.watchHitter}); });
   document.querySelectorAll('[data-market-game]').forEach(el=>el.onclick=async()=>{ state.selectedGamePk=Number(el.dataset.marketGame); const selected=state.games.find(g=>g.gamePk===state.selectedGamePk); if(selected&&(!state.selectedGameData||state.selectedGameData.gamePk!==state.selectedGamePk)){ view.innerHTML=`<div class="card loading"><strong>Loading market shell...</strong></div>`; await loadSelectedGame(state.selectedGamePk); state.tab='market'; }else render(); });
-
-  if($('#saveApiConfigBtn')) $('#saveApiConfigBtn').onclick=()=>{ saveApiConfig({proxyBaseUrl:$('#proxyBaseUrl')?.value.trim()||'https://newest-mlb.onrender.com',oddsRegion:$('#oddsRegion')?.value||'us',oddsBookmaker:$('#oddsBookmaker')?.value.trim()||'',autoSyncWeather:!!$('#autoSyncWeather')?.checked,autoSyncOdds:!!$('#autoSyncOdds')?.checked}); render(); };
+  if($('#saveApiConfigBtn')) $('#saveApiConfigBtn').onclick=()=>{ saveApiConfig({proxyBaseUrl:$('#proxyBaseUrl')?.value.trim()||'https://newest-mlb-1.onrender.com',oddsRegion:$('#oddsRegion')?.value||'us',oddsBookmaker:$('#oddsBookmaker')?.value.trim()||'',autoSyncWeather:!!$('#autoSyncWeather')?.checked,autoSyncOdds:!!$('#autoSyncOdds')?.checked}); render(); };
   if($('#syncWeatherBtn')) $('#syncWeatherBtn').onclick=syncWeatherForSlate;
   if($('#syncOddsBtn')) $('#syncOddsBtn').onclick=syncOddsForSlate;
   if($('#launchSyncAll')) $('#launchSyncAll').onclick=syncLiveFeeds;
@@ -354,11 +341,9 @@ function render(){
   if($('#jumpPricing')) $('#jumpPricing').onclick=()=>{ state.tab='pricing'; render(); document.getElementById('pricingSection')?.scrollIntoView({behavior:'smooth'}); };
   if($('#jumpLaunch')) $('#jumpLaunch').onclick=()=>{ state.tab='launch'; render(); document.getElementById('launchSection')?.scrollIntoView({behavior:'smooth'}); };
 }
-
 function exportCsv(){ const rows=[['Rank','Team','Side','Opponent','Score','Level','Opp Pitcher','Venue','Date']].concat(filteredStackRows().map((r,i)=>[i+1,r.team,r.side,r.opponent,r.score,r.level,r.oppPitcher,r.venue,state.selectedDate])); const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})); a.download=`mlb-edge-board-${state.selectedDate}.csv`; a.click(); URL.revokeObjectURL(a.href); }
 function tickClock(){ $('#clockPill').textContent=new Date().toLocaleTimeString(); }
 setInterval(tickClock,1000); tickClock();
-
 $('#dateInput').value=state.selectedDate;
 $('#dateInput').addEventListener('change',e=>{state.selectedDate=e.target.value;});
 $('#refreshBtn').onclick=loadSlate;
@@ -366,25 +351,23 @@ $('#exportBtn').onclick=exportCsv;
 $('#edgeSearch').addEventListener('input',e=>{ state.edgeFilter=e.target.value; if(state.tab==='edges') render(); });
 let autoTimer=null;
 $('#autoBtn').onclick=()=>{ state.autoRefresh=!state.autoRefresh; $('#autoBtn').textContent=`Auto Refresh: ${state.autoRefresh?'On':'Off'}`; if(autoTimer) clearInterval(autoTimer); if(state.autoRefresh) autoTimer=setInterval(loadSlate,state.autoRefreshMs); };
-
 async function generateAIPicks(){
   if(state.aiLoading) return;
   state.aiLoading=true; state.aiResult=''; state.aiError=''; render();
   const games=state.games.map(g=>({away:{abbr:g.away?.abbr,name:g.away?.name},home:{abbr:g.home?.abbr,name:g.home?.name},venue:{name:g.venue?.name},awayPitcher:{name:g.awayPitcher?.name,era:g.awayPitcher?.era,whip:g.awayPitcher?.whip},homePitcher:{name:g.homePitcher?.name,era:g.homePitcher?.era,whip:g.homePitcher?.whip},status:g.status}));
   try {
-    const resp=await fetch('/api/ai-picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({games,date:state.selectedDate,mode:state.aiMode})});
+    const _aiBase=(state.apiConfig?.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');
+    const resp=await fetch(_aiBase+'/api/ai-picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({games,date:state.selectedDate,mode:state.aiMode})});
     const data=await resp.json();
     if(!resp.ok||!data.ok) throw new Error(data.error||'AI request failed');
     state.aiResult=data.analysis; state.aiResultMode=state.aiMode; state.aiResultDate=state.selectedDate;
   } catch(err){ state.aiError=err.message; }
   state.aiLoading=false; render();
 }
-
 buildHero();
 $('#edgeSearch').value=state.edgeFilter;
 render();
 // loadSlate() called by auth gate after sign-in
-
 (function(){
   'use strict';
   const BACKEND='https://newest-mlb-1.onrender.com';
@@ -396,7 +379,6 @@ render();
   document.getElementById('agBackend').value=_cfg.proxyBaseUrl||_prof.apiBase||BACKEND;
   if(_prof.email) document.getElementById('agEmail').value=_prof.email;
   if(_savedToken) document.getElementById('agToken').value=_savedToken;
-
   function getBase(){ return (document.getElementById('agBackend').value.trim()||BACKEND).replace(/\/$/,''); }
   function persistBackend(url){ const cfg=JSON.parse(localStorage.getItem('mlb-edge-api-config')||'{}'); cfg.proxyBaseUrl=url; localStorage.setItem('mlb-edge-api-config',JSON.stringify(cfg)); if(typeof state!=='undefined') state.apiConfig.proxyBaseUrl=url; const prof=JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}'); prof.apiBase=url; localStorage.setItem('allday-mlb-edge-access',JSON.stringify(prof)); }
   function msg(text,type){ agMsg.textContent=text; agMsg.style.display='block'; const colors={ok:['rgba(0,212,106,.1)','#7dffbe','rgba(0,212,106,.2)'],err:['rgba(255,95,109,.12)','#ff9fa7','rgba(255,95,109,.2)'],inf:['rgba(89,169,255,.1)','#9fd0ff','rgba(89,169,255,.2)']}; const[bg,color,border]=colors[type]||colors.inf; Object.assign(agMsg.style,{background:bg,color,border:`1px solid ${border}`}); }
@@ -404,19 +386,14 @@ render();
   function closeGate(plan,email,backendUrl){ persistBackend(backendUrl||getBase()); const badge=document.getElementById('planBadge'),badgeLbl=document.getElementById('planBadgeLabel'); if(badge&&badgeLbl){badgeLbl.textContent=plan;badge.classList.add('visible');} const prof=JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}'); localStorage.setItem('allday-mlb-edge-access',JSON.stringify({...prof,email,plan})); gate.classList.add('hidden'); document.body.style.overflow=''; if(typeof loadSlate==='function') loadSlate(); }
   async function verifyAndClose(token){ const base=getBase(); msg('Verifying…','inf'); try{ const res=await fetch(base+'/api/auth/verify',{headers:{'Authorization':'Bearer '+token},signal:AbortSignal.timeout(4000)}); const data=await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error||'HTTP '+res.status); localStorage.setItem('allday-mlb-edge-token',token); closeGate(data.plan,data.email,base); }catch(err){ closeGate('elite','aldaye2015@gmail.com',base); } }
   async function claimAndClose(email){ const base=getBase(); msg('Sending claim request…','inf'); try{ const res=await fetch(base+'/api/auth/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email}),signal:AbortSignal.timeout(8000)}); const data=await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error||'HTTP '+res.status); localStorage.setItem('allday-mlb-edge-token',data.token); msg('Token issued! Plan: '+data.plan+'. Loading app…','ok'); setTimeout(()=>closeGate(data.plan,data.email,base),900); }catch(err){ msg(err.message||'Claim failed.','err'); } }
-
   document.getElementById('agSignInBtn').onclick=function(){ const token=document.getElementById('agToken').value.trim(),email=document.getElementById('agEmail').value.trim(); if(!token){msg('Paste your access token first.','err');return;} if(email){const p=JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}');p.email=email;localStorage.setItem('allday-mlb-edge-access',JSON.stringify(p));} verifyAndClose(token); };
   document.getElementById('agClaimBtn').onclick=function(){ const email=document.getElementById('agEmail').value.trim(); if(!email){msg('Enter the email you used at checkout.','err');return;} claimAndClose(email); };
   document.getElementById('agAutoBtn').onclick=function(){ const saved=localStorage.getItem('allday-mlb-edge-token'); if(!saved){msg('No saved token found.','err');return;} verifyAndClose(saved); };
-
   const badge=document.getElementById('planBadge');
   if(badge) badge.onclick=function(){ if(!confirm('Sign out?')) return; localStorage.removeItem('allday-mlb-edge-token'); badge.classList.remove('visible'); openGate('Signed out.','inf'); };
-
   if(_savedToken){
     closeGate(_prof.plan||'elite', _prof.email||'aldaye2015@gmail.com', _cfg.proxyBaseUrl||BACKEND);
   } else {
     openGate();
   }
 })();
-
-
