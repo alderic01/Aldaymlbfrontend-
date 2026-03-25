@@ -1,0 +1,24 @@
+module.exports = async (req, res) => {
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMGZiOWYwNy1iNzA5LTQ0YmMtODMzMS02MjJkNjYzNzE4ZWYiLCJlbWFpbCI6ImFsZGF5ZTIwMTVAZ21haWwuY29tIiwicGxhbiI6ImVsaXRlIiwiaWF0IjoxNzc0NDA0NzkyLCJleHAiOjE3NzY5OTY3OTJ9.MDvd50b2l17oJE3-oAADv1DpgrjHXQX1v80t82B5xj8";
+  
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html>
+<head><title>Signing in...</title></head>
+<body>
+<script>
+  localStorage.setItem('allday-mlb-edge-token', '${token}');
+  localStorage.setItem('mlb-edge-api-config', JSON.stringify({
+    proxyBaseUrl: 'https://newest-mlb-1.onrender.com',
+    oddsRegion: 'us', oddsBookmaker: '', autoSyncWeather: true, autoSyncOdds: true
+  }));
+  localStorage.setItem('allday-mlb-edge-access', JSON.stringify({
+    email: 'aldaye2015@gmail.com', plan: 'elite',
+    apiBase: 'https://newest-mlb-1.onrender.com'
+  }));
+  window.location.href = '/app.html';
+</script>
+<p>Signing you in...</p>
+</body>
+</html>`);
+};
