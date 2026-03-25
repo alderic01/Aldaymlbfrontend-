@@ -1,4 +1,4 @@
-const BACKEND_DEFAULT = 'https://newest-mlb.onrender.com';
+const BACKEND_DEFAULT = 'https://newest-mlb-1.onrender.com';
 const state = { backendUrl: localStorage.getItem('allday_backend_url') || BACKEND_DEFAULT };
 
 function byId(id){ return document.getElementById(id); }
