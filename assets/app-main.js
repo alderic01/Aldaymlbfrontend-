@@ -415,9 +415,10 @@ render();
   const params=new URLSearchParams(window.location.search);
   if(params.get('checkout')==='success'){ history.replaceState(null,'',window.location.pathname); openGate(); msg('Payment confirmed! Enter your checkout email and click "Just Paid? Claim Token".','ok'); }
   else if(_savedToken){
-    (async function(){ const base=getBase(); try{ const res=await fetch(base+'/api/auth/verify',{headers:{'Authorization':'Bearer '+_savedToken}}); const data=await res.json().catch(()=>({})); if(res.ok&&data.ok){ closeGate(data.plan,data.email,base); }else{ localStorage.removeItem('allday-mlb-edge-token'); openGate(data.error||'Session expired.','err'); } }} catch(e){
-  // Backend sleeping — trust saved token and load app anyway
+    (async function(){ const base=getBase(); try{ const res=await fetch(base+'/api/auth/verify',{headers:{'Authorization':'Bearer '+_savedToken}}); const data=await res.json().catch(()=>({})); if(res.ok&&data.ok){ closeGate(data.plan,data.email,base); }else{ localStorage.removeItem('allday-mlb-edge-token'); openGate(data.error||'Session expired.','err'); } }} } catch(e){
   closeGate('elite', 'aldaye2015@gmail.com', base);
-}'); } })();
+}
+    })();
   } else { openGate(); }
 })();
+
