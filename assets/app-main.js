@@ -453,4 +453,91 @@ window.render = function() {
     } else {
           _origRender();
     }
+
+  // ─── Stripe Pricing Page (replaces old renderPricing) ────────────────────────
+  function renderPricing() {
+      const plans = [
+        {
+                id: 'starter', name: 'Starter', price: '$19.99', color: '#3b82f6', badge: '',
+                features: ['Daily MLB matchup grades','Basic player edges','Weather & odds data','Mobile friendly']
+        },
+        {
+                id: 'pro', name: 'Pro', price: '$49.99', color: '#7c3aed', badge: 'POPULAR',
+                features: ['Everything in Starter','DraftKings salary sync','DK Lineup Optimizer','Budget Beast value plays','Smart Stacks (3 lineups)','Multi-AI picks (Grok + ChatGPT + Claude)']
+        },
+        {
+                id: 'elite', name: 'Elite', price: '$99.99', color: '#f59e0b', badge: 'BEST VALUE',
+                features: ['Everything in Pro','Real-time lineup alerts','Advanced pitcher grades','Stack correlation tools','Priority support','Early access to new features']
+        }
+          ];
+      const userPlan = state.plan || '';
+      document.getElementById('app').innerHTML = `
+          <div style="padding:32px 20px;max-width:1000px;margin:0 auto;">
+                <div style="text-align:center;margin-bottom:36px;">
+                        <h2 style="color:#e2e8f0;font-size:28px;margin-bottom:8px;">Choose Your Plan</h2>
+                                <p style="color:#64748b;font-size:15px;">Unlock the full ALLDAY MLB EDGE suite</p>
+                                        <div style="background:#1e293b;display:inline-block;padding:6px 16px;border-radius:20px;margin-top:10px;">
+                                                  <span style="color:#22c55e;font-size:13px;">🔒 Secured by Stripe · Cancel anytime</span>
+                                                          </div>
+                                                                </div>
+                                                                      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-bottom:32px;">
+                                                                              ${plans.map(p => `
+                                                                                        <div style="background:#1a1a2e;border:2px solid ${p.id==='pro'?p.color:'#334'};border-radius:14px;padding:24px;position:relative;display:flex;flex-direction:column;">
+                                                                                                    ${p.badge ? `<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:${p.color};color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:20px;letter-spacing:1px;">${p.badge}</div>` : ''}
+                                                                                                                <div style="margin-bottom:16px;">
+                                                                                                                              <div style="color:${p.color};font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">${p.name}</div>
+                                                                                                                                            <div style="display:flex;align-items:baseline;gap:4px;">
+                                                                                                                                                            <span style="color:#e2e8f0;font-size:36px;font-weight:900;">${p.price}</span>
+                                                                                                                                                                            <span style="color:#64748b;font-size:14px;">/month</span>
+                                                                                                                                                                                          </div>
+                                                                                                                                                                                                      </div>
+                                                                                                                                                                                                                  <ul style="list-style:none;padding:0;margin:0 0 24px;flex:1;">
+                                                                                                                                                                                                                                ${p.features.map(f => `<li style="color:#cbd5e1;font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:8px;"><span style="color:${p.color};font-size:16px;">✓</span> ${f}</li>`).join('')}
+                                                                                                                                                                                                                                            </ul>
+                                                                                                                                                                                                                                                        ${userPlan === p.id
+                                                                                                                                                                                                                                                                        ? `<div style="background:#1e293b;color:#22c55e;text-align:center;padding:10px;border-radius:8px;font-weight:700;font-size:14px;">✓ Current Plan</div>`
+                                                                                                                                                                                                                                                                        : `<button id="checkoutBtn-${p.id}" onclick="startCheckout('${p.id}')" style="background:${p.color};color:#fff;border:none;padding:12px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;width:100%;">Subscribe — ${p.price}/mo</button>`
+                                                                                                                                                                                                                                                                      }
+                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                                        `).join('')}
+                                                                                                                                                                                                                                                                                              </div>
+                                                                                                                                                                                                                                                                                                    <div style="text-align:center;color:#475569;font-size:13px;">
+                                                                                                                                                                                                                                                                                                            <p>All plans billed monthly. No contracts. Cancel anytime from your account portal.</p>
+                                                                                                                                                                                                                                                                                                                    <p style="margin-top:6px;">Questions? <a href="mailto:aldaye2015@gmail.com" style="color:#7c3aed;">aldaye2015@gmail.com</a></p>
+                                                                                                                                                                                                                                                                                                                            ${userPlan === 'elite' || userPlan === 'pro'
+                                                                                                                                                                                                                                                                                                                                        ? `<button onclick="openBillingPortal()" style="margin-top:12px;background:transparent;border:1px solid #334;color:#94a3b8;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;">Manage Billing / Cancel</button>`
+                                                                                                                                                                                                                                                                                                                                        : ''}
+                                                                                                                                                                                                                                                                                                                                              </div>
+                                                                                                                                                                                                                                                                                                                                                  </div>
+                                                                                                                                                                                                                                                                                                                                                    `;
+  }
+
+  async function openBillingPortal() {
+      try {
+            const resp = await fetch(`${getBase()}/api/portal/session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customerId: state.stripeCustomerId, returnUrl: window.location.origin })
+            });
+            const data = await resp.json();
+            if (data.url) window.location.href = data.url;
+            else alert('Portal error: ' + (data.error || 'No customer ID on file'));
+      } catch (err) {
+            alert('Portal error: ' + err.message);
+      }
+  }
+
+  // Patch render() to also handle pricing tab via renderPricing override
+  const _origRender2 = window.render;
+  window.render = function() {
+      if (state.tab === 'pricing') {
+            renderTabs();
+            renderPricing();
+      } else if (state.tab === 'budget') {
+            renderTabs();
+            renderBudgetBeasts();
+      } else {
+            _origRender2 ? _origRender2() : render();
+      }
+  };
 };
