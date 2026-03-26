@@ -483,4 +483,72 @@ async function loadSlate(){
     state.season=Number(state.selectedDate.slice(0,4));
     const data=await fetchJson(`${API}/schedule?sportId=1&date=${state.selectedDate}&hydrate=${encodeURIComponent(HYDRATE)}`);
     const games=(data.dates?.[0]?.games||[]).map(g=>({gamePk:g.gamePk,status:normalizeStatus(g.status?.abstractGameState||'Preview'),detailed:g.status?.detailedState||'-',gameDate:g.gameDate,venue:g.venue||{name:'Unknown'},linescore:g.linescore||{},away:{id:g.teams?.away?.team?.id,abbr:g.teams?.away?.team?.abbreviation,name:g.teams?.away?.team?.name,score:g.teams?.away?.score??'-'},home:{id:g.teams?.home?.team?.id,abbr:g.teams?.home?.team?.abbreviation,name:g.teams?.home?.team?.name,score:g.teams?.home?.score??'-'},awayProbable:g.teams?.away?.probablePitcher||null,homeProbable:g.teams?.home?.probablePitcher||null,lineupAway:g.lineups?.awayStarters||null,lineupHome:g.lineups?.homeStarters||null}));
-    const pIds=games.flatMap(g=>[g.awayProbable?.
+    const pIds=games.flatMap(g=>[g.awayProbable?.id,g.homeProbable?.id]).filter(Boolean);
+    const pStats=await fetchPitcherStats(pIds,state.season);
+    const defaultP={era:4.30,whip:1.30,hr9:1.15,k9:8.6};
+    state.games=games.map(g=>({...g,awayPitcher:g.awayProbable?(pStats[g.awayProbable.id]||{id:g.awayProbable.id,name:g.awayProbable.fullName,...defaultP}):{name:'TBD',...defaultP},homePitcher:g.homeProbable?(pStats[g.homeProbable.id]||{id:g.homeProbable.id,name:g.homeProbable.fullName,...defaultP}):{name:'TBD',...defaultP},park:parkFor(g.venue?.name||'')}));
+    state.teamEdges=[];state.stackRows=[];
+    for(const g of state.games){
+      const homeScore=teamEdgeScore(g,'home'),awayScore=teamEdgeScore(g,'away');
+      const[homeLevel,homeStyle]=stackLevel(homeScore),[awayLevel,awayStyle]=stackLevel(awayScore);
+      state.teamEdges.push({gamePk:g.gamePk,team:g.home.abbr,side:'Home',opponent:g.away.abbr,score:homeScore,level:homeLevel,style:homeStyle,venue:g.venue.name,oppPitcher:g.awayPitcher.name},{gamePk:g.gamePk,team:g.away.abbr,side:'Away',opponent:g.home.abbr,score:awayScore,level:awayLevel,style:awayStyle,venue:g.venue.name,oppPitcher:g.homePitcher.name});
+    }
+    state.stackRows=[...state.teamEdges].sort((a,b)=>b.score-a.score);
+    state.hero.games=state.games.length;state.hero.live=state.games.filter(g=>g.status==='Live').length;state.hero.best=state.stackRows[0]?.team||'-';state.hero.avg=state.stackRows.length?Math.round(state.stackRows.reduce((a,b)=>a+b.score,0)/state.stackRows.length):0;
+    if(!state.selectedGamePk||!state.games.find(g=>g.gamePk===state.selectedGamePk))state.selectedGamePk=state.games[0]?.gamePk||null;
+    if(state.selectedGamePk)await loadSelectedGame(state.selectedGamePk);
+    if(state.apiConfig.autoSyncWeather||state.apiConfig.autoSyncOdds)try{await syncLiveFeeds();}catch(e){console.warn(e);}
+    try{await syncDKSalaries();}catch(e){console.warn('DK sync:',e);}
+  }catch(err){console.error(err);state.games=[];state.stackRows=[];state.teamEdges=[];state.selectedGameData=null;}
+  finally{state.loading=false;buildHero();render();}
+}
+
+async function loadSelectedGame(gamePk){
+  const game=state.games.find(g=>g.gamePk===gamePk);
+  state.selectedGamePk=gamePk;
+  if(!game)return;
+  const park=parkFor(game.venue.name);
+  const awayTeamCtx={id:game.away.id,abbr:game.away.abbr,nextVenue:game.venue.name};
+  const homeTeamCtx={id:game.home.id,abbr:game.home.abbr,nextVenue:game.venue.name};
+  const[awayLineupIds,homeLineupIds]=await fetchGameLineups(gamePk,game).catch(()=>[null,null]);
+  const[awayHitters,homeHitters,awayTravel,homeTravel,awayStaff,homeStaff,awayUsage,homeUsage]=await Promise.all([
+    (awayLineupIds?fetchLineupStats(awayLineupIds,state.season):fetchTeamHitters(game.away.id,state.season)).catch(()=>[]),
+    (homeLineupIds?fetchLineupStats(homeLineupIds,state.season):fetchTeamHitters(game.home.id,state.season)).catch(()=>[]),
+    fetchTravelContext(awayTeamCtx,state.selectedDate).catch(()=>({miles:0,hours:0,label:'Travel n/a',penalty:0})),
+    fetchTravelContext(homeTeamCtx,state.selectedDate).catch(()=>({miles:0,hours:0,label:'Travel n/a',penalty:0})),
+    fetchTeamPitchingStaff(game.away.id,state.season,game.awayPitcher.id).catch(()=>[]),
+    fetchTeamPitchingStaff(game.home.id,state.season,game.homePitcher.id).catch(()=>[]),
+    fetchRecentBullpenUsage(game.away.id,state.selectedDate).catch(()=>({})),
+    fetchRecentBullpenUsage(game.home.id,state.selectedDate).catch(()=>({}))
+  ]);
+  const awayBullpen=projectBullpen(awayStaff,awayUsage,game.gameDate,game.awayPitcher);
+  const homeBullpen=projectBullpen(homeStaff,homeUsage,game.gameDate,game.homePitcher);
+  const grade=(h,oppPitcher,isHome,travel,oppBullpen)=>hitterGrade(h,oppPitcher,park,{isHome,travel,game,side:isHome?'home':'away',oppBullpen});
+  const awayGraded=awayHitters.slice(0,10).map(h=>({...h,grade:grade(h,game.homePitcher,false,awayTravel,homeBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
+  const homeGraded=homeHitters.slice(0,10).map(h=>({...h,grade:grade(h,game.awayPitcher,true,homeTravel,awayBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
+  state.selectedGameData={...game,park,awayHitters:awayGraded,homeHitters:homeGraded,awayTravel,homeTravel,awayBullpen,homeBullpen,awayStarterTendencies:pitcherTendencies(game.awayPitcher),homeStarterTendencies:pitcherTendencies(game.homePitcher),lineupsLive:!!(awayLineupIds&&homeLineupIds)};
+  buildHero();render();
+}
+
+function renderDashboard(){
+  const top=state.stackRows.slice(0,6);
+  const topPlayers=getTopOneOffs();
+  return`<section>
+    <div class="section-title"><h2>Slate Command Center</h2><div class="meta">Quick-hitting board for where the offense should come from</div></div>
+    <div class="grid-3">
+      <div class="card callout"><h3>Best stack right now</h3><p>${top[0]?`${top[0].team} rates as the top offense on this slate — ${top[0].score}/99 against ${escapeHtml(top[0].oppPitcher)} in ${escapeHtml(top[0].venue)}.`:'Load a slate to rank offenses.'}</p></div>
+      <div class="card callout"><h3>Most attackable pitcher</h3><p>${state.games.length?(()=>{const all=state.games.flatMap(g=>[{name:g.awayPitcher.name,weak:pitcherWeakness(g.awayPitcher),opp:g.home.abbr},{name:g.homePitcher.name,weak:pitcherWeakness(g.homePitcher),opp:g.away.abbr}]).sort((a,b)=>b.weak-a.weak);return`${escapeHtml(all[0].name)} is the softest target. Offense boost points to ${all[0].opp}.`;})():'No pitchers loaded yet.'}</p></div>
+      <div class="card callout"><h3>Selected matchup</h3><p>${state.selectedGameData?`${state.selectedGameData.away.abbr} at ${state.selectedGameData.home.abbr} in ${escapeHtml(state.selectedGameData.venue.name)}. Park run ${fmtNum(state.selectedGameData.park.run,2)} HR ${fmtNum(state.selectedGameData.park.hr,2)}.`:'Pick a game to open the hitter lab.'}</p></div>
+    </div>
+    <div class="section-title"><h2>Top stack targets</h2></div>
+    <div class="games">${top.map((r,i)=>`<div class="card game" data-gamepick="${r.gamePk}"><div class="row"><div class="mini">#${i+1}</div><span class="tag ${r.style}">${r.level}</span></div><div class="abbr" style="margin-top:10px">${r.team}</div><div class="mini">vs ${r.opponent} · ${escapeHtml(r.oppPitcher)}</div><div class="row" style="margin-top:16px"><div class="score">${r.score}/99</div><div class="mini">${escapeHtml(r.venue)}</div></div></div>`).join('')||'<div class="card empty">No games found.</div>'}</div>
+    ${topPlayers.length?`<div class="section-title" style="margin-top:24px"><h2>Top Player Grades</h2><div class="meta">${state.selectedGameData?.lineupsLive?'Official lineup':'Active roster'} · ${state.selectedGameData?.away?.abbr||''} @ ${state.selectedGameData?.home?.abbr||''}</div></div><div class="games">${topPlayers.map(p=>`<div class="card game" data-gamepick="${state.selectedGamePk}"><div class="row"><span class="grade" style="font-size:22px;line-height:1">${escapeHtml(p.grade.letter)}</span><span class="tag ${p.grade.style}" style="margin-left:8px">${p.grade.score}/99</span></div><div class="player-name" style="margin-top:8px">${escapeHtml(p.name)}</div><div class="mini">${escapeHtml(p.pos)} · ${fmtPct(p.avg)} AVG · ${fmtPct(p.ops)} OPS · ${p.hr} HR</div><div class="mini" style="margin-top:4px">${escapeHtml(p.grade.collab?.market?.label||'')} · ${escapeHtml(p.grade.collab?.pattern?.label||'')}</div></div>`).join('')}</div>`:''}
+  </section>`;
+}
+
+function renderGames(){
+  return`<section id="gamesSection">
+    <div class="section-title"><h2>Games</h2><div class="meta">Pick a matchup to load team hitters</div></div>
+    <div class="games">${state.games.map(g=>{const park=parkFor(g.venue.name),homeEdge=teamEdgeScore(g,'home'),awayEdge=teamEdgeScore(g,'away');const m=getMarket(g);const mParts=[];if(m.total)mParts.push(`O/U ${m.total}`);if(m.temperature)mParts.push(`${m.temperature}°`);if(m.wind)mParts.push(`${m.wind} mph ${m.windDir}`);const dk=getDKSalary(g.awayPitcher.name)||getDKSalary(g.homePitcher.name);return`<div class="card game ${g.gamePk===state.selectedGamePk?'active':''}" data-game="${g.gamePk}"><div class="row"><span class="pill ${gameBadge(g.status)}">${escapeHtml(g.status)}</span><span class="mini mono">${fmtTime(g.gameDate)}</span></div><div class="teams"><div class="teamrow"><div><div class="abbr">${g.away.abbr}</div><div class="name">${escapeHtml(g.away.name)}</div></div><div class="score">${g.away.score}</div></div><div class="teamrow"><div><div class="abbr">${g.home.abbr}</div><div class="name">${escapeHtml(g.home.name)}</div></div><div class="score">${g.home.score}</div></div></div><div class="mini">${escapeHtml(g.awayPitcher.name)} vs ${escapeHtml(g.homePitcher.name)}</div><div class="mini" style="margin-top:6px">${escapeHtml(g.venue.name)} · run ${fmtNum(park.run,2)} · HR ${fmtNum(park.hr,2)}</div>${mParts.length?`<div class="mini" style="margin-top:4px">${mParts.join(' · ')}</div>`:''}<div class="lift" style="margin-top:14px"><div class="stat"><div class="k">${g.away.abbr}</div><div class="v">${awayEdge}</div></div><div class="stat"><div class="k">${g.home.abbr}</div><div class="v">${homeEdge}</div></div><div class="stat"><div class="k">Best</div><div class="v">${Math.max(awayEdge,homeEdge)}</div></div></div></div>`;}).join('')||'<div class="card empty">No MLB games found.</div>'}</div>
+  </section>`;
+}
