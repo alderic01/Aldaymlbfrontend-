@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+
     :root{--bg:#08111f;--bg2:#0d1727;--bg3:#122238;--card:#0d1828;--line:#1b3150;--text:#e8f0fa;--muted:#89a0bd;--teal:#00e5aa;--gold:#ffd54a;--red:#ff5f6d;--blue:#59a9ff;--orange:#ff9e57;--green:#00d46a;--purple:#a88dff;--shadow:0 12px 30px rgba(0,0,0,.32);}
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;background:linear-gradient(180deg,#07101c 0%,#091322 100%);color:var(--text);font-family:Inter,system-ui,sans-serif}
@@ -152,10 +153,56 @@
     #planBadge.visible{display:inline-flex}
     @media(max-width:1100px){.hero,.grid-3,.grid-2,.split,.pricing,.lift,.signal-grid{grid-template-columns:1fr}.hero-side{grid-template-columns:1fr 1fr}}
     @media(max-width:720px){.hero-title{font-size:40px}.topbar-inner{padding:12px}.app{padding:14px}.hero-side{grid-template-columns:1fr}.toolbar{margin-left:0}}
-  </style>
+  
+
+/* === ALLDAY EDGE NEON ENHANCEMENTS === */
+:root{--bg:#060e1a;--bg2:#0b1623;--card:#0b1623;--line:#1e293b;--green:#00ff9c;--red:#ff3b3b;--yellow:#ffd000;--text:#e8f0fa;--muted:#64748b;--teal:#00ff9c;--gold:#ffd000}
+html,body{background:#060e1a!important;background-image:none!important}
+.topbar{background:rgba(6,14,26,.95)!important;border-bottom:1px solid #1e293b!important;backdrop-filter:blur(16px)!important}
+.topbar-inner{height:56px!important;max-width:100%!important}
+.brand .title{color:#00ff9c!important;font-weight:900!important;text-shadow:0 0 20px rgba(0,255,156,.4)!important}
+.logo{background:linear-gradient(135deg,#00ff9c,#00b87a)!important;border-radius:8px!important}
+.app{max-width:100%!important;padding:0!important}
+.sidebar{width:210px;flex-shrink:0;background:#0b1623;border-right:1px solid #1e293b;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-section{padding:14px 14px 6px;color:#334155;font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
+.sidebar-nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-radius:8px;margin:2px 8px;transition:all .2s;color:#64748b;font-size:13px;font-weight:600}
+.sidebar-nav-item:hover{background:rgba(0,255,156,.06);color:#e8f0fa}
+.sidebar-nav-item.active{background:rgba(0,255,156,.1);color:#00ff9c;font-weight:700}
+.sidebar-nav-icon{font-size:14px;width:18px;text-align:center}
+.sidebar-badge{background:#ff3b3b;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:10px;margin-left:auto}
+.sidebar-badge.g{background:#00ff9c;color:#060e1a}
+.sidebar-badge.y{background:#ffd000;color:#060e1a}
+.app-body{display:flex;flex:1;min-height:calc(100vh - 56px)}
+.app-sidebar-content{flex:1;overflow-x:hidden;padding:20px;display:flex;flex-direction:column;gap:16px}
+.toolbar{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:12px!important;padding:12px 18px!important}
+#tabs .tab{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:8px!important;padding:7px 14px!important;color:#64748b!important;font-size:12px!important;font-weight:700!important;transition:all .2s!important;margin:0 2px 4px!important}
+#tabs .tab:hover{color:#e8f0fa!important;border-color:#334155!important}
+#tabs .tab.active{background:rgba(0,255,156,.1)!important;border-color:rgba(0,255,156,.4)!important;color:#00ff9c!important}
+.player-card{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:16px!important;padding:18px!important;margin-bottom:12px!important;transition:transform .2s,box-shadow .2s!important;cursor:pointer!important}
+.player-card:hover{transform:translateY(-2px)!important;box-shadow:0 8px 24px rgba(0,0,0,.3)!important}
+.player-name{font-size:15px!important;font-weight:900!important;color:#e8f0fa!important}
+.player-meta{font-size:12px!important;color:#64748b!important}
+.grade{font-size:36px!important;font-weight:900!important;line-height:1!important}
+.section-title{font-size:18px!important;font-weight:900!important;margin-bottom:16px!important}
+.card{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:14px!important;box-shadow:none!important}
+.card.smash{border-color:rgba(0,255,156,.4)!important;box-shadow:0 0 20px rgba(0,255,156,.1)!important}
+.card.priority{border-color:rgba(255,208,0,.35)!important}
+.game{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:14px!important;padding:16px!important}
+.pill.live{background:rgba(255,59,59,.15)!important;border:1px solid rgba(255,59,59,.4)!important;color:#ff6b6b!important;font-weight:800!important}
+.pill.preview{background:rgba(100,116,139,.1)!important;border:1px solid rgba(100,116,139,.3)!important;color:#94a3b8!important}
+.pill.final{background:rgba(0,255,156,.08)!important;border:1px solid rgba(0,255,156,.2)!important;color:#00ff9c!important}
+.tag.smash{background:rgba(0,255,156,.12)!important;color:#00ff9c!important;border:1px solid rgba(0,255,156,.3)!important}
+.tag.strong{background:rgba(255,208,0,.12)!important;color:#ffd000!important;border:1px solid rgba(255,208,0,.3)!important}
+.tag.watch{background:rgba(56,189,248,.1)!important;color:#38bdf8!important;border:1px solid rgba(56,189,248,.2)!important}
+.tag.fade{background:rgba(255,59,59,.1)!important;color:#ff6b6b!important;border:1px solid rgba(255,59,59,.2)!important}
+.price-card{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:16px!important;padding:28px!important}
+.price-card.featured{border-color:rgba(0,255,156,.45)!important;box-shadow:0 0 30px rgba(0,255,156,.12)!important}
+.footer{background:#0b1623!important;border-top:1px solid #1e293b!important;color:#334155!important;font-size:11px!important;text-align:center!important;padding:14px!important;letter-spacing:.5px!important}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#060e1a}::-webkit-scrollbar-thumb{background:rgba(0,255,156,.25);border-radius:3px}
+@media(max-width:900px){.sidebar{display:none!important}.app-body{flex-direction:column}}
+</style>
 </head>
 <body>
-
 <div id="authGate">
   <div class="ag-box">
     <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#00e5aa;font-weight:800;margin-bottom:8px">ALLDAY MLB EDGE</div>
@@ -210,7 +257,29 @@
 </div>
 
 <div class="app">
-  <div class="tabs" id="tabs"></div>
+<div class="app-body">
+<nav class="sidebar" id="appSidebar">
+  <div class="sidebar-section">Main</div>
+  <div class="sidebar-nav-item active" onclick="sideSwitch(this,'dash')"><span class="sidebar-nav-icon">📊</span>Dashboard</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'games')"><span class="sidebar-nav-icon">⚾</span>Games<span class="sidebar-badge g">LIVE</span></div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'edges')"><span class="sidebar-nav-icon">📈</span>Edge Board</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'stacks')"><span class="sidebar-nav-icon">💰</span>Stack Lab</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'hitters')"><span class="sidebar-nav-icon">🏏</span>Hitter Lab</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'signals')"><span class="sidebar-nav-icon">📡</span>Signals</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'ai')"><span class="sidebar-nav-icon">⚡</span>AI Picks<span class="sidebar-badge y">NEW</span></div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'market')"><span class="sidebar-nav-icon">🌤</span>Odds+Weather</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'optimizer')"><span class="sidebar-nav-icon">🎯</span>DK Optimizer</div>
+  <div class="sidebar-section">More</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'launchpad')"><span class="sidebar-nav-icon">🚀</span>Launchpad</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'budget')"><span class="sidebar-nav-icon">💸</span>Budget Beasts</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'notes')"><span class="sidebar-nav-icon">📝</span>Notes</div>
+  <div class="sidebar-section">Account</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'pricing')"><span class="sidebar-nav-icon">🔐</span>Pricing</div>
+  <div class="sidebar-nav-item" onclick="document.getElementById('accountBtn')&&document.getElementById('accountBtn').click()"><span class="sidebar-nav-icon">👤</span>Account</div>
+  <div style="padding:14px 16px;margin-top:auto;border-top:1px solid #1e293b"><a href="./index.html" style="display:flex;align-items:center;gap:6px;color:#334155;font-size:12px;font-weight:600;padding:6px 0" onmouseover="this.style.color='#00ff9c'" onmouseout="this.style.color='#334155'">&#8592; Back to Home</a></div>
+</nav>
+<div class="app-sidebar-content">
+<div class="tabs" id="tabs"></div>
   <section class="hero">
     <div class="card hero-main">
       <div class="eyebrow">Live slate control room</div>
@@ -246,8 +315,10 @@
   </div>
   <div class="footer">ALLDAY MLB EDGE · MLB Stats API · Private proxy · AI by Claude</div>
 </div>
-
+</div>
+</div>
 <script src="./assets/app-core.js"></script>
 <script src="./assets/app-main.js"></script>
+<script>(function(){function sideSwitch(el,tab){document.querySelectorAll(".sidebar-nav-item").forEach(function(x){x.classList.remove("active")});el.classList.add("active");if(typeof render==="function")render(tab);document.querySelectorAll("#tabs .tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tab")===tab)})}window.sideSwitch=sideSwitch;var obs=new MutationObserver(function(){document.querySelectorAll(".grade:not([data-grade])").forEach(function(el){el.setAttribute("data-grade",el.innerText.trim())})});document.addEventListener("DOMContentLoaded",function(){obs.observe(document.body,{childList:true,subtree:true})})})();</script>
 </body>
 </html>
