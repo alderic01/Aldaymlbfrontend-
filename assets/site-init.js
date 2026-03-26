@@ -1,0 +1,4 @@
+// ALLDAY MLB EDGE — Landing Page Init
+// Handles: navbar scroll effect, smooth scroll, Stripe checkout return
+
+(function(){var p=new URLSearchParams(window.location.search);if(p.get('checkout')==='success'){setTimeout(function(){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#16a34a;color:#fff;padding:14px 20px;text-align:center;font-weight:700;font-size:15px';d.innerHTML='&#10003; Subscription activated! Welcome to ALLDAY MLB EDGE. <button onclick="this.parentElement.remove()" style="margin-left:16px;background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer">&#x2715;</button>';document.body.insertBefore(d,document.body.firstChild);window.history.replaceState({},'',window.location.pathname);},500);}if(p.get('checkout')==='cancel'){window.history.replaceState({},'',window.location.pathname);}})();
