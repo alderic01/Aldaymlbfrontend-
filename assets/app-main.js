@@ -301,7 +301,22 @@ $('#edgeSearch').addEventListener('input',e=>{state.edgeFilter=e.target.value;if
 let autoTimer=null;
 $('#autoBtn').onclick=()=>{state.autoRefresh=!state.autoRefresh;$('#autoBtn').textContent=`Auto Refresh: ${state.autoRefresh?'On':'Off'}`;if(autoTimer)clearInterval(autoTimer);if(state.autoRefresh)autoTimer=setInterval(loadSlate,state.autoRefreshMs);};
 
-async function generateAIPicks(){if(state.aiLoading)return;state.aiLoading=true;state.aiResult='';state.aiError='';render();const games=state.games.map(g=>({away:{abbr:g.away?.abbr,name:g.away?.name},home:{abbr:g.home?.abbr,name:g.home?.name},venue:{name:g.venue?.name},awayPitcher:{name:g.awayPitcher?.name,era:g.awayPitcher?.era,whip:g.awayPitcher?.whip},homePitcher:{name:g.homePitcher?.name,era:g.homePitcher?.era,whip:g.homePitcher?.whip},status:g.status}));try{const _aiBase=(state.apiConfig?.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');const resp=await fetch(_aiBase+'/api/ai-picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({games,date:state.selectedDate,mode:state.aiMode})});const data=await resp.json();if(!resp.ok||!data.ok)throw new Error(data.error||'AI request failed');state.aiResult=data.analysis;state.aiResultMode=state.aiMode;state.aiResultDate=state.selectedDate;}catch(err){state.aiError=err.message;}state.aiLoading=false;render();}
+async function generateAIPicks(){
+  if(state.aiLoading)return;
+  state.aiLoading=true;state.aiResult='';state.aiError='';state.aiLastResult={};render();
+  const games=state.games.map(g=>({away:{abbr:g.away?.abbr,name:g.away?.name},home:{abbr:g.home?.abbr,name:g.home?.name},venue:{name:g.venue?.name},awayPitcher:{name:g.awayPitcher?.name,era:g.awayPitcher?.era,whip:g.awayPitcher?.whip},homePitcher:{name:g.homePitcher?.name,era:g.homePitcher?.era,whip:g.homePitcher?.whip},status:g.status}));
+  try{
+    const _aiBase=(state.apiConfig?.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');
+    const resp=await fetch(_aiBase+'/api/ai-picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({games,date:state.selectedDate,mode:state.aiMode})});
+    const data=await resp.json();
+    if(!resp.ok||!data.ok)throw new Error(data.error||'AI request failed');
+    state.aiLastResult=data;
+    state.aiResult=data.analysis||'';
+    state.aiResultMode=state.aiMode;
+    state.aiResultDate=state.selectedDate;
+  }catch(err){state.aiError=err.message;}
+  state.aiLoading=false;render();
+}
 
 buildHero();
 $('#edgeSearch').value=state.edgeFilter;
