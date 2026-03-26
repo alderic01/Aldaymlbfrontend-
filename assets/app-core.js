@@ -553,3 +553,58 @@ function renderGames(){
     <div class="games">${state.games.map(g=>{const park=parkFor(g.venue.name),homeEdge=teamEdgeScore(g,'home'),awayEdge=teamEdgeScore(g,'away');const m=getMarket(g);const mParts=[];if(m.total)mParts.push(`O/U ${m.total}`);if(m.temperature)mParts.push(`${m.temperature}°`);if(m.wind)mParts.push(`${m.wind} mph ${m.windDir}`);const dk=getDKSalary(g.awayPitcher.name)||getDKSalary(g.homePitcher.name);return`<div class="card game ${g.gamePk===state.selectedGamePk?'active':''}" data-game="${g.gamePk}"><div class="row"><span class="pill ${gameBadge(g.status)}">${escapeHtml(g.status)}</span><span class="mini mono">${fmtTime(g.gameDate)}</span></div><div class="teams"><div class="teamrow"><div><div class="abbr">${g.away.abbr}</div><div class="name">${escapeHtml(g.away.name)}</div></div><div class="score">${g.away.score}</div></div><div class="teamrow"><div><div class="abbr">${g.home.abbr}</div><div class="name">${escapeHtml(g.home.name)}</div></div><div class="score">${g.home.score}</div></div></div><div class="mini">${escapeHtml(g.awayPitcher.name)} vs ${escapeHtml(g.homePitcher.name)}</div><div class="mini" style="margin-top:6px">${escapeHtml(g.venue.name)} · run ${fmtNum(park.run,2)} · HR ${fmtNum(park.hr,2)}</div>${mParts.length?`<div class="mini" style="margin-top:4px">${mParts.join(' · ')}</div>`:''}<div class="lift" style="margin-top:14px"><div class="stat"><div class="k">${g.away.abbr}</div><div class="v">${awayEdge}</div></div><div class="stat"><div class="k">${g.home.abbr}</div><div class="v">${homeEdge}</div></div><div class="stat"><div class="k">Best</div><div class="v">${Math.max(awayEdge,homeEdge)}</div></div></div></div>`;}).join('')||'<div class="card empty">No MLB games found.</div>'}</div>
   </section>`;
 }
+
+
+// ─── Stripe Checkout ─────────────────────────────────────────────────────────
+function getBase() {
+    return (document.getElementById('agBackend')?.value.trim() ||
+                state.apiConfig?.proxyBaseUrl ||
+                'https://newest-mlb-1.onrender.com').replace(/\/$/, '');
+}
+
+async function startCheckout(plan) {
+    const btn = document.getElementById(`checkoutBtn-${plan}`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Redirecting...'; }
+    try {
+          const email = state.userEmail || prompt('Enter your email to continue:') || '';
+          const resp = await fetch(`${getBase()}/api/checkout/session`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                            plan,
+                            customerEmail: email,
+                            successUrl: `${window.location.origin}?checkout=success`,
+                            cancelUrl: `${window.location.origin}?checkout=cancel`
+                  })
+          });
+          const data = await resp.json();
+          if (data.url) {
+                  window.location.href = data.url;
+          } else {
+                  alert('Checkout error: ' + (data.error || 'Unknown error'));
+                  if (btn) { btn.disabled = false; btn.textContent = 'Subscribe'; }
+          }
+    } catch (err) {
+          alert('Checkout failed: ' + err.message);
+          if (btn) { btn.disabled = false; btn.textContent = 'Subscribe'; }
+    }
+}
+
+// Check for checkout return on page load
+(function checkCheckoutReturn() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') {
+          setTimeout(() => {
+                  document.getElementById('app')?.insertAdjacentHTML('afterbegin',
+                                                                             `<div style="background:#16a34a;color:#fff;padding:14px 20px;text-align:center;font-weight:700;font-size:15px;position:fixed;top:0;left:0;right:0;z-index:9999;">
+                                                                                       ✓ Subscription activated! Welcome to ALLDAY MLB EDGE.
+                                                                                                 <button onclick="this.parentElement.remove()" style="margin-left:16px;background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;">✕</button>
+                                                                                                         </div>`
+                                                                           );
+                  window.history.replaceState({}, '', window.location.pathname);
+          }, 500);
+    }
+    if (params.get('checkout') === 'cancel') {
+          window.history.replaceState({}, '', window.location.pathname);
+    }
+})();
