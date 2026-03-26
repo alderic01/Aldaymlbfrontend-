@@ -1,123 +1,287 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ALLDAY MLB EDGE</title>
-  <meta name="description" content="Live MLB slate control room for DFS, props, stacks, hitters, odds, and weather." />
-  <meta name="theme-color" content="#08111f" />
-  <link rel="stylesheet" href="./assets/site.css" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ALLDAY MLB EDGE - Win DFS. Beat The Books.</title>
+<meta name="description" content="The ultimate MLB DFS + betting weapon. AI-powered picks from Grok, ChatGPT and Claude."/>
+<meta name="theme-color" content="#060e1a"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','Helvetica Neue',sans-serif;background:#060e1a;color:#e8f0fa;overflow-x:hidden}
+a{text-decoration:none;color:inherit}ul{list-style:none}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0b1623}::-webkit-scrollbar-thumb{background:#00ff9c44;border-radius:3px}
+nav{position:sticky;top:0;z-index:100;backdrop-filter:blur(16px);background:rgba(6,14,26,.85);border-bottom:1px solid #1e293b;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nb{color:#00ff9c;font-weight:900;font-size:20px;letter-spacing:1px;text-shadow:0 0 20px rgba(0,255,156,.5)}
+.nl{display:flex;gap:32px;align-items:center}
+.nl a{color:#64748b;font-size:13px;font-weight:700;transition:color .2s}
+.nl a:hover{color:#00ff9c}
+.nlb{background:transparent!important;border:1px solid #00ff9c!important;color:#00ff9c!important;border-radius:12px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.nlb:hover{background:#00ff9c!important;color:#060e1a!important}
+.hero{padding:80px 40px;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,255,156,.08) 0%,transparent 70%);display:grid;grid-template-columns:1fr 2fr 1fr;gap:32px;align-items:center;max-width:1200px;margin:0 auto}
+.hc{text-align:center}
+.hbadge{display:inline-block;background:rgba(0,255,156,.09);border:1px solid rgba(0,255,156,.27);border-radius:20px;padding:6px 18px;color:#00ff9c;font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:28px}
+.hero h1{font-size:52px;font-weight:900;line-height:1.1;margin-bottom:20px}
+.hero h1 span{color:#00ff9c;text-shadow:0 0 30px #00ff9c}
+.hero p{color:#64748b;font-size:17px;margin-bottom:36px;line-height:1.6}
+.hcta{background:#00ff9c;color:#060e1a;border:none;border-radius:12px;padding:18px 40px;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 0 40px rgba(0,255,156,.53);transition:transform .2s;display:inline-block}
+.hcta:hover{transform:translateY(-2px)}
+.hsub{margin-top:20px;color:#64748b;font-size:12px}
+.pcard{background:#0b1623;border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.pcimg{display:flex;align-items:center;justify-content:center;font-size:64px;min-height:180px}
+.pcinfo{padding:16px 14px}
+.pcn{font-weight:800;font-size:15px;margin-bottom:4px}
+.pct{color:#64748b;font-size:12px;margin-bottom:10px}
+.pcg{font-size:40px;font-weight:900;line-height:1}
+.sec{padding:60px 40px;max-width:1200px;margin:0 auto}
+.seca{padding:60px 40px;background:rgba(11,22,35,.33)}
+.secin{max-width:1200px;margin:0 auto}
+.st{text-align:center;margin-bottom:36px}
+.st h2{font-size:36px;font-weight:900;margin-bottom:10px}
+.st p{color:#64748b;font-size:15px}
+.etable{background:#0b1623;border-radius:16px;border:1px solid #1e293b;overflow:hidden;box-shadow:0 0 40px rgba(0,255,156,.07)}
+.ehdr,.erow{display:grid;grid-template-columns:2fr 80px 80px 80px 80px 100px;padding:0 20px}
+.ehdr{padding:14px 20px;background:#060e1a;border-bottom:1px solid #1e293b}
+.ech{color:#00ff9c;font-size:11px;font-weight:800;letter-spacing:1px}
+.erow{align-items:center;height:56px;border-bottom:1px solid #1e293b;transition:background .2s}
+.erow:hover{background:rgba(0,255,156,.04)}
+.erow:nth-child(odd){background:#0b1623}
+.erow:nth-child(even){background:rgba(9,20,32,.6)}
+.ep{font-weight:700}.et,.eo,.eown{color:#64748b;font-size:13px}.eg{font-weight:900;font-size:16px}.es{font-size:18px}
+.pgrid{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center}
+.pcard2{background:#0b1623;border-radius:16px;border:1px solid #1e293b;padding:28px}
+.plbl{color:#64748b;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px}
+.pname{font-weight:900;font-size:22px;margin-bottom:18px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.sbox{background:#060e1a;border-radius:8px;padding:10px 14px}
+.sk{color:#64748b;font-size:11px;margin-bottom:4px}.sv{font-weight:900;font-size:20px}
+.mxt{color:#64748b;font-size:11px;margin-bottom:8px}
+.br{margin-bottom:6px}
+.brl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.brt{background:#1e293b;border-radius:3px;height:4px}.brf{height:100%;border-radius:3px}
+.exp{text-align:center;padding:0 20px}
+.exl{color:#64748b;font-size:12px;margin-bottom:8px}
+.exn{color:#ff3b3b;font-size:60px;font-weight:900;text-shadow:0 0 25px #ff3b3b;line-height:1}
+.ext{color:#ff3b3b;font-size:20px;margin-top:4px}
+.sscroll{display:flex;gap:20px;overflow-x:auto;padding-bottom:16px}
+.scard{min-width:280px;height:180px;background:#0b1623;border-radius:16px;padding:24px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between}
+.steam{font-weight:800;font-size:18px}
+.srow{display:flex;justify-content:space-between;margin-bottom:8px;font-size:12px}
+.slbl{color:#64748b}.sval{font-weight:900;font-size:18px}
+.strk{border-radius:4px;height:6px;overflow:hidden;margin-bottom:8px}.sfll{height:100%;border-radius:4px}
+.shr{color:#64748b;font-size:12px}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.gcard{background:#0b1623;border-radius:16px;padding:18px 20px}
+.gbadge{display:inline-block;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:800;margin-bottom:14px}
+.gbody{display:flex;justify-content:space-between;align-items:center}
+.gaw,.ghm{font-weight:700}.gaw{margin-bottom:8px}
+.gscores{text-align:right}.gscore{font-weight:900;font-size:22px}
+.pgrid2{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;align-items:stretch}
+.plan{flex:1 1 280px;max-width:340px;background:#0b1623;border-radius:16px;padding:28px;position:relative;display:flex;flex-direction:column}
+.plbdg{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;padding:3px 16px;border-radius:20px;letter-spacing:1px;white-space:nowrap}
+.plnm{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.plpr{font-size:40px;font-weight:900;color:#e8f0fa}
+.plper{color:#64748b;font-size:13px}
+.plpr-row{display:flex;align-items:baseline;gap:4px;margin-bottom:20px}
+.plfeats{margin:0 0 24px;flex:1}
+.plfeat{color:#cbd5e1;font-size:13px;padding:7px 0;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:8px}
+.plbtn{border:none;border-radius:12px;padding:13px 0;font-size:15px;font-weight:800;cursor:pointer;width:100%;transition:opacity .2s}
+.plbtn:hover{opacity:.85}
+.pnote{text-align:center;color:#64748b;font-size:13px;margin-top:28px}
+.pnote a{color:#7c3aed}
+.psec{display:inline-block;background:#1e293b;padding:6px 16px;border-radius:20px;margin-top:10px;color:#00ff9c;font-size:13px}
+.cta{padding:100px 40px;background:radial-gradient(ellipse 80% 80% at 50% 50%,rgba(0,255,156,.08) 0%,transparent 70%);text-align:center}
+.cta h2{font-size:52px;font-weight:900;margin-bottom:20px;letter-spacing:-1px}
+.cta h2 span{color:#00ff9c;text-shadow:0 0 40px #00ff9c}
+.cta p{color:#64748b;font-size:17px;margin-bottom:40px}
+.ctabtn{background:#00ff9c;color:#060e1a;border:none;border-radius:12px;padding:20px 56px;font-size:20px;font-weight:900;cursor:pointer;box-shadow:0 0 50px rgba(0,255,156,.53);transition:transform .2s}
+.ctabtn:hover{transform:translateY(-2px)}
+footer{background:#0b1623;border-top:1px solid #1e293b;padding:40px}
+.fin{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:32px}
+.fbrand{color:#00ff9c;font-weight:900;font-size:18px;text-shadow:0 0 20px rgba(0,255,156,.53)}
+.fdesc{color:#64748b;font-size:13px;max-width:280px;line-height:1.6;margin-top:8px}
+.fcols{display:flex;gap:48px;flex-wrap:wrap}
+.fct{color:#00ff9c;font-size:11px;font-weight:800;letter-spacing:1px;margin-bottom:14px}
+.fcl{display:block;color:#64748b;font-size:13px;margin-bottom:8px;transition:color .2s}
+.fcl:hover{color:#00ff9c}
+.fbot{max-width:1200px;margin:32px auto 0;padding-top:24px;border-top:1px solid #1e293b;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.fcp{color:#64748b;font-size:12px}
+.fsoc{display:flex;gap:16px}
+.fsl{color:#64748b;font-size:12px;transition:color .2s}
+.fsl:hover{color:#00ff9c}
+@media(max-width:900px){
+.hero{grid-template-columns:1fr;text-align:center}
+.hl,.hr{display:none}
+.hero h1{font-size:36px}
+.pgrid{grid-template-columns:1fr}
+.exp{display:none}
+.ehdr,.erow{grid-template-columns:2fr 70px 70px 80px}
+.eo,.eown{display:none}
+nav{padding:0 20px}
+.nl{gap:12px}
+.sec,.seca{padding:40px 20px}
+.hero{padding:60px 20px}
+}
+</style>
 </head>
 <body>
-  <div class="nav">
-    <div class="wrap navin">
-      <div class="brand"><div class="logo">⚾</div><div>ALLDAY MLB EDGE</div></div>
-      <div class="row" style="margin-top:0">
-        <a class="btn" href="./app.html">Launch App</a>
-        <a class="btn primary" href="#pricing">Get Access</a>
+<nav>
+  <div class="nb">&#9889; ALLDAY MLB EDGE</div>
+  <div class="nl">
+    <a href="#edge-board">EDGE BOARD</a>
+    <a href="#stack-builder">STACK BUILDER</a>
+    <a href="#pitch-edge">PITCH EDGE</a>
+    <a href="#pricing">PRICING</a>
+    <a class="nlb" href="./app.html">LOGIN</a>
+  </div>
+</nav>
+<div class="hero">
+  <div class="hl" style="display:flex;justify-content:center">
+    <div class="pcard" style="border:2px solid #00ff9c;box-shadow:0 0 30px rgba(0,255,156,.33)">
+      <div class="pcimg" style="background:linear-gradient(135deg,rgba(0,255,156,.13) 0%,#060e1a 100%)">&#9918;</div>
+      <div class="pcinfo"><div class="pcn">Shohei Ohtani</div><div class="pct">LAD</div><div class="pcg" style="color:#00ff9c;text-shadow:0 0 20px #00ff9c">A+</div></div>
+    </div>
+  </div>
+  <div class="hc">
+    <div class="hbadge">&#127942; #1 MLB DFS + BETTING TOOL</div>
+    <h1>WIN DFS.<br><span>BEAT THE BOOKS.</span></h1>
+    <p>The ultimate MLB DFS + betting weapon.<br>AI-powered picks from Grok, ChatGPT &amp; Claude.</p>
+    <button class="hcta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">&#128073; UNLOCK EDGE</button>
+    <div class="hsub">&#128274; Secured by Stripe &middot; Cancel anytime</div>
+  </div>
+  <div class="hr" style="display:flex;justify-content:center">
+    <div class="pcard" style="border:2px solid #00ff9c;box-shadow:0 0 30px rgba(0,255,156,.33)">
+      <div class="pcimg" style="background:linear-gradient(135deg,rgba(0,255,156,.13) 0%,#060e1a 100%)">&#9918;</div>
+      <div class="pcinfo"><div class="pcn">Aaron Judge</div><div class="pct">NYY</div><div class="pcg" style="color:#00ff9c;text-shadow:0 0 20px #00ff9c">A+</div></div>
+    </div>
+  </div>
+</div>
+<section class="sec" id="edge-board">
+  <div class="st"><h2>&#128202; EDGE BOARD</h2><p>Real-time DFS grades &middot; Updated every 15 min</p></div>
+  <div class="etable">
+    <div class="ehdr"><span class="ech">PLAYER</span><span class="ech">TEAM</span><span class="ech">OPP</span><span class="ech">EDGE</span><span class="ech">OWN%</span><span class="ech">STACK</span></div>
+    <div class="erow"><span class="ep">Ohtani</span><span class="et">LAD</span><span class="eo">SF</span><span class="eg" style="color:#00ff9c;text-shadow:0 0 12px #00ff9c">A+</span><span class="eown">18%</span><span class="es">&#128293;&#128293;&#128293;</span></div>
+    <div class="erow"><span class="ep">Judge</span><span class="et">NYY</span><span class="eo">BOS</span><span class="eg" style="color:#00ff9c;text-shadow:0 0 12px #00ff9c">A+</span><span class="eown">22%</span><span class="es">&#128293;&#128293;&#128293;</span></div>
+    <div class="erow"><span class="ep">Acu&ntilde;a</span><span class="et">ATL</span><span class="eo">NYM</span><span class="eg" style="color:#ffd000;text-shadow:0 0 12px #ffd000">A</span><span class="eown">15%</span><span class="es">&#128293;&#128293;</span></div>
+    <div class="erow"><span class="ep">Soto</span><span class="et">NYY</span><span class="eo">BOS</span><span class="eg" style="color:#60a5fa;text-shadow:0 0 12px #60a5fa">B+</span><span class="eown">12%</span><span class="es">&#128293;&#128293;</span></div>
+    <div class="erow"><span class="ep">Tatis Jr.</span><span class="et">SD</span><span class="eo">COL</span><span class="eg" style="color:#ffd000;text-shadow:0 0 12px #ffd000">A</span><span class="eown">11%</span><span class="es">&#128293;&#128293;</span></div>
+  </div>
+</section>
+<section class="seca" id="pitch-edge">
+  <div class="secin">
+    <div class="st"><h2>&#9889; PITCH EDGE</h2><p>Matchup analysis &middot; Batter vs. Pitcher edge</p></div>
+    <div class="pgrid">
+      <div class="pcard2">
+        <div class="plbl">PITCHER</div><div class="pname">Blake Snell</div>
+        <div class="sgrid">
+          <div class="sbox"><div class="sk">ERA</div><div class="sv" style="color:#00ff9c">2.14</div></div>
+          <div class="sbox"><div class="sk">K/9</div><div class="sv" style="color:#00ff9c">11.8</div></div>
+          <div class="sbox"><div class="sk">FIP</div><div class="sv" style="color:#00ff9c">2.31</div></div>
+          <div class="sbox"><div class="sk">WHIP</div><div class="sv" style="color:#00ff9c">0.93</div></div>
+        </div>
+        <div class="mxt">PITCH MIX</div>
+        <div class="br"><div class="brl"><span>Fastball</span><span style="color:#ff3b3b;font-weight:700">45%</span></div><div class="brt"><div class="brf" style="width:45%;background:#ff3b3b"></div></div></div>
+        <div class="br"><div class="brl"><span>Slider</span><span style="color:#ffd000;font-weight:700">32%</span></div><div class="brt"><div class="brf" style="width:32%;background:#ffd000"></div></div></div>
+        <div class="br"><div class="brl"><span>Curveball</span><span style="color:#60a5fa;font-weight:700">23%</span></div><div class="brt"><div class="brf" style="width:23%;background:#60a5fa"></div></div></div>
+      </div>
+      <div class="exp"><div class="exl">EXPLOIT SCORE</div><div class="exn">92</div><div class="ext">&#128293; HIGH</div><div style="color:#64748b;font-size:11px;margin-top:16px;max-width:120px">Strong batter advantage vs this pitching profile</div></div>
+      <div class="pcard2">
+        <div class="plbl">BATTER</div><div class="pname">Shohei Ohtani</div>
+        <div class="sgrid">
+          <div class="sbox"><div class="sk">ISO</div><div class="sv" style="color:#ffd000">.312</div></div>
+          <div class="sbox"><div class="sk">wRC+</div><div class="sv" style="color:#ffd000">168</div></div>
+          <div class="sbox"><div class="sk">OBP</div><div class="sv" style="color:#ffd000">.393</div></div>
+          <div class="sbox"><div class="sk">SLG</div><div class="sv" style="color:#ffd000">.654</div></div>
+        </div>
+        <div class="mxt">VS PITCH TYPE</div>
+        <div class="br"><div class="brl"><span>vs Fastball</span><span style="color:#00ff9c;font-weight:700">88</span></div><div class="brt"><div class="brf" style="width:88%;background:#00ff9c"></div></div></div>
+        <div class="br"><div class="brl"><span>vs Slider</span><span style="color:#ffd000;font-weight:700">76</span></div><div class="brt"><div class="brf" style="width:76%;background:#ffd000"></div></div></div>
+        <div class="br"><div class="brl"><span>vs Curve</span><span style="color:#60a5fa;font-weight:700">82</span></div><div class="brt"><div class="brf" style="width:82%;background:#60a5fa"></div></div></div>
       </div>
     </div>
   </div>
-  <div class="wrap">
-    <section class="hero">
-      <div class="card hero-copy">
-        <div class="eyebrow">Live MLB Slate Control Room</div>
-        <h1>ALLDAY MLB EDGE</h1>
-        <div class="sub">Stacks, hitters, odds, weather, splits, bullpen intelligence — plus Claude AI picks. All in one slate board.</div>
-        <div class="row">
-          <a class="btn primary" href="./app.html">Open the App</a>
-          <a class="btn" href="#pricing">Get Access</a>
-        </div>
-      </div>
-      <div class="card hero-stat-grid">
-        <div class="stat"><div class="k">Live slate board</div><div class="v">Matchup Engine</div><div class="s">Grades hitters with park, splits, travel, pitcher tendencies, and bullpen projections.</div></div>
-        <div class="stat"><div class="k">AI powered</div><div class="v">Claude Picks</div><div class="s">Claude Sonnet analyzes your live slate — stacks, edges, fades, and market alerts.</div></div>
-        <div class="stat"><div class="k">Private backend</div><div class="v">Odds Proxy</div><div class="s">Your odds key stays server-side. Frontend only talks to your backend.</div></div>
-        <div class="stat"><div class="k">Auth protected</div><div class="v">JWT Access</div><div class="s">Subscription-gated. Webhook-driven entitlement, 30-day tokens.</div></div>
-      </div>
-    </section>
-
-    <section id="setup">
-      <div class="card config-card">
-        <h2>Connect your backend</h2>
-        <div class="muted">Your backend is pre-configured below.</div>
-        <div class="flex" style="margin-top:10px">
-          <div>
-            <label for="backendUrl">Backend URL</label>
-            <input id="backendUrl" placeholder="https://newest-mlb-1.onrender.com" value="https://newest-mlb-1.onrender.com" />
-          </div>
-          <div style="align-self:end">
-            <button class="btn primary" onclick="ALLDAY.saveBackendUrl()">Save &amp; Check</button>
-          </div>
-        </div>
-        <div class="row">
-          <small id="healthStatus" class="status">Not checked yet</small>
-        </div>
-      </div>
-    </section>
-
-    <section id="pricing">
-      <h2>Pricing</h2>
-      <div class="muted">Buttons call your backend checkout session.</div>
-      <label for="emailCapture">Your email</label>
-      <input id="emailCapture" type="email" placeholder="you@example.com" />
-      <div class="pricing" style="margin-top:14px">
-        <div class="card price-card">
-          <div class="eyebrow">Starter</div>
-          <div class="price">$19<span style="font-size:18px;font-weight:400">/mo</span></div>
-          <ul><li>Dashboard + stack board</li><li>Hitter lab</li><li>Notes</li><li>App access</li></ul>
-          <button class="btn primary" onclick="ALLDAY.checkout('starter')">Start Starter</button>
-        </div>
-        <div class="card price-card featured">
-          <div class="eyebrow">Pro</div>
-          <div class="price">$49<span style="font-size:18px;font-weight:400">/mo</span></div>
-          <ul><li>Everything in Starter</li><li>Live odds + weather</li><li>⚡ Claude AI picks</li><li>Private API routing</li></ul>
-          <button class="btn primary" onclick="ALLDAY.checkout('pro')">Start Pro</button>
-        </div>
-        <div class="card price-card">
-          <div class="eyebrow">Elite</div>
-          <div class="price">$99<span style="font-size:18px;font-weight:400">/mo</span></div>
-          <ul><li>Everything in Pro</li><li>Priority support</li><li>Future releases</li></ul>
-          <button class="btn primary" onclick="ALLDAY.checkout('elite')">Start Elite</button>
-        </div>
-      </div>
-    </section>
-
-    <section id="claimSection" style="display:none">
-      <div class="card config-card">
-        <h2>🎉 Payment complete — activate your access</h2>
-        <div class="muted">Enter the email you used at checkout.</div>
-        <form onsubmit="ALLDAY.handleClaimSubmit(event)" style="margin-top:14px">
-          <label for="claimEmail">Email used at checkout</label>
-          <input id="claimEmail" type="email" placeholder="you@example.com" required />
-          <div class="row" style="margin-top:12px">
-            <button class="btn primary" type="submit">Activate Access &amp; Open App</button>
-            <small id="claimStatus" class="status">Enter your email above</small>
-          </div>
-        </form>
-      </div>
-    </section>
-
-    <section>
-      <div class="card config-card">
-        <h2>Book a demo</h2>
-        <form onsubmit="ALLDAY.submitLead(event)">
-          <div class="flex">
-            <div><label for="leadName">Name</label><input id="leadName" placeholder="Your name" /></div>
-            <div><label for="leadEmail">Email</label><input id="leadEmail" placeholder="you@example.com" /></div>
-          </div>
-          <label for="leadNote">Note</label>
-          <textarea id="leadNote" rows="3" placeholder="Which plan are you interested in?"></textarea>
-          <div class="row">
-            <button class="btn primary" type="submit">Save Demo Request</button>
-            <small id="leadStatus" class="status">No lead submitted yet</small>
-          </div>
-        </form>
-      </div>
-    </section>
-
-    <div class="footer">ALLDAY MLB EDGE · Frontend on Vercel · Backend on Render · AI by Claude</div>
+</section>
+<section class="sec" id="stack-builder">
+  <div class="st"><h2>&#128176; STACK BUILDER</h2><p>AI-powered correlated lineup stacks</p></div>
+  <div class="sscroll">
+    <div class="scard" style="border:2px solid rgba(0,255,156,.27);box-shadow:0 0 20px rgba(0,255,156,.13)">
+      <div class="steam" style="color:#00ff9c">Braves Stack &#128163;</div>
+      <div><div class="srow"><span class="slbl">STACK RATING</span><span class="sval" style="color:#00ff9c">94</span></div><div class="strk" style="background:rgba(0,255,156,.2)"><div class="sfll" style="width:94%;background:#00ff9c"></div></div><div class="shr">HR Upside: <strong style="color:#00ff9c">38%</strong></div></div>
+    </div>
+    <div class="scard" style="border:2px solid rgba(255,208,0,.27);box-shadow:0 0 20px rgba(255,208,0,.13)">
+      <div class="steam" style="color:#ffd000">Yankees Stack &#128293;</div>
+      <div><div class="srow"><span class="slbl">STACK RATING</span><span class="sval" style="color:#ffd000">91</span></div><div class="strk" style="background:rgba(255,208,0,.2)"><div class="sfll" style="width:91%;background:#ffd000"></div></div><div class="shr">HR Upside: <strong style="color:#ffd000">34%</strong></div></div>
+    </div>
+    <div class="scard" style="border:2px solid rgba(96,165,250,.27);box-shadow:0 0 20px rgba(96,165,250,.13)">
+      <div class="steam" style="color:#60a5fa">Dodgers Stack &#9889;</div>
+      <div><div class="srow"><span class="slbl">STACK RATING</span><span class="sval" style="color:#60a5fa">89</span></div><div class="strk" style="background:rgba(96,165,250,.2)"><div class="sfll" style="width:89%;background:#60a5fa"></div></div><div class="shr">HR Upside: <strong style="color:#60a5fa">31%</strong></div></div>
+    </div>
+    <div class="scard" style="border:2px solid rgba(244,114,182,.27);box-shadow:0 0 20px rgba(244,114,182,.13)">
+      <div class="steam" style="color:#f472b6">Padres Stack &#127754;</div>
+      <div><div class="srow"><span class="slbl">STACK RATING</span><span class="sval" style="color:#f472b6">82</span></div><div class="strk" style="background:rgba(244,114,182,.2)"><div class="sfll" style="width:82%;background:#f472b6"></div></div><div class="shr">HR Upside: <strong style="color:#f472b6">27%</strong></div></div>
+    </div>
   </div>
-  <script src="./assets/site.js"></script>
+</section>
+<section class="seca">
+  <div class="secin">
+    <div class="st"><h2>&#128202; TODAY'S EDGE SLATE</h2><p>MLB Schedule &mdash; Live &amp; Upcoming</p></div>
+    <div class="ggrid">
+      <div class="gcard" style="border:1px solid #00ff9c;box-shadow:0 0 20px rgba(0,255,156,.2)"><div class="gbadge" style="background:rgba(0,255,156,.13);color:#00ff9c">&#128308; LIVE &middot; Top 3</div><div class="gbody"><div><div class="gaw">Pirates</div><div class="ghm">Mets</div></div><div class="gscores"><div class="gscore">3</div><div class="gscore" style="color:#00ff9c">5</div></div></div></div>
+      <div class="gcard" style="border:1px solid #ffd000;box-shadow:0 0 20px rgba(255,208,0,.2)"><div class="gbadge" style="background:rgba(255,208,0,.13);color:#ffd000">&#128308; LIVE &middot; Top 1</div><div class="gbody"><div><div class="gaw">White Sox</div><div class="ghm">Brewers</div></div><div class="gscores"><div class="gscore">1</div><div class="gscore" style="color:#ffd000">0</div></div></div></div>
+      <div class="gcard" style="border:1px solid #1e293b"><div class="gbadge" style="background:#1e293b;color:#64748b">&#8987; 11:20 AM</div><div class="gbody"><div><div class="gaw">Nationals</div><div class="ghm">Cubs</div></div></div></div>
+      <div class="gcard" style="border:1px solid #1e293b"><div class="gbadge" style="background:#1e293b;color:#64748b">&#8987; 12:05 PM</div><div class="gbody"><div><div class="gaw">Twins</div><div class="ghm">Orioles</div></div></div></div>
+    </div>
+  </div>
+</section>
+<section class="sec" id="pricing">
+  <div class="st">
+    <h2>&#128274; CHOOSE YOUR PLAN</h2>
+    <p>Unlock the full ALLDAY MLB EDGE suite</p>
+    <div class="psec">&#128274; Secured by Stripe &middot; Cancel anytime</div>
+  </div>
+  <div class="pgrid2">
+    <div class="plan" style="border:2px solid #112240">
+      <div class="plnm" style="color:#64748b">Free</div>
+      <div class="plpr-row"><span class="plpr">$0</span><span class="plper">/mo</span></div>
+      <ul class="plfeats"><li class="plfeat"><span style="color:#64748b">&#10003;</span> Daily matchup grades</li><li class="plfeat"><span style="color:#64748b">&#10003;</span> Basic player edges</li><li class="plfeat"><span style="color:#64748b">&#10003;</span> Weather data</li><li class="plfeat"><span style="color:#64748b">&#10003;</span> Mobile friendly</li></ul>
+      <button class="plbtn" style="background:#64748b;color:#fff" onclick="location.href='./app.html'">Get Started Free</button>
+    </div>
+    <div class="plan" style="border:2px solid #7c3aed">
+      <div class="plbdg" style="background:#7c3aed;color:#fff">POPULAR</div>
+      <div class="plnm" style="color:#7c3aed">EDGE PRO</div>
+      <div class="plpr-row"><span class="plpr">$49.99</span><span class="plper">/mo</span></div>
+      <ul class="plfeats"><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> Everything in Free</li><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> DK salary sync</li><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> Lineup Optimizer</li><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> Smart Stacks</li><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> Multi-AI picks</li></ul>
+      <button class="plbtn" id="checkoutBtn-pro" style="background:#7c3aed;color:#fff" onclick="startCheckout('pro')">Subscribe &mdash; $49.99/mo</button>
+    </div>
+    <div class="plan" style="border:2px solid #00ff9c;box-shadow:0 0 30px rgba(0,255,156,.33)">
+      <div class="plbdg" style="background:#00ff9c;color:#060e1a">BEST VALUE</div>
+      <div class="plnm" style="color:#00ff9c">ELITE EDGE</div>
+      <div class="plpr-row"><span class="plpr">$99.99</span><span class="plper">/mo</span></div>
+      <ul class="plfeats"><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Everything in Pro</li><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Real-time alerts</li><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Advanced pitcher grades</li><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Stack correlation</li><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Priority support</li></ul>
+      <button class="plbtn" id="checkoutBtn-elite" style="background:#00ff9c;color:#060e1a;box-shadow:0 0 20px rgba(0,255,156,.53)" onclick="startCheckout('elite')">Subscribe &mdash; $99.99/mo</button>
+    </div>
+  </div>
+  <div class="pnote">All plans billed monthly. No contracts. Cancel anytime. &middot; Questions? <a href="mailto:aldaye2015@gmail.com">aldaye2015@gmail.com</a></div>
+</section>
+<section class="cta">
+  <h2>STOP GUESSING.<br><span>START WINNING.</span></h2>
+  <p>Join thousands of DFS players and sports bettors using ALLDAY MLB EDGE daily.</p>
+  <button class="ctabtn" onclick="location.href='./app.html'">&#128073; GET ACCESS</button>
+</section>
+<footer>
+  <div class="fin">
+    <div><div class="fbrand">&#9889; ALLDAY MLB EDGE</div><div class="fdesc">The most advanced MLB DFS + sports betting AI tool. Win more. Every day.</div></div>
+    <div class="fcols">
+      <div><div class="fct">PRODUCT</div><a class="fcl" href="#edge-board">Edge Board</a><a class="fcl" href="#stack-builder">Stack Builder</a><a class="fcl" href="#pitch-edge">Pitch Edge</a><a class="fcl" href="#pricing">Pricing</a></div>
+      <div><div class="fct">COMPANY</div><a class="fcl" href="#">About</a><a class="fcl" href="#">Blog</a><a class="fcl" href="mailto:aldaye2015@gmail.com">Contact</a><a class="fcl" href="#">Support</a></div>
+      <div><div class="fct">LEGAL</div><a class="fcl" href="#">Terms</a><a class="fcl" href="#">Privacy</a><a class="fcl" href="#">Cookies</a></div>
+    </div>
+  </div>
+  <div class="fbot"><div class="fcp">&copy; 2025 ALLDAY MLB EDGE. All rights reserved.</div><div class="fsoc"><a class="fsl" href="#">Twitter</a><a class="fsl" href="#">Discord</a><a class="fsl" href="#">YouTube</a></div></div>
+</footer>
+<script src="./assets/app-core.js"></script>
+<script>
+(function(){var p=new URLSearchParams(window.location.search);if(p.get('checkout')==='success'){setTimeout(function(){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#16a34a;color:#fff;padding:14px 20px;text-align:center;font-weight:700;font-size:15px';d.innerHTML='&#10003; Subscription activated! Welcome to ALLDAY MLB EDGE. <button onclick="this.parentElement.remove()" style="margin-left:16px;background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer">&#x2715;</button>';document.body.insertBefore(d,document.body.firstChild);window.history.replaceState({},'',window.location.pathname);},500);}if(p.get('checkout')==='cancel'){window.history.replaceState({},'',window.location.pathname);}})();
+</script>
 </body>
 </html>
