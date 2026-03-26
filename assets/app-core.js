@@ -9,6 +9,7 @@ const TABS = [
   {id:'signals', label:'Signals'},
   {id:'ai', label:'⚡ AI Picks'},
   {id:'market', label:'Odds + Weather'},
+  {id:'optimizer', label:'🎯 DK Optimizer'},
   {id:'launch', label:'Launchpad'},
   {id:'pricing', label:'Pricing'},
   {id:'notes', label:'Notes'}
@@ -39,7 +40,7 @@ const VENUE_COORDS={
   'Progressive Field':{lat:41.4962,lon:-81.6852,roof:'Open'},'Rogers Centre':{lat:43.6414,lon:-79.3894,roof:'Retractable'},
   'T-Mobile Park':{lat:47.5914,lon:-122.3325,roof:'Retractable'},'Target Field':{lat:44.9817,lon:-93.2775,roof:'Open'},
   'Truist Park':{lat:33.8908,lon:-84.4677,roof:'Open'},'Wrigley Field':{lat:41.9484,lon:-87.6553,roof:'Open'},
-  'Yankee Stadium':{lat:40.8296,lon:-73.9262,roof:'Open'},'Coors Field':{lat:39.7559,lon:-104.9942,roof:'Open'}
+  'Yankee Stadium':{lat:40.8296,lon:-73.9262,roof:'Open'}
 };
 const TEAM_NAME_ALIASES={
   'athletics':'oakland athletics',"a's":'oakland athletics',
@@ -58,7 +59,13 @@ const state={
   apiConfig:JSON.parse(localStorage.getItem('mlb-edge-api-config')||'{"proxyBaseUrl":"https://newest-mlb-1.onrender.com","oddsRegion":"us","oddsBookmaker":"","autoSyncWeather":true,"autoSyncOdds":true}'),
   liveSync:{weather:{status:'idle',updatedAt:null,error:''},odds:{status:'idle',updatedAt:null,error:''}},
   teamHittersCache:{},teamPitchingCache:{},recentGamesCache:{},gameContextCache:{},
-  aiMode:'picks',aiLoading:false,aiResult:'',aiResultMode:'',aiResultDate:'',aiError:''
+  aiMode:'picks',aiLoading:false,aiResult:'',aiResultMode:'',aiResultDate:'',aiError:'',
+  dkSalaries:JSON.parse(localStorage.getItem('mlb-edge-dk-salaries')||'{}'),
+  dkSalaryDate:localStorage.getItem('mlb-edge-dk-salary-date')||'',
+  dkSlates:[],
+  dkSyncStatus:{status:'idle',updatedAt:null,error:''},
+  optimizerResult:null,
+  optimizerStackTeam:''
 };
 
 const $=s=>document.querySelector(s);
@@ -151,6 +158,162 @@ function parseIP(ip){if(ip==null||ip==='')return 0;const s=String(ip);if(!s.incl
 function haversineMiles(lat1,lon1,lat2,lon2){const R=3958.8,toRad=d=>d*Math.PI/180,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1),a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(a));}
 function classifyTravel(miles,restDays){if(!miles)return{hours:0,label:'No travel',penalty:0};const hours=Math.round((miles/500+1.5)*10)/10;let penalty=miles>1800?7:miles>1000?4:miles>450?2:0;if(restDays<=1&&miles>900)penalty+=3;else if(restDays<=1&&miles>450)penalty+=1;return{hours,label:miles>1800?'Cross-country':miles>900?'Flight spot':miles>250?'Road hop':'Short turn',penalty};}
 
+// ─── DraftKings salary helpers ───────────────────────────────────────────────
+
+function parseDKCsv(text){
+  const lines=text.trim().split('\n');
+  const header=lines[0].split(',').map(h=>h.replace(/"/g,'').trim().toLowerCase());
+  const nameIdx=header.findIndex(h=>h==='name');
+  const salaryIdx=header.findIndex(h=>h==='salary');
+  const posIdx=header.findIndex(h=>h==='position'||h==='roster position');
+  const teamIdx=header.findIndex(h=>h==='teamabbrev'||h==='team');
+  const avgIdx=header.findIndex(h=>h.includes('avgpoints')||h.includes('avg points'));
+  const out={};
+  for(let i=1;i<lines.length;i++){
+    const cols=lines[i].split(',').map(c=>c.replace(/"/g,'').trim());
+    const name=cols[nameIdx];if(!name)continue;
+    out[name.toLowerCase()]={name,salary:Number(cols[salaryIdx])||0,pos:cols[posIdx]||'',team:cols[teamIdx]||'',avgPts:Number(cols[avgIdx])||0};
+  }
+  return out;
+}
+
+function getDKSalary(playerName){
+  const key=String(playerName||'').toLowerCase();
+  return state.dkSalaries[key]||null;
+}
+
+function valueScore(gradeScore,salary){
+  if(!salary||salary<1000)return null;
+  return Math.round((gradeScore/(salary/1000))*10)/10;
+}
+
+function fuzzyNameMatch(a,b){
+  const norm=s=>s.toLowerCase().replace(/[^a-z ]/g,'').trim();
+  const na=norm(a),nb=norm(b);
+  if(na===nb)return true;
+  const pa=na.split(' '),pb=nb.split(' ');
+  if(pa.length>=2&&pb.length>=2){
+    const lastA=pa[pa.length-1],lastB=pb[pb.length-1];
+    if(lastA===lastB&&pa[0][0]===pb[0][0])return true;
+  }
+  return false;
+}
+
+function pitcherDKScore(pitcher,game,side){
+  const era=Number(pitcher.era||4.30),k9=Number(pitcher.k9||8.6),whip=Number(pitcher.whip||1.30),hr9=Number(pitcher.hr9||1.15);
+  const oppSide=side==='home'?'away':'home';
+  const oppEdge=teamEdgeScore(game,oppSide);
+  const park=parkFor(game.venue.name);
+  let score=50;
+  score+=Math.max(-18,Math.min(22,(4.5-era)*9));
+  score+=Math.max(-8,Math.min(18,(k9-8.0)*3.5));
+  score+=Math.max(-8,Math.min(10,(1.30-whip)*22));
+  score+=Math.max(-8,Math.min(8,(1.15-hr9)*18));
+  score+=Math.round((50-oppEdge)*0.25);
+  score+=Math.round((1.0-park.run)*12);
+  if(side==='home')score+=3;
+  return Math.max(20,Math.min(99,Math.round(score)));
+}
+
+function buildDKPlayerPool(){
+  if(!Object.keys(state.dkSalaries||{}).length)return[];
+  const gradedMap={};
+  if(state.selectedGameData){
+    for(const h of[...(state.selectedGameData.awayHitters||[]),...(state.selectedGameData.homeHitters||[])]){
+      gradedMap[h.name.toLowerCase()]=h;
+    }
+  }
+  const teamEdgeMap={};
+  for(const row of state.stackRows)teamEdgeMap[row.team.toUpperCase()]=row.score;
+  const gameByTeam={};
+  for(const g of state.games){
+    gameByTeam[(g.away.abbr||'').toUpperCase()]={game:g,side:'away'};
+    gameByTeam[(g.home.abbr||'').toUpperCase()]={game:g,side:'home'};
+  }
+  const pool=[];
+  for(const[key,dk]of Object.entries(state.dkSalaries)){
+    if(!dk.salary||dk.salary<2000)continue;
+    const teamKey=(dk.team||'').toUpperCase();
+    const ctx=gameByTeam[teamKey]||null;
+    const teamEdge=teamEdgeMap[teamKey]||50;
+    const isPitcher=/^(SP|RP|P)$/i.test(dk.pos||'');
+    let score=50,projPts=dk.avgPts||0,graded=false;
+    if(isPitcher&&ctx){
+      const pitcher=ctx.side==='away'?ctx.game.awayPitcher:ctx.game.homePitcher;
+      if(pitcher&&pitcher.name)score=pitcherDKScore(pitcher,ctx.game,ctx.side);
+    }else if(!isPitcher){
+      const exact=gradedMap[key];
+      if(exact){score=exact.grade.score;projPts=projPts||Math.round(score*0.42);graded=true;}
+      else{
+        const fuzzy=Object.entries(gradedMap).find(([k])=>fuzzyNameMatch(dk.name,k));
+        if(fuzzy){score=fuzzy[1].grade.score;projPts=projPts||Math.round(score*0.42);graded=true;}
+        else{const ptsBias=projPts>0?Math.min(25,projPts*3.5):15;score=Math.max(25,Math.min(95,Math.round(teamEdge*0.55+ptsBias)));}
+      }
+    }
+    const val=valueScore(score,dk.salary);
+    const compositeScore=Math.round(score*0.50+(val||0)*2.5+Math.min(18,(projPts||0)*1.8));
+    pool.push({...dk,score,projPts,val:val||0,isPitcher,graded,compositeScore});
+  }
+  return pool.sort((a,b)=>b.compositeScore-a.compositeScore);
+}
+
+function optimizeDKLineup(stackTeam){
+  const pool=buildDKPlayerPool();
+  if(pool.length<8)return null;
+  const CAP=50000;
+  const posMatch=(pos,slot)=>{
+    const p=(pos||'').toUpperCase().split('/')[0];
+    if(slot==='SP')return/^(SP|P)$/.test(p);
+    if(slot==='C1B')return p==='C'||p==='1B';
+    if(slot==='2B')return p==='2B';
+    if(slot==='3B')return p==='3B';
+    if(slot==='SS')return p==='SS';
+    if(slot==='OF')return p==='OF';
+    if(slot==='FLEX')return['C','1B','2B','3B','SS','OF'].includes(p);
+    return false;
+  };
+  const SLOTS=[
+    {id:'sp1',label:'SP',slot:'SP'},{id:'sp2',label:'SP',slot:'SP'},
+    {id:'c1b',label:'C/1B',slot:'C1B'},{id:'ob2',label:'2B',slot:'2B'},
+    {id:'ob3',label:'3B',slot:'3B'},{id:'ss',label:'SS',slot:'SS'},
+    {id:'of1',label:'OF',slot:'OF'},{id:'of2',label:'OF',slot:'OF'},{id:'of3',label:'OF',slot:'OF'},
+    {id:'flex',label:'FLEX',slot:'FLEX'}
+  ];
+  const stackKey=stackTeam?(stackTeam+'').toUpperCase():'';
+  const scored=pool.map(p=>({...p,adj:p.compositeScore+(stackKey&&p.team.toUpperCase()===stackKey?14:0)})).sort((a,b)=>b.adj-a.adj);
+  const lineup={};
+  const used=new Set();
+  for(const slotDef of SLOTS){
+    const pick=scored.find(p=>!used.has(p.name)&&posMatch(p.pos,slotDef.slot));
+    if(pick){lineup[slotDef.id]={...pick,slotLabel:slotDef.label,slotId:slotDef.id};used.add(pick.name);}
+  }
+  let totalSalary=Object.values(lineup).reduce((s,p)=>s+(p.salary||0),0);
+  let guard=0;
+  while(totalSalary>CAP&&guard++<40){
+    const hitters=Object.values(lineup).filter(p=>!p.isPitcher).sort((a,b)=>b.salary-a.salary);
+    let swapped=false;
+    for(const target of hitters){
+      const slotDef=SLOTS.find(s=>s.id===target.slotId);
+      if(!slotDef)continue;
+      const cheaper=scored.find(p=>!used.has(p.name)&&posMatch(p.pos,slotDef.slot)&&p.salary<target.salary);
+      if(!cheaper)continue;
+      totalSalary=totalSalary-target.salary+cheaper.salary;
+      used.delete(target.name);
+      lineup[target.slotId]={...cheaper,slotLabel:target.slotLabel,slotId:target.slotId};
+      used.add(cheaper.name);
+      swapped=true;break;
+    }
+    if(!swapped)break;
+  }
+  const players=Object.values(lineup);
+  totalSalary=players.reduce((s,p)=>s+(p.salary||0),0);
+  const remaining=CAP-totalSalary;
+  const projScore=Math.round(players.reduce((s,p)=>s+(p.projPts||p.score*0.4),0)*10)/10;
+  return{lineup:SLOTS.map(s=>lineup[s.id]).filter(Boolean),totalSalary,remaining,projScore,valid:players.length===10&&totalSalary<=CAP};
+}
+
+// ─── Fetch helpers ────────────────────────────────────────────────────────────
+
 async function fetchJson(url){
   const base=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');
   const isProxy=base&&String(url).startsWith(base);
@@ -163,32 +326,23 @@ async function fetchJson(url){
 function saveApiConfig(patch={}){state.apiConfig={proxyBaseUrl:'https://newest-mlb-1.onrender.com',oddsRegion:'us',oddsBookmaker:'',autoSyncWeather:true,autoSyncOdds:true,...state.apiConfig,...patch};localStorage.setItem('mlb-edge-api-config',JSON.stringify(state.apiConfig));}
 function proxyUrl(path,params={}){const base=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');const url=new URL(base+path);Object.entries(params).forEach(([k,v])=>{if(v!==undefined&&v!==null&&String(v)!=='')url.searchParams.set(k,v);});return url.toString();}
 function inferWindDir(deg){if(deg==null||Number.isNaN(Number(deg)))return'Calm';const d=Number(deg);if((d>=315&&d<=360)||(d>=0&&d<45))return'Out';if(d>=135&&d<225)return'In';return'Cross';}
-function pickForecastForGame(game,payload={}){const rows=payload.hourly||[];if(!rows.length)return null;const target=new Date(game.gameDate).getTime();let best=rows[0],bestDiff=Infinity;for(const row of rows){const t=new Date(row.time).getTime(),diff=Math.abs(t-target);if(diff<bestDiff){best=row;bestDiff=diff;}}return best;}
+function normTeamAbbr(s){return String(s||'').toUpperCase().trim();}
 function findMatchingOddsEvent(game,events=[]){const away=normTeamName(game.away.name),home=normTeamName(game.home.name);return events.find(ev=>normTeamName(ev.away_team||ev.awayTeam||'')===away&&normTeamName(ev.home_team||ev.homeTeam||'')===home);}
-function pickOutcomePoint(outcomes=[],teamName=''){const wanted=normTeamName(teamName);return outcomes.find(o=>normTeamName(o.name||'')===wanted)?.point??'';}
 
 async function syncWeatherForSlate(){
   if(!state.games.length)return;
   state.liveSync.weather={status:'loading',updatedAt:null,error:''};render();
   try{
     for(const game of state.games){
-      const venue=venueMeta(game.venue.name);
-      if(!venue)continue;
+      const venue=venueMeta(game.venue.name);if(!venue)continue;
       const url=`https://api.open-meteo.com/v1/forecast?latitude=${venue.lat}&longitude=${venue.lon}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=3&timezone=auto`;
-      let payload;
-      try{payload=await(await fetch(url)).json();}catch(e){continue;}
+      let payload;try{payload=await(await fetch(url)).json();}catch(e){continue;}
       const times=payload.hourly?.time||[];
       const target=new Date(game.gameDate).getTime();
       let bestIdx=0,bestDiff=Infinity;
       times.forEach((t,i)=>{const diff=Math.abs(new Date(t).getTime()-target);if(diff<bestDiff){bestDiff=diff;bestIdx=i;}});
       const h=payload.hourly;
-      saveMarket(game.gamePk,{
-        temperature:String(h.temperature_2m?Math.round(h.temperature_2m[bestIdx]):''),
-        wind:String(h.wind_speed_10m?Math.round(h.wind_speed_10m[bestIdx]):''),
-        windDir:inferWindDir(h.wind_direction_10m?h.wind_direction_10m[bestIdx]:null),
-        precip:String(h.precipitation_probability?h.precipitation_probability[bestIdx]:''),
-        roof:venue.roof||'Open',source:'Open-Meteo',lastWeatherSync:new Date().toISOString()
-      });
+      saveMarket(game.gamePk,{temperature:String(h.temperature_2m?Math.round(h.temperature_2m[bestIdx]):''),wind:String(h.wind_speed_10m?Math.round(h.wind_speed_10m[bestIdx]):''),windDir:inferWindDir(h.wind_direction_10m?h.wind_direction_10m[bestIdx]:null),precip:String(h.precipitation_probability?h.precipitation_probability[bestIdx]:''),roof:venue.roof||'Open',source:'Open-Meteo',lastWeatherSync:new Date().toISOString()});
     }
     state.liveSync.weather={status:'ok',updatedAt:new Date().toISOString(),error:''};
   }catch(err){state.liveSync.weather={status:'error',updatedAt:null,error:err.message||'Weather sync failed'};}
@@ -205,25 +359,40 @@ async function syncOddsForSlate(){
     const data=await(await fetch(url)).json();
     const events=Array.isArray(data)?data:(data.data||[]);
     for(const game of state.games){
-      const ev=findMatchingOddsEvent(game,events);
-      if(!ev)continue;
+      const ev=findMatchingOddsEvent(game,events);if(!ev)continue;
       const bm=ev.bookmakers?.[0]||{};
       const h2h=bm.markets?.find(m=>m.key==='h2h');
       const totals=bm.markets?.find(m=>m.key==='totals');
       const tt=bm.markets?.find(m=>m.key==='team_totals');
-      saveMarket(game.gamePk,{
-        awayMoneyline:String(h2h?.outcomes?.find(o=>normTeamName(o.name||'')===normTeamName(game.away.name))?.price??''),
-        homeMoneyline:String(h2h?.outcomes?.find(o=>normTeamName(o.name||'')===normTeamName(game.home.name))?.price??''),
-        total:String(totals?.outcomes?.find(o=>o.name==='Over')?.point??''),
-        awayTeamTotal:String(tt?.outcomes?.find(o=>normTeamName(o.name||'')===normTeamName(game.away.name))?.point??pickOutcomePoint(tt?.outcomes||[],game.away.name)),
-        homeTeamTotal:String(tt?.outcomes?.find(o=>normTeamName(o.name||'')===normTeamName(game.home.name))?.point??pickOutcomePoint(tt?.outcomes||[],game.home.name)),
-        book:bm.title||bm.key||'OddsAPI',source:'The Odds API',lastOddsSync:new Date().toISOString()
-      });
+      saveMarket(game.gamePk,{awayMoneyline:String(h2h?.outcomes?.find(o=>normTeamName(o.name||'')===normTeamName(game.away.name))?.price??''),homeMoneyline:String(h2h?.outcomes?.find(o=>normTeamName(o.name||'')===normTeamName(game.home.name))?.price??''),total:String(totals?.outcomes?.find(o=>o.name==='Over')?.point??''),awayTeamTotal:String(tt?.outcomes?.find(o=>normTeamName(o.name||'')===normTeamName(game.away.name))?.point??''),homeTeamTotal:String(tt?.outcomes?.find(o=>normTeamName(o.name||'')===normTeamName(game.home.name))?.point??''),book:bm.title||bm.key||'OddsAPI',source:'The Odds API',lastOddsSync:new Date().toISOString()});
     }
     state.liveSync.odds={status:'ok',updatedAt:new Date().toISOString(),error:''};
   }catch(err){state.liveSync.odds={status:'error',updatedAt:null,error:err.message||'Odds sync failed'};}
   render();
 }
+
+async function syncDKSalaries(){
+  const base=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');
+  state.dkSyncStatus={status:'loading',updatedAt:null,error:''};
+  try{
+    const data=await fetchJson(base+'/api/dk/salaries');
+    if(data.salaries&&Object.keys(data.salaries).length>0){
+      state.dkSalaries=data.salaries;
+      state.dkSalaryDate=data.updatedAt?data.updatedAt.slice(0,10):state.selectedDate;
+      state.dkSlates=data.slates||[];
+      localStorage.setItem('mlb-edge-dk-salaries',JSON.stringify(state.dkSalaries));
+      localStorage.setItem('mlb-edge-dk-salary-date',state.dkSalaryDate);
+      state.dkSyncStatus={status:'ok',updatedAt:new Date().toISOString(),error:''};
+      console.log(`DK salaries loaded: ${Object.keys(data.salaries).length} players`);
+    }else{
+      state.dkSyncStatus={status:'ok',updatedAt:new Date().toISOString(),error:''};
+    }
+  }catch(err){
+    state.dkSyncStatus={status:'error',updatedAt:null,error:err.message||'DK sync failed'};
+    console.warn('DK salary sync failed:',err.message);
+  }
+}
+
 async function syncLiveFeeds(){if(state.apiConfig.autoSyncWeather)await syncWeatherForSlate();if(state.apiConfig.autoSyncOdds)await syncOddsForSlate();}
 
 async function fetchPitcherStats(ids,season){
@@ -238,9 +407,7 @@ async function fetchPitcherStats(ids,season){
     for(const p of data.people||[]){
       const split=p.stats?.[0]?.splits?.[0]?.stat||{};
       const ip=parseIP(split.inningsPitched||'0');
-      if(ip>0||!out[p.id]){
-        out[p.id]={id:p.id,name:p.fullName,era:Number(split.era||4.30),whip:Number(split.whip||1.30),hr9:Number(split.homeRunsPer9||1.15),k9:Number(split.strikeoutsPer9Inn||split.strikeOutsPer9Inn||8.6),ip:split.inningsPitched||'-',w:split.wins||0,l:split.losses||0,pitchHand:p.pitchHand?.code||'R',_noStats:ip===0};
-      }
+      if(ip>0||!out[p.id]){out[p.id]={id:p.id,name:p.fullName,era:Number(split.era||4.30),whip:Number(split.whip||1.30),hr9:Number(split.homeRunsPer9||1.15),k9:Number(split.strikeoutsPer9Inn||split.strikeOutsPer9Inn||8.6),ip:split.inningsPitched||'-',w:split.wins||0,l:split.losses||0,pitchHand:p.pitchHand?.code||'R',_noStats:ip===0};}
     }
   }
   unique.forEach(id=>{if(!out[id])out[id]={id,name:'TBD',era:4.30,whip:1.30,hr9:1.15,k9:8.6,ip:'-',w:0,l:0,pitchHand:'R'};delete out[id]?._noStats;});
@@ -258,14 +425,10 @@ async function fetchTeamHitters(teamId,season){
   for(const tryYear of[season,season-1,season-2]){
     if(rows.length>=5)break;
     const data=await fetchJson(`${API}/people?personIds=${ids.join(',')}&hydrate=stats(group=[hitting],type=[season],season=${tryYear})`);
-    const mapped=(data.people||[]).map(p=>{
-      const s=p.stats?.[0]?.splits?.[0]?.stat||{};
-      return{id:p.id,name:p.fullName,pos:hitters.find(h=>h.person?.id===p.id)?.position?.abbreviation||'-',avg:Number(s.avg||0),obp:Number(s.obp||0),slg:Number(s.slg||0),ops:Number(s.ops||0),hr:Number(s.homeRuns||0),rbi:Number(s.rbi||0),pa:Number(s.plateAppearances||s.atBats||0),sb:Number(s.stolenBases||0),batSide:p.batSide?.code||'R'};
-    }).filter(r=>r.pa>20).sort((a,b)=>b.ops-a.ops||b.hr-a.hr);
+    const mapped=(data.people||[]).map(p=>{const s=p.stats?.[0]?.splits?.[0]?.stat||{};return{id:p.id,name:p.fullName,pos:hitters.find(h=>h.person?.id===p.id)?.position?.abbreviation||'-',avg:Number(s.avg||0),obp:Number(s.obp||0),slg:Number(s.slg||0),ops:Number(s.ops||0),hr:Number(s.homeRuns||0),rbi:Number(s.rbi||0),pa:Number(s.plateAppearances||s.atBats||0),sb:Number(s.stolenBases||0),batSide:p.batSide?.code||'R'};}).filter(r=>r.pa>20).sort((a,b)=>b.ops-a.ops||b.hr-a.hr);
     if(mapped.length>rows.length)rows=mapped;
   }
-  state.teamHittersCache[ck]=rows;
-  return rows;
+  state.teamHittersCache[ck]=rows;return rows;
 }
 
 async function fetchTeamPitchingStaff(teamId,season,excludeId=null){
@@ -294,15 +457,8 @@ async function fetchRecentBullpenUsage(teamId,beforeDate){const games=(await fet
 function projectBullpen(staff=[],usageMap={},gameDate,starter){const relievers=staff.filter(p=>p.id!==starter?.id);const nowTs=new Date(gameDate).getTime();const rows=relievers.map(p=>{const usage=usageMap[p.id]||{apps:0,pitches:0,ip:0,lastUsed:null};const daysRest=usage.lastUsed?Math.max(0,Math.round((nowTs-new Date(usage.lastUsed).getTime())/86400000)):5;const leverage=p.sv*3+p.gf*1.5+p.k9+Math.max(0,10-p.era);const fatigue=usage.apps*8+usage.pitches*0.18+Math.max(0,2-daysRest)*10;const availability=Math.max(5,Math.min(95,Math.round(74+daysRest*5-fatigue)));return{...p,usage,daysRest,leverage,availability};}).sort((a,b)=>b.leverage-a.leverage);const projectedInnings=Math.max(1.4,Math.min(5.2,9-starterProjection(starter||{})));return{closer:rows[0]||null,setup:rows.slice(1,3),bridge:rows.slice(3,5),projectedInnings,rows};}
 
 async function fetchGameLineups(gamePk,game){
-  if(game.lineupAway?.length&&game.lineupHome?.length){
-    return[game.lineupAway.map(p=>p.id),game.lineupHome.map(p=>p.id)];
-  }
-  try{
-    const box=await fetchJson(`${API}/game/${gamePk}/boxscore`);
-    const awayOrder=box.teams?.away?.battingOrder||[];
-    const homeOrder=box.teams?.home?.battingOrder||[];
-    if(awayOrder.length>=5&&homeOrder.length>=5)return[awayOrder,homeOrder];
-  }catch(e){}
+  if(game.lineupAway?.length&&game.lineupHome?.length){return[game.lineupAway.map(p=>p.id),game.lineupHome.map(p=>p.id)];}
+  try{const box=await fetchJson(`${API}/game/${gamePk}/boxscore`);const awayOrder=box.teams?.away?.battingOrder||[];const homeOrder=box.teams?.home?.battingOrder||[];if(awayOrder.length>=5&&homeOrder.length>=5)return[awayOrder,homeOrder];}catch(e){}
   return[null,null];
 }
 async function fetchLineupStats(playerIds,season){
@@ -310,11 +466,7 @@ async function fetchLineupStats(playerIds,season){
   let rows=[];
   for(const tryYear of[season,season-1,season-2]){
     const data=await fetchJson(`${API}/people?personIds=${playerIds.join(',')}&hydrate=stats(group=[hitting],type=[season],season=${tryYear})`);
-    const mapped=(data.people||[]).map(p=>{
-      const s=p.stats?.[0]?.splits?.[0]?.stat||{};
-      const orderIdx=playerIds.indexOf(p.id);
-      return{id:p.id,name:p.fullName,pos:'-',avg:Number(s.avg||0),obp:Number(s.obp||0),slg:Number(s.slg||0),ops:Number(s.ops||0),hr:Number(s.homeRuns||0),rbi:Number(s.rbi||0),pa:Number(s.plateAppearances||s.atBats||0),sb:Number(s.stolenBases||0),batSide:p.batSide?.code||'R',lineupOrder:orderIdx>=0?orderIdx+1:99};
-    });
+    const mapped=(data.people||[]).map(p=>{const s=p.stats?.[0]?.splits?.[0]?.stat||{};const orderIdx=playerIds.indexOf(p.id);return{id:p.id,name:p.fullName,pos:'-',avg:Number(s.avg||0),obp:Number(s.obp||0),slg:Number(s.slg||0),ops:Number(s.ops||0),hr:Number(s.homeRuns||0),rbi:Number(s.rbi||0),pa:Number(s.plateAppearances||s.atBats||0),sb:Number(s.stolenBases||0),batSide:p.batSide?.code||'R',lineupOrder:orderIdx>=0?orderIdx+1:99};});
     const withStats=mapped.filter(r=>r.pa>0);
     if(withStats.length>rows.length)rows=mapped.sort((a,b)=>a.lineupOrder-b.lineupOrder);
     if(rows.filter(r=>r.pa>0).length>=5)break;
@@ -331,71 +483,4 @@ async function loadSlate(){
     state.season=Number(state.selectedDate.slice(0,4));
     const data=await fetchJson(`${API}/schedule?sportId=1&date=${state.selectedDate}&hydrate=${encodeURIComponent(HYDRATE)}`);
     const games=(data.dates?.[0]?.games||[]).map(g=>({gamePk:g.gamePk,status:normalizeStatus(g.status?.abstractGameState||'Preview'),detailed:g.status?.detailedState||'-',gameDate:g.gameDate,venue:g.venue||{name:'Unknown'},linescore:g.linescore||{},away:{id:g.teams?.away?.team?.id,abbr:g.teams?.away?.team?.abbreviation,name:g.teams?.away?.team?.name,score:g.teams?.away?.score??'-'},home:{id:g.teams?.home?.team?.id,abbr:g.teams?.home?.team?.abbreviation,name:g.teams?.home?.team?.name,score:g.teams?.home?.score??'-'},awayProbable:g.teams?.away?.probablePitcher||null,homeProbable:g.teams?.home?.probablePitcher||null,lineupAway:g.lineups?.awayStarters||null,lineupHome:g.lineups?.homeStarters||null}));
-    const pIds=games.flatMap(g=>[g.awayProbable?.id,g.homeProbable?.id]).filter(Boolean);
-    const pStats=await fetchPitcherStats(pIds,state.season);
-    const defaultP={era:4.30,whip:1.30,hr9:1.15,k9:8.6};
-    state.games=games.map(g=>({...g,awayPitcher:g.awayProbable?(pStats[g.awayProbable.id]||{id:g.awayProbable.id,name:g.awayProbable.fullName,...defaultP}):{name:'TBD',...defaultP},homePitcher:g.homeProbable?(pStats[g.homeProbable.id]||{id:g.homeProbable.id,name:g.homeProbable.fullName,...defaultP}):{name:'TBD',...defaultP},park:parkFor(g.venue?.name||'')}));
-    state.teamEdges=[];state.stackRows=[];
-    for(const g of state.games){
-      const homeScore=teamEdgeScore(g,'home'),awayScore=teamEdgeScore(g,'away');
-      const[homeLevel,homeStyle]=stackLevel(homeScore),[awayLevel,awayStyle]=stackLevel(awayScore);
-      state.teamEdges.push({gamePk:g.gamePk,team:g.home.abbr,side:'Home',opponent:g.away.abbr,score:homeScore,level:homeLevel,style:homeStyle,venue:g.venue.name,oppPitcher:g.awayPitcher.name},{gamePk:g.gamePk,team:g.away.abbr,side:'Away',opponent:g.home.abbr,score:awayScore,level:awayLevel,style:awayStyle,venue:g.venue.name,oppPitcher:g.homePitcher.name});
-    }
-    state.stackRows=[...state.teamEdges].sort((a,b)=>b.score-a.score);
-    state.hero.games=state.games.length;state.hero.live=state.games.filter(g=>g.status==='Live').length;state.hero.best=state.stackRows[0]?.team||'-';state.hero.avg=state.stackRows.length?Math.round(state.stackRows.reduce((a,b)=>a+b.score,0)/state.stackRows.length):0;
-    if(!state.selectedGamePk||!state.games.find(g=>g.gamePk===state.selectedGamePk))state.selectedGamePk=state.games[0]?.gamePk||null;
-    if(state.selectedGamePk)await loadSelectedGame(state.selectedGamePk);
-    if(state.apiConfig.autoSyncWeather||state.apiConfig.autoSyncOdds)try{await syncLiveFeeds();}catch(e){console.warn(e);}
-  }catch(err){console.error(err);state.games=[];state.stackRows=[];state.teamEdges=[];state.selectedGameData=null;}
-  finally{state.loading=false;buildHero();render();}
-}
-
-async function loadSelectedGame(gamePk){
-  const game=state.games.find(g=>g.gamePk===gamePk);
-  state.selectedGamePk=gamePk;
-  if(!game)return;
-  const park=parkFor(game.venue.name);
-  const awayTeamCtx={id:game.away.id,abbr:game.away.abbr,nextVenue:game.venue.name};
-  const homeTeamCtx={id:game.home.id,abbr:game.home.abbr,nextVenue:game.venue.name};
-  const[awayLineupIds,homeLineupIds]=await fetchGameLineups(gamePk,game).catch(()=>[null,null]);
-  const[awayHitters,homeHitters,awayTravel,homeTravel,awayStaff,homeStaff,awayUsage,homeUsage]=await Promise.all([
-    (awayLineupIds?fetchLineupStats(awayLineupIds,state.season):fetchTeamHitters(game.away.id,state.season)).catch(()=>[]),
-    (homeLineupIds?fetchLineupStats(homeLineupIds,state.season):fetchTeamHitters(game.home.id,state.season)).catch(()=>[]),
-    fetchTravelContext(awayTeamCtx,state.selectedDate).catch(()=>({miles:0,hours:0,label:'Travel n/a',penalty:0})),
-    fetchTravelContext(homeTeamCtx,state.selectedDate).catch(()=>({miles:0,hours:0,label:'Travel n/a',penalty:0})),
-    fetchTeamPitchingStaff(game.away.id,state.season,game.awayPitcher.id).catch(()=>[]),
-    fetchTeamPitchingStaff(game.home.id,state.season,game.homePitcher.id).catch(()=>[]),
-    fetchRecentBullpenUsage(game.away.id,state.selectedDate).catch(()=>({})),
-    fetchRecentBullpenUsage(game.home.id,state.selectedDate).catch(()=>({}))
-  ]);
-  const awayBullpen=projectBullpen(awayStaff,awayUsage,game.gameDate,game.awayPitcher);
-  const homeBullpen=projectBullpen(homeStaff,homeUsage,game.gameDate,game.homePitcher);
-  const grade=(h,oppPitcher,isHome,travel,oppBullpen)=>hitterGrade(h,oppPitcher,park,{isHome,travel,game,side:isHome?'home':'away',oppBullpen});
-  const awayGraded=awayHitters.slice(0,10).map(h=>({...h,grade:grade(h,game.homePitcher,false,awayTravel,homeBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
-  const homeGraded=homeHitters.slice(0,10).map(h=>({...h,grade:grade(h,game.awayPitcher,true,homeTravel,awayBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
-  state.selectedGameData={...game,park,awayHitters:awayGraded,homeHitters:homeGraded,awayTravel,homeTravel,awayBullpen,homeBullpen,awayStarterTendencies:pitcherTendencies(game.awayPitcher),homeStarterTendencies:pitcherTendencies(game.homePitcher),lineupsLive:!!(awayLineupIds&&homeLineupIds)};
-  buildHero();render();
-}
-
-function renderDashboard(){
-  const top=state.stackRows.slice(0,6);
-  const topPlayers=getTopOneOffs();
-  return`<section>
-    <div class="section-title"><h2>Slate Command Center</h2><div class="meta">Quick-hitting board for where the offense should come from</div></div>
-    <div class="grid-3">
-      <div class="card callout"><h3>Best stack right now</h3><p>${top[0]?`${top[0].team} rates as the top offense on this slate — ${top[0].score}/99 against ${escapeHtml(top[0].oppPitcher)} in ${escapeHtml(top[0].venue)}.`:'Load a slate to rank offenses.'}</p></div>
-      <div class="card callout"><h3>Most attackable pitcher</h3><p>${state.games.length?(()=>{const all=state.games.flatMap(g=>[{name:g.awayPitcher.name,weak:pitcherWeakness(g.awayPitcher),opp:g.home.abbr},{name:g.homePitcher.name,weak:pitcherWeakness(g.homePitcher),opp:g.away.abbr}]).sort((a,b)=>b.weak-a.weak);return`${escapeHtml(all[0].name)} is the softest target. Offense boost points to ${all[0].opp}.`;})():'No pitchers loaded yet.'}</p></div>
-      <div class="card callout"><h3>Selected matchup</h3><p>${state.selectedGameData?`${state.selectedGameData.away.abbr} at ${state.selectedGameData.home.abbr} in ${escapeHtml(state.selectedGameData.venue.name)}. Park run ${fmtNum(state.selectedGameData.park.run,2)} HR ${fmtNum(state.selectedGameData.park.hr,2)}.`:'Pick a game to open the hitter lab.'}</p></div>
-    </div>
-    <div class="section-title"><h2>Top stack targets</h2></div>
-    <div class="games">${top.map((r,i)=>`<div class="card game" data-gamepick="${r.gamePk}"><div class="row"><div class="mini">#${i+1}</div><span class="tag ${r.style}">${r.level}</span></div><div class="abbr" style="margin-top:10px">${r.team}</div><div class="mini">vs ${r.opponent} · ${escapeHtml(r.oppPitcher)}</div><div class="row" style="margin-top:16px"><div class="score">${r.score}/99</div><div class="mini">${escapeHtml(r.venue)}</div></div></div>`).join('')||'<div class="card empty">No games found.</div>'}</div>
-    ${topPlayers.length?`<div class="section-title" style="margin-top:24px"><h2>Top Player Grades</h2><div class="meta">${state.selectedGameData?.lineupsLive?'Official lineup':'Active roster'} · ${state.selectedGameData?.away?.abbr||''} @ ${state.selectedGameData?.home?.abbr||''}</div></div><div class="games">${topPlayers.map(p=>`<div class="card game" data-gamepick="${state.selectedGamePk}"><div class="row"><span class="grade" style="font-size:22px;line-height:1">${escapeHtml(p.grade.letter)}</span><span class="tag ${p.grade.style}" style="margin-left:8px">${p.grade.score}/99</span></div><div class="player-name" style="margin-top:8px">${escapeHtml(p.name)}</div><div class="mini">${escapeHtml(p.pos)} · ${fmtPct(p.avg)} AVG · ${fmtPct(p.ops)} OPS · ${p.hr} HR</div><div class="mini" style="margin-top:4px">${escapeHtml(p.grade.collab?.market?.label||'')} · ${escapeHtml(p.grade.collab?.pattern?.label||'')}</div></div>`).join('')}</div>`:''}
-  </section>`;
-}
-
-function renderGames(){
-  return`<section id="gamesSection">
-    <div class="section-title"><h2>Games</h2><div class="meta">Pick a matchup to load team hitters</div></div>
-    <div class="games">${state.games.map(g=>{const park=parkFor(g.venue.name),homeEdge=teamEdgeScore(g,'home'),awayEdge=teamEdgeScore(g,'away');const m=getMarket(g);const mParts=[];if(m.total)mParts.push(`O/U ${m.total}`);if(m.temperature)mParts.push(`${m.temperature}°`);if(m.wind)mParts.push(`${m.wind} mph ${m.windDir}`);return`<div class="card game ${g.gamePk===state.selectedGamePk?'active':''}" data-game="${g.gamePk}"><div class="row"><span class="pill ${gameBadge(g.status)}">${escapeHtml(g.status)}</span><span class="mini mono">${fmtTime(g.gameDate)}</span></div><div class="teams"><div class="teamrow"><div><div class="abbr">${g.away.abbr}</div><div class="name">${escapeHtml(g.away.name)}</div></div><div class="score">${g.away.score}</div></div><div class="teamrow"><div><div class="abbr">${g.home.abbr}</div><div class="name">${escapeHtml(g.home.name)}</div></div><div class="score">${g.home.score}</div></div></div><div class="mini">${escapeHtml(g.awayPitcher.name)} vs ${escapeHtml(g.homePitcher.name)}</div><div class="mini" style="margin-top:6px">${escapeHtml(g.venue.name)} · run ${fmtNum(park.run,2)} · HR ${fmtNum(park.hr,2)}</div>${mParts.length?`<div class="mini" style="margin-top:4px">${mParts.join(' · ')}</div>`:''}<div class="lift" style="margin-top:14px"><div class="stat"><div class="k">${g.away.abbr}</div><div class="v">${awayEdge}</div></div><div class="stat"><div class="k">${g.home.abbr}</div><div class="v">${homeEdge}</div></div><div class="stat"><div class="k">Best</div><div class="v">${Math.max(awayEdge,homeEdge)}</div></div></div></div>`;}).join('')||'<div class="card empty">No MLB games found.</div>'}</div>
-  </section>`;
-}
+    const pIds=games.flatMap(g=>[g.awayProbable?.
