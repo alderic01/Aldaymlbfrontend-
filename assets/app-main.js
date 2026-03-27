@@ -308,7 +308,7 @@ async function generateAIPicks(){
   const games=state.games.map(g=>({away:{abbr:g.away?.abbr,name:g.away?.name},home:{abbr:g.home?.abbr,name:g.home?.name},venue:{name:g.venue?.name},awayPitcher:{name:g.awayPitcher?.name,era:g.awayPitcher?.era,whip:g.awayPitcher?.whip},homePitcher:{name:g.homePitcher?.name,era:g.homePitcher?.era,whip:g.homePitcher?.whip},status:g.status}));
   try{
     const _aiBase=(state.apiConfig?.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');
-    const resp=await fetch(_aiBase+'/api/ai-picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({games,date:state.selectedDate,mode:state.aiMode})});
+    const resp=await fetch(_aiBase+'/api/ai-picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({games,date:state.selectedDate,mode:state.aiMode,dkSalaries:Object.values(state.dkSalaries||{}).sort((a,b)=>(b.avgPts||0)-(a.avgPts||0)).slice(0,50).map(p=>({n:p.name,pos:p.pos,sal:p.salary,pts:p.avgPts,team:p.team}))})});
     const data=await resp.json();
     if(!resp.ok||!data.ok)throw new Error(data.error||'AI request failed');
     state.aiLastResult=data;
