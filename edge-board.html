@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALLDAY MLB EDGE — Edge Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+            font-family: 'Inter', system-ui, sans-serif;
+      background: #060e1a;
+      color: #e8f0fa;
+            height: 100vh;
+      overflow: hidden;
+      display: flex;
+}
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    h1, h2, h3, p { margin: 0; }
+
+          /* Sidebar */
+          #sidebar {
+            width: 210px;
+      background: #060e1a;
+      padding: 24px 16px;
+      border-right: 1px solid #111d2e;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+}
+    #sidebar h2 {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 28px;
+      letter-spacing: 2px;
+      color: #00ff9c;
+      text-shadow: 0 0 18px rgba(0,255,156,0.35);
+      line-height: 1.3;
+}
+    .nav-items { display: flex; flex-direction: column; gap: 4px; }
+    .nav-btn {
+            display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7d8e;
+      border: 1px solid transparent;
+      text-align: left;
+      transition: all 0.15s;
+      letter-spacing: 0.8px;
+      width: 100%;
+}
+    .nav-btn.active {
+      background: rgba(0,255,156,0.08);
+      color: #00ff9c;
+      border-color: rgba(0,255,156,0.15);
+    }
+    .nav-btn .icon { font-size: 16px; }
+    .sidebar-spacer { flex: 1; }
+    .sidebar-version {
+            padding: 12px;
+      border-radius: 10px;
+      background: #0b1623;
+      border: 1px solid rgba(255,255,255,0.04);
+      font-size: 11px;
+      color: #3d5060;
+      text-align: center;
+      margin-top: 20px;
+}
+
+    /* Main content */
+    #main {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+}
+
+    /* Top bar */
+    .topbar {
+            display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #111d2e;
+}
+    .topbar h1 {
+            font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #e8f0fa;
+      }
+    .topbar-right { display: flex; gap: 10px; align-items: center; }
+    .badge-elite {
+      font-size: 11px;
+      background: rgba(0,255,156,0.1);
+      color: #00ff9c;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+}
+    .avatar {
+            width: 34px; height: 34px;
+      border-radius: 50%;
+      background: #0b1623;
+      border: 2px solid #00ff9c;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #00ff9c;
+    }
+
+    /* View toggle */
+    .view-toggle { display: flex; gap: 6px; margin-bottom: 18px; }
+    .toggle-btn {
+            padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #4a5e6f;
+      border: 1px solid #1a2636;
+      transition: all 0.15s;
+}
+    .toggle-btn.active {
+      background: rgba(0,255,156,0.1);
+      color: #00ff9c;
+      border-color: rgba(0,255,156,0.2);
+    }
+
+    /* Cards grid */
+    #cards-view {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      }
+    .player-card {
+            background: #0b1623;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      padding: 16px;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      cursor: pointer;
+}
+    .player-card:hover {
+            transform: scale(1.04);
+      box-shadow: 0 0 24px rgba(0,255,156,0.18);
+    }
+    .card-header {
+            display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      align-items: center;
+}
+    .initials-circle {
+            width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      color: #8899aa; letter-spacing: 1px;
+}
+    .card-grade {
+            font-weight: 800;
+      font-size: 22px;
+      line-height: 1;
+}
+    .card-name {
+            font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 4px;
+      color: #e8f0fa;
+      }
+    .card-stats {
+            font-size: 12px;
+      color: #6b7d8e;
+      margin-bottom: 6px;
+}
+    .card-score-label {
+            text-align: right;
+      font-size: 12px;
+      color: #8899aa;
+      margin-bottom: 4px;
+}
+    .progress-track {
+            height: 4px;
+      background: #1a2636;
+      border-radius: 4px;
+      overflow: hidden;
+}
+    .progress-bar {
+            height: 4px;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+}
+    .fire-row { margin-top: 8px; display: flex; gap: 2px; }
+
+    /* Table */
+    #table-view {
+      background: #0b1623;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      overflow: hidden;
+}
+    .table-header {
+            display: grid;
+      grid-template-columns: 2fr 1fr 1fr 0.7fr 0.8fr 1.2fr;
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #3d5060;
+      border-bottom: 1px solid #111d2e;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+}
+    .edge-row {
+            display: grid;
+      grid-template-columns: 2fr 1fr 1fr 0.7fr 0.8fr 1.2fr;
+      padding: 12px 16px;
+      border-bottom: 1px solid #111d2e;
+      align-items: center;
+      font-size: 13px;
+      transition: background 0.15s;
+      cursor: default;
+}
+    .edge-row:hover { background: #0d1a29; }
+    .edge-row.even { background: transparent; }
+    .edge-row.odd { background: rgba(255,255,255,0.01); }
+    .edge-row:hover { background: #0d1a29 !important; }
+    .row-name { font-weight: 600; color: #e8f0fa; }
+        .row-team { color: #6b7d8e; }
+    .row-opp { color: #6b7d8e; }
+    .row-grade { font-weight: 800; }
+    .row-own { color: #8899aa; }
+
+    .hidden { display: none; }
+  </style>
+      </head>
+      <body>
+
+      <!-- Sidebar -->
+      <div id="sidebar">
+        <h2>ALLDAY MLB<br>EDGE</h2>
+        <div class="nav-items" id="nav-items"></div>
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-version">v2.0 — DFS & Betting</div>
+      </div>
+
+      <!-- Main -->
+      <div id="main">
+        <div class="topbar">
+          <h1 id="view-title">EDGE BOARD</h1>
+          <div class="topbar-right">
+            <span class="badge-elite">ELITE</span>
+            <div class="avatar">E</div>
+          </div>
+        </div>
+
+        <div class="view-toggle">
+          <button class="toggle-btn active" id="btn-cards" onclick="setView('cards')">Cards</button>
+          <button class="toggle-btn" id="btn-table" onclick="setView('table')">Table</button>
+        </div>
+
+        <div id="cards-view"></div>
+        <div id="table-view" class="hidden"></div>
+      </div>
+
+      <script>
+        // --- Data ---
+        const players = [
+{ name: "Aaron Judge",        initials: "AJ", team: "NYY", opp: "BOS", grade: "A+", avg: ".310", ops: "1.045", hr: 22, score: 97, own: 28.5 },
+      { name: "Shohei Ohtani",      initials: "SO", team: "LAD", opp: "SF",  grade: "A+", avg: ".298", ops: ".985",  hr: 19, score: 95, own: 32.1 },
+{ name: "Mookie Betts",       initials: "MB", team: "LAD", opp: "SF",  grade: "A",  avg: ".289", ops: ".920",  hr: 14, score: 89, own: 18.7 },
+{ name: "Juan Soto",          initials: "JS", team: "NYM", opp: "ATL", grade: "A",  avg: ".292", ops: ".940",  hr: 16, score: 88, own: 21.3 },
+{ name: "Gunnar Henderson",   initials: "GH", team: "BAL", opp: "TB",  grade: "B+", avg: ".275", ops: ".870",  hr: 12, score: 78, own: 14.2 },
+{ name: "Bobby Witt Jr",      initials: "BW", team: "KC",  opp: "MIN", grade: "B+", avg: ".280", ops: ".855",  hr: 10, score: 76, own: 12.8 },
+{ name: "Marcus Semien",      initials: "MS", team: "TEX", opp: "SEA", grade: "B",  avg: ".258", ops: ".780",  hr: 8,  score: 65, own: 9.4  },
+{ name: "Willy Adames",       initials: "WA", team: "SF",  opp: "LAD", grade: "C",  avg: ".245", ops: ".720",  hr: 6,  score: 52, own: 6.1  },
+{ name: "Josh Rojas",         initials: "JR", team: "SEA", opp: "TEX", grade: "D",  avg: ".228", ops: ".650",  hr: 3,  score: 38, own: 3.2  },
+{ name: "Isiah Kiner-Falefa", initials: "IK", team: "PIT", opp: "CIN", grade: "D",  avg: ".220", ops: ".610",  hr: 1,  score: 29, own: 1.8  },
+  ];
+
+  const gradeColor = {
+    "A+": "#00ff9c", "A": "#00ff9c",
+        "B+": "#ffd000", "B": "#ffd000",
+        "C": "#ff7a00", "D": "#ff3b3b", "F": "#ff3b3b"
+    };
+
+  function getFireRating(grade) {
+        const map = { "A+": 5, "A": 4.5, "B+": 4, "B": 3.5, "C": 2.5, "D": 2 };
+    return map[grade] || 1;
+  }
+
+  function fireHTML(grade) {
+        const rating = getFireRating(grade);
+    const full = Math.floor(rating);
+    const half = rating % 1 !== 0;
+    let html = '';
+    for (let i = 0; i < full; i++) html += '<span style="font-size:14px">&#x1F525;</span>';
+    if (half) html += '<span style="font-size:14px;opacity:0.45">&#x1F525;</span>';
+    return html;
+  }
+
+  // --- Sidebar nav ---
+  const navItems = [
+{ icon: "💣", label: "HR EDGE" },
+{ icon: "📊", label: "EDGE BOARD" },
+{ icon: "⚡", label: "PITCH EDGE" },
+{ icon: "🔥", label: "STACK BUILDER" },
+{ icon: "🌬️", label: "WEATHER" },
+{ icon: "📈", label: "LIVE" },
+  ];
+
+  let activeNav = "EDGE BOARD";
+
+  function renderNav() {
+        const container = document.getElementById('nav-items');
+    container.innerHTML = navItems.map(item => `
+            <button class="nav-btn ${item.label === activeNav ? 'active' : ''}" onclick="setNav('${item.label}')">
+              <span class="icon">${item.icon}</span>${item.label}
+      </button>
+          `).join('');
+  }
+
+  function setNav(label) {
+        activeNav = label;
+    document.getElementById('view-title').textContent = label;
+    renderNav();
+  }
+
+  // --- Cards view ---
+  function renderCards() {
+        document.getElementById('cards-view').innerHTML = players.map(p => `
+      <div class="player-card">
+        <div class="card-header">
+          <div class="initials-circle">${p.initials}</div>
+          <div class="card-grade" style="color:${gradeColor[p.grade]}">${p.grade}</div>
+            </div>
+            <div class="card-name">${p.name}</div>
+            <div class="card-stats">${p.avg} AVG &middot; ${p.ops} OPS &middot; ${p.hr} HR</div>
+            <div class="card-score-label">${p.score}/99</div>
+            <div class="progress-track">
+              <div class="progress-bar" style="width:${p.score}%;background:linear-gradient(90deg,${gradeColor[p.grade]}cc,${gradeColor[p.grade]})"></div>
+            </div>
+            <div class="fire-row">${fireHTML(p.grade)}</div>
+          </div>
+        `).join('');
+}
+
+  // --- Table view ---
+  function renderTable() {
+        const header = `
+      <div class="table-header">
+                  <div>Player</div><div>Team</div><div>Opp</div><div>Grade</div><div>Own%</div><div>Fire</div>
+                </div>`;
+    const rows = players.map((p, i) => `
+      <div class="edge-row ${i % 2 === 0 ? 'even' : 'odd'}">
+        <div class="row-name">${p.name}</div>
+        <div class="row-team">${p.team}</div>
+        <div class="row-opp">${p.opp}</div>
+        <div class="row-grade" style="color:${gradeColor[p.grade]}">${p.grade}</div>
+        <div class="row-own">${p.own}%</div>
+        <div class="fire-row">${fireHTML(p.grade)}</div>
+      </div>
+    `).join('');
+    document.getElementById('table-view').innerHTML = header + rows;
+}
+
+  // --- View toggle ---
+  let currentView = 'cards';
+
+  function setView(v) {
+    currentView = v;
+    document.getElementById('cards-view').classList.toggle('hidden', v !== 'cards');
+    document.getElementById('table-view').classList.toggle('hidden', v !== 'table');
+    document.getElementById('btn-cards').classList.toggle('active', v === 'cards');
+    document.getElementById('btn-table').classList.toggle('active', v === 'table');
+}
+
+  // --- Init ---
+  renderNav();
+  renderCards();
+  renderTable();
+</script>
+</body>
+</html>
