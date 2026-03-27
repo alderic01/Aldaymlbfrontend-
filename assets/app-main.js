@@ -352,147 +352,175 @@ render();
 
 function renderBudgetBeasts() {
   const maxSal = state.budgetSalaryMax || 3600;
-  const beasts = buildBudgetBeasts(maxSal);
-  const stacks = buildSmartStacks();
-  const aiLineup = state.aiPicksLineup || null;
+  // Use the advanced grading engine if available, else fallback
+  const buildFn = typeof window.buildBudgetBeasts === 'function' ? window.buildBudgetBeasts : (typeof buildBudgetBeasts === 'function' ? buildBudgetBeasts : null);
+  const stackFn = typeof window.buildSmartStacks === 'function' ? window.buildSmartStacks : (typeof buildSmartStacks === 'function' ? buildSmartStacks : null);
+  const beasts = buildFn ? buildFn(maxSal) : [];
+  const stacks = stackFn ? stackFn() : [];
 
   // Grade color helper
   function gc(letter) {
     return {'A+':'#00ff9c','A':'#00e88a','B+':'#ffd000','B':'#f59e0b','C+':'#ff9e57','C':'#ff5f6d'}[letter]||'#64748b';
   }
 
-  // By position
+  // Count grades
+  const aCount = beasts.filter(b=>b.letter==='A+'||b.letter==='A').length;
+  const bCount = beasts.filter(b=>b.letter==='B+'||b.letter==='B').length;
+
+  // Build position grid
   const positions = ['C','1B','2B','3B','SS','OF'];
-  const byPos = positions.map(pos => {
-    const players = beasts.filter(p => (p.pos||'').toUpperCase().includes(pos)).slice(0, 6);
+  function posMatch(pos, slot) {
+    const p = (pos||'').toUpperCase();
+    if(slot==='C') return p==='C'||p==='C/1B';
+    if(slot==='1B') return p==='1B'||p==='C/1B';
+    if(slot==='OF') return p==='OF'||p==='LF'||p==='CF'||p==='RF';
+    return p===slot;
+  }
+
+  const posHtml = positions.map(pos => {
+    const players = beasts.filter(p => posMatch(p.pos, pos)).slice(0, 8);
     if(!players.length) return '';
-    return '<div style="margin-bottom:16px">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
-      '<span style="background:rgba(0,255,156,.15);color:#00ff9c;border:1px solid rgba(0,255,156,.3);padding:3px 10px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:1px">' + pos + '</span>' +
-      '<span style="color:#64748b;font-size:12px">' + players.length + ' value plays</span>' +
+    const posColor = pos==='OF'?'rgba(167,139,250,.15)':'rgba(0,255,156,.1)';
+    const rows = players.map(p => {
+      const lc = gc(p.letter);
+      const gradeGlow = (p.letter==='A+'||p.letter==='A') ? '0 0 12px rgba(0,255,156,.2)' : 'none';
+      const borderCol = (p.letter==='A+'||p.letter==='A') ? 'rgba(0,255,156,.3)' : 'rgba(30,41,59,.9)';
+      return '<div style="display:grid;grid-template-columns:36px 1fr 90px 70px 60px;gap:8px;align-items:center;padding:8px 12px;background:#0b1623;border:1px solid '+borderCol+';border-radius:8px;margin-bottom:4px;box-shadow:'+gradeGlow+';">' +
+        '<div style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:'+lc+';line-height:1">'+escapeHtml(p.letter)+'</div>' +
+        '<div>' +
+          '<div style="color:#e8f0fa;font-weight:700;font-size:13px">'+escapeHtml(p.name)+'</div>' +
+          '<div style="color:#64748b;font-size:11px">'+escapeHtml(p.team)+' · '+escapeHtml(p.pos)+(p.graded?' · <span style="color:#00ff9c">✓ Full Grade</span>':' · Est.')+'</div>' +
+        '</div>' +
+        '<div style="text-align:right"><div style="color:#22c55e;font-weight:800;font-size:14px">$'+(p.salary||0).toLocaleString()+'</div><div style="color:#64748b;font-size:11px">'+(p.avgPts||0).toFixed(1)+' avg pts</div></div>' +
+        '<div style="text-align:right"><div style="color:#a78bfa;font-weight:700;font-size:13px">'+(p.adjScore||0).toFixed(0)+'/99</div><div style="color:#64748b;font-size:11px">grade</div></div>' +
+        '<div style="text-align:right"><div style="color:#ffd000;font-weight:800;font-size:13px">'+(p.valueScore||0).toFixed(1)+'</div><div style="color:#64748b;font-size:11px">val/k</div></div>' +
+        '</div>';
+    }).join('');
+    return '<div style="margin-bottom:20px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 12px;background:'+posColor+';border-radius:8px;">' +
+        '<span style="font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:900;color:#e8f0fa;letter-spacing:2px">'+pos+'</span>' +
+        '<span style="color:#64748b;font-size:12px">'+players.length+' value plays</span>' +
+        '<span style="margin-left:auto;color:'+gc(players[0].letter)+';font-size:12px;font-weight:700">Top: '+escapeHtml(players[0].name)+'</span>' +
       '</div>' +
-      players.map(p => {
-        const letterColor = gc(p.letter);
-        return '<div style="display:grid;grid-template-columns:auto 1fr auto auto auto;gap:8px;align-items:center;padding:8px 12px;background:#0b1623;border:1px solid ' + (p.letter==='A+'||p.letter==='A'?'rgba(0,255,156,.25)':'rgba(30,41,59,.8)') + ';border-radius:8px;margin-bottom:4px;cursor:pointer;transition:all .2s" ' +
-          'onmouseover="this.style.borderColor='' + letterColor + '33'" onmouseout="this.style.borderColor='' + (p.letter==='A+'||p.letter==='A'?'rgba(0,255,156,.25)':'rgba(30,41,59,.8)') + ''">' +
-          '<div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:' + letterColor + ';line-height:1;min-width:32px">' + escapeHtml(p.letter) + '</div>' +
-          '<div>' +
-            '<div style="color:#e8f0fa;font-weight:700;font-size:13px">' + escapeHtml(p.name) + '</div>' +
-            '<div style="color:#64748b;font-size:11px">' + escapeHtml(p.team) + ' · ' + escapeHtml(p.pos) + (p.graded ? ' · <span style="color:#00ff9c">Graded</span>' : ' · Estimated') + '</div>' +
-          '</div>' +
-          '<div style="text-align:right"><div style="color:#22c55e;font-weight:700;font-size:14px">$' + (p.salary||0).toLocaleString() + '</div>' +
-            '<div style="color:#64748b;font-size:11px">' + (p.avgPts||0).toFixed(1) + ' avg pts</div>' +
-          '</div>' +
-          '<div style="text-align:right"><div style="color:#a78bfa;font-weight:700;font-size:13px">' + (p.adjScore||0).toFixed(0) + '/99</div>' +
-            '<div style="color:#64748b;font-size:11px">grade</div>' +
-          '</div>' +
-          '<div style="text-align:right"><div style="color:#f59e0b;font-weight:800;font-size:13px">' + (p.valueScore||0).toFixed(2) + '</div>' +
-            '<div style="color:#64748b;font-size:11px">val/k</div>' +
-          '</div>' +
-          '</div>';
-      }).join('') +
-      '</div>';
+      rows +
+    '</div>';
   }).join('');
 
   // Smart Stacks HTML
   const stacksHtml = stacks.length ? stacks.map((st, idx) => {
-    const borderColor = idx===0?'rgba(0,255,156,.35)':idx===1?'rgba(255,208,0,.25)':'rgba(30,41,59,.8)';
-    return '<div style="background:linear-gradient(180deg,#0d1827,#0b1623);border:1px solid ' + borderColor + ';border-radius:16px;padding:20px;margin-bottom:16px;">' +
+    const borderColor = idx===0?'rgba(0,255,156,.4)':idx===1?'rgba(255,208,0,.3)':'rgba(100,116,139,.3)';
+    const badgeBg = idx===0?'linear-gradient(135deg,#00ff9c,#00b87a)':idx===1?'linear-gradient(135deg,#ffd000,#f59e0b)':'rgba(100,116,139,.25)';
+    const badgeColor = idx<2?'#060e1a':'#94a3b8';
+    return '<div style="background:linear-gradient(180deg,#0d1827,#0b1623);border:1px solid '+borderColor+';border-radius:16px;padding:20px;margin-bottom:16px;">' +
+      // Header
       '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">' +
-        '<span style="background:' + (idx===0?'linear-gradient(135deg,#00ff9c,#00b87a)':idx===1?'linear-gradient(135deg,#ffd000,#f59e0b)':'rgba(100,116,139,.2)') + ';color:' + (idx<2?'#060e1a':'#94a3b8') + ';padding:4px 12px;border-radius:12px;font-size:11px;font-weight:800;letter-spacing:1px">' + escapeHtml(st.badge) + '</span>' +
-        '<strong style="color:#e8f0fa;font-size:16px">' + escapeHtml(st.label) + ' — <span style="color:#00ff9c">' + escapeHtml(st.stackTeam) + '</span> stack</strong>' +
-        '<span style="margin-left:auto;padding:4px 12px;border-radius:8px;font-size:13px;font-weight:700;background:' + (st.valid?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)') + ';color:' + (st.valid?'#22c55e':'#ef4444') + ';border:1px solid ' + (st.valid?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)') + '">$' + (st.totalSalary||0).toLocaleString() + ' / $50,000 ' + (st.valid?'✓ Valid':'OVER CAP') + '</span>' +
+        '<span style="background:'+badgeBg+';color:'+badgeColor+';padding:4px 12px;border-radius:12px;font-size:11px;font-weight:900;letter-spacing:1.5px">'+escapeHtml(st.badge)+'</span>' +
+        '<strong style="color:#e8f0fa;font-size:15px">'+escapeHtml(st.label)+' — <span style="color:#00ff9c">'+escapeHtml(st.stackTeam)+'</span> stack vs <span style="color:#f59e0b">'+escapeHtml(st.stackOpp)+'</span></strong>' +
+        '<span style="margin-left:auto;padding:4px 14px;border-radius:8px;font-size:13px;font-weight:700;background:'+(st.valid?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)')+';color:'+(st.valid?'#22c55e':'#ef4444')+';border:1px solid '+(st.valid?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)')+'">' +
+          '$'+(st.totalSalary||0).toLocaleString()+' / $50,000 '+(st.valid?'✓ VALID':'OVER CAP') +
+        '</span>' +
       '</div>' +
+      // Pitchers
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-        [st.sp1, st.sp2].filter(Boolean).map(sp =>
-          '<div style="background:#060e1a;border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">' +
-            '<span style="color:#a78bfa;font-size:11px;font-weight:800;background:rgba(124,58,237,.15);padding:2px 8px;border-radius:4px">SP</span>' +
-            '<span style="color:#e8f0fa;font-size:13px;font-weight:600">' + escapeHtml(sp.name) + '</span>' +
-            '<span style="color:#22c55e;font-size:13px">$' + (sp.salary||0).toLocaleString() + '</span>' +
-            '<span style="color:#94a3b8;font-size:12px">' + (sp.adjScore||sp.score||50).toFixed(0) + '/99</span>' +
+        [st.sp1,st.sp2].filter(Boolean).map(sp =>
+          '<div style="background:#060e1a;border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px">' +
+          '<span style="background:rgba(124,58,237,.2);color:#a78bfa;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:800">SP</span>' +
+          '<span style="color:#e8f0fa;font-size:13px;font-weight:600;flex:1">'+escapeHtml(sp.name)+'</span>' +
+          '<span style="color:#22c55e;font-size:13px">$'+(sp.salary||0).toLocaleString()+'</span>' +
+          '<span style="color:#a78bfa;font-size:12px">'+(sp.adjScore||sp.score||50).toFixed(0)+'/99</span>' +
           '</div>'
         ).join('') +
       '</div>' +
+      // Hitters grid
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">' +
         (st.hitters||[]).map(p => {
-          const isStack = p.isStackTeam;
-          const isOpp = p.isOpp;
-          const bc = isStack?'rgba(255,208,0,.35)':isOpp?'rgba(59,130,246,.3)':'rgba(30,41,59,.5)';
-          return '<div style="background:#0b1623;border:1px solid ' + bc + ';border-radius:8px;padding:8px 10px">' +
+          const bc = p.isStackTeam?'rgba(255,208,0,.4)':p.isOpp?'rgba(59,130,246,.35)':'rgba(30,41,59,.6)';
+          return '<div style="background:#0b1623;border:1px solid '+bc+';border-radius:8px;padding:8px 10px;">' +
             '<div style="color:#64748b;font-size:10px;display:flex;justify-content:space-between">' +
-              '<span>' + escapeHtml(p.slot||p.pos) + '</span>' +
-              '<span style="color:' + (isStack?'#ffd000':isOpp?'#60a5fa':'#475569') + '">' + escapeHtml(p.team) + (isStack?' ★':isOpp?' ↺':'') + '</span>' +
+              '<span>'+escapeHtml(p.slot||p.pos)+'</span>' +
+              '<span style="color:'+(p.isStackTeam?'#ffd000':p.isOpp?'#60a5fa':'#475569')+'">'+escapeHtml(p.team)+(p.isStackTeam?' ★':p.isOpp?' ↺':'')+'</span>' +
             '</div>' +
-            '<div style="color:#e8f0fa;font-size:12px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.name) + '</div>' +
-            '<div style="color:#64748b;font-size:11px;margin-top:2px">$' + (p.salary||0).toLocaleString() + '</div>' +
+            '<div style="color:#e8f0fa;font-size:12px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(p.name)+'</div>' +
+            '<div style="color:#64748b;font-size:11px;margin-top:2px">$'+(p.salary||0).toLocaleString()+'</div>' +
           '</div>';
         }).join('') +
       '</div>' +
-      '<div style="margin-top:12px;display:flex;gap:16px;color:#64748b;font-size:12px">' +
-        '<span>★ ' + (st.stackCount||0) + ' from ' + escapeHtml(st.stackTeam) + '</span>' +
-        '<span>↺ ' + (st.bringBackCount||0) + ' from ' + escapeHtml(st.stackOpp) + '</span>' +
-        '<span>Proj: <strong style="color:#a78bfa">' + (st.projPts||0).toFixed(0) + ' pts</strong></span>' +
-        '<span>Remaining: <strong style="color:' + ((st.remaining||0)>=0?'#22c55e':'#ef4444') + '">$' + (st.remaining||0).toLocaleString() + '</strong></span>' +
+      // Footer stats
+      '<div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;color:#64748b;font-size:12px">' +
+        '<span>★ '+(st.stackCount||0)+' from '+escapeHtml(st.stackTeam)+'</span>' +
+        '<span>↺ '+(st.bringBackCount||0)+' bring-back</span>' +
+        '<span>Proj: <strong style="color:#a78bfa">'+(st.projPts||0).toFixed(0)+' pts</strong></span>' +
+        '<span>Remaining: <strong style="color:'+((st.remaining||0)>=0?'#22c55e':'#ef4444')+'">$'+(st.remaining||0).toLocaleString()+'</strong></span>' +
       '</div>' +
-      '</div>';
+    '</div>';
   }).join('') : '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center;color:#475569">Load today's matchups and sync DK salaries to see smart stacks.</div>';
 
-  document.getElementById('view').innerHTML =
-    '<div style="padding:24px;max-width:1400px;margin:0 auto">' +
-    
-    // Header
-    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">' +
-      '<div>' +
-        '<h2 style="font-family:Barlow Condensed,sans-serif;font-size:36px;font-weight:900;color:#e8f0fa;letter-spacing:1px;margin:0">🔥 BUDGET BEASTS</h2>' +
-        '<p style="color:#64748b;font-size:13px;margin:4px 0 0">A &amp; B grade value plays under $' + maxSal.toLocaleString() + ' · Smart $50K stacks with 2 SP</p>' +
-      '</div>' +
-      '<button onclick="syncDKSalaries().then(()=>render())" style="margin-left:auto;background:linear-gradient(135deg,#00ff9c,#00b87a);color:#060e1a;border:none;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:800">Sync DK Salaries</button>' +
-    '</div>' +
+  // AI Picks Optimizer section
+  const aiLineupHtml = renderAIPicksOptimizer();
 
-    // Filter bar
+  const html =
+    '<div style="padding:24px;max-width:1400px;margin:0 auto">' +
+    // ── HEADER ──
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap">' +
+      '<div>' +
+        '<h2 style="font-family:Barlow Condensed,sans-serif;font-size:40px;font-weight:900;color:#e8f0fa;letter-spacing:1px;margin:0;line-height:1">🔥 BUDGET BEASTS</h2>' +
+        '<p style="color:#64748b;font-size:13px;margin:4px 0 0">A &amp; B grade value plays under $'+maxSal.toLocaleString()+' · Smart $50K stacks · DraftKings Classic</p>' +
+      '</div>' +
+      '<button onclick="(typeof syncDKSalaries==='function'?syncDKSalaries():Promise.resolve()).then(()=>{typeof window.renderBudgetBeasts==='function'?window.renderBudgetBeasts():null})" style="margin-left:auto;background:linear-gradient(135deg,#00ff9c,#00b87a);color:#060e1a;border:none;padding:10px 22px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:900;letter-spacing:.5px;box-shadow:0 0 20px rgba(0,255,156,.3)">⚡ Sync DK Salaries</button>' +
+    '</div>' +
+    // ── FILTER BAR ──
     '<div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap;background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:14px 18px">' +
       '<div style="display:flex;align-items:center;gap:10px">' +
-        '<label style="color:#94a3b8;font-size:12px;font-weight:700">MAX SALARY</label>' +
-        '<input type="range" min="2500" max="4500" step="100" value="' + maxSal + '" id="budgetSlider" style="width:160px;accent-color:#00ff9c">' +
-        '<span id="budgetVal" style="color:#ffd000;font-weight:800;font-size:14px">$' + maxSal.toLocaleString() + '</span>' +
+        '<label style="color:#94a3b8;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase">Max Salary</label>' +
+        '<input type="range" min="2500" max="4500" step="100" value="'+maxSal+'" id="budgetSlider" style="width:160px;accent-color:#00ff9c" oninput="state.budgetSalaryMax=+this.value;document.getElementById('budgetVal').textContent='$'+(+this.value).toLocaleString();window.renderBudgetBeasts&&window.renderBudgetBeasts()">' +
+        '<span id="budgetVal" style="color:#ffd000;font-weight:900;font-size:15px;min-width:56px">$'+maxSal.toLocaleString()+'</span>' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">' +
-        '<span style="padding:4px 12px;border-radius:999px;background:rgba(0,255,156,.12);color:#00ff9c;border:1px solid rgba(0,255,156,.3);font-size:12px;font-weight:700">' + beasts.filter(b=>b.letter==='A+'||b.letter==='A').length + ' A Grade</span>' +
-        '<span style="padding:4px 12px;border-radius:999px;background:rgba(255,208,0,.12);color:#ffd000;border:1px solid rgba(255,208,0,.3);font-size:12px;font-weight:700">' + beasts.filter(b=>b.letter==='B+'||b.letter==='B').length + ' B Grade</span>' +
-        '<span style="padding:4px 12px;border-radius:999px;background:rgba(148,163,184,.1);color:#94a3b8;border:1px solid rgba(148,163,184,.2);font-size:12px">' + beasts.length + ' total</span>' +
+        '<span style="padding:4px 14px;border-radius:999px;background:rgba(0,255,156,.12);color:#00ff9c;border:1px solid rgba(0,255,156,.3);font-size:12px;font-weight:800">'+aCount+' A Grade</span>' +
+        '<span style="padding:4px 14px;border-radius:999px;background:rgba(255,208,0,.12);color:#ffd000;border:1px solid rgba(255,208,0,.3);font-size:12px;font-weight:800">'+bCount+' B Grade</span>' +
+        '<span style="padding:4px 14px;border-radius:999px;background:rgba(148,163,184,.08);color:#94a3b8;border:1px solid rgba(148,163,184,.2);font-size:12px">'+beasts.length+' total</span>' +
+        (Object.keys(state.dkSalaries||{}).length?'<span style="padding:4px 14px;border-radius:999px;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.25);font-size:12px">'+Object.keys(state.dkSalaries).length+' DK players</span>':'') +
       '</div>' +
     '</div>' +
-
-    // Value plays grid
-    '<div style="margin-bottom:32px">' +
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">' +
-        '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:#e8f0fa;margin:0;text-transform:uppercase">Value Plays by Position</h3>' +
-        '<span style="font-size:12px;color:#64748b">A &amp; B grades only</span>' +
+    // ── VALUE PLAYS SECTION ──
+    '<div style="margin-bottom:36px">' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
+        '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#e8f0fa;margin:0;text-transform:uppercase;letter-spacing:1px">🎯 Value Plays by Position</h3>' +
+        '<span style="font-size:12px;color:#64748b">A &amp; B grades only · sorted by value/k</span>' +
       '</div>' +
-      (byPos || '<div style="color:#475569;text-align:center;padding:32px">Load matchups to see value plays.</div>') +
+      (posHtml || '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:40px;text-align:center"><p style="color:#475569;font-size:15px;margin:0">Load today's matchups to calculate value plays.<br><span style="font-size:12px;color:#334155">Select a game in the Games tab, then return here.</span></p></div>') +
     '</div>' +
-
-    // Smart stacks
-    '<div>' +
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">' +
-        '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:#a78bfa;margin:0;text-transform:uppercase">Smart $50K Stacks (2 SP + 8 Batters)</h3>' +
+    // ── SMART STACKS SECTION ──
+    '<div style="margin-bottom:36px">' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
+        '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#a78bfa;margin:0;text-transform:uppercase;letter-spacing:1px">📊 Smart $50K Stacks (2 SP + 8 Batters)</h3>' +
         '<span style="font-size:12px;color:#64748b">DraftKings Classic format</span>' +
       '</div>' +
       stacksHtml +
     '</div>' +
+    // ── AI $50K OPTIMIZER ──
+    '<div style="margin-bottom:36px">' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
+        '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#00ff9c;margin:0;text-transform:uppercase;letter-spacing:1px">⚡ AI Picks — $50K Optimized Lineup</h3>' +
+        '<span style="font-size:12px;color:#64748b">2 SP required · Grade-weighted</span>' +
+      '</div>' +
+      aiLineupHtml +
+    '</div>' +
     '</div>';
 
-  document.getElementById('budgetSlider')?.addEventListener('input', e => {
-    state.budgetSalaryMax = +e.target.value;
-    document.getElementById('budgetVal').textContent = '$' + (+e.target.value).toLocaleString();
-    renderBudgetBeasts();
-  });
+  document.getElementById('view').innerHTML = html;
 }
+window.renderBudgetBeasts = renderBudgetBeasts;
 
-// === ENHANCED AI PICKS WITH $50K OPTIMIZER ===
+// ── AI PICKS OPTIMIZER RENDERER ─────────────────────────────────
 function renderAIPicksOptimizer() {
-  const result = state.aiPicksLineup || optimizeDKLineup(state.optimizerStackTeam || '');
-  if(!result) return '<div class="card empty">Run the optimizer or load DK salaries to see AI picks lineup.</div>';
+  const result = typeof optimizeDKLineup === 'function' ? optimizeDKLineup(state.optimizerStackTeam||'') : null;
+  if(!result||!result.lineup||!result.lineup.length) {
+    return '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center">' +
+      '<p style="color:#475569;margin:0">Load DK salaries and matchups to build the $50K optimized lineup with 2 SPs.</p>' +
+      '<button onclick="state.tab='optimizer';render()" style="margin-top:12px;background:rgba(0,255,156,.12);color:#00ff9c;border:1px solid rgba(0,255,156,.3);padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px">Open Optimizer →</button>' +
+    '</div>';
+  }
 
   function gc(letter) {
     return {'A+':'#00ff9c','A':'#00e88a','B+':'#ffd000','B':'#f59e0b','C+':'#ff9e57','C':'#ff5f6d'}[letter]||'#64748b';
@@ -501,71 +529,75 @@ function renderAIPicksOptimizer() {
   const pitchers = result.lineup.filter(p=>p.isPitcher);
   const hitters = result.lineup.filter(p=>!p.isPitcher);
 
-  return '<div style="background:linear-gradient(180deg,#0d1827,#0b1623);border:1px solid rgba(0,255,156,.25);border-radius:16px;padding:20px;margin-bottom:16px">' +
+  // Stack detection
+  const tc = {};
+  hitters.forEach(p=>{tc[p.team]=(tc[p.team]||0)+1;});
+  const stks = Object.entries(tc).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]);
+
+  return '<div style="background:linear-gradient(180deg,#0d1827,#0b1623);border:1px solid rgba(0,255,156,.3);border-radius:16px;padding:20px">' +
+    // Lineup stats header
     '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">' +
-      '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#00ff9c;text-transform:uppercase;margin:0">⚡ AI PICKS — $50K Optimized Lineup</h3>' +
-      '<div style="display:flex;gap:12px">' +
-        '<div style="text-align:center"><div style="color:#22c55e;font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900">$' + (result.totalSalary||0).toLocaleString() + '</div><div style="color:#64748b;font-size:11px">Salary Used</div></div>' +
-        '<div style="text-align:center"><div style="color:' + ((result.remaining||0)>=0?'#22c55e':'#ef4444') + ';font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900">$' + (result.remaining||0).toLocaleString() + '</div><div style="color:#64748b;font-size:11px">Remaining</div></div>' +
-        '<div style="text-align:center"><div style="color:#a78bfa;font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900">' + (result.projScore||0) + '</div><div style="color:#64748b;font-size:11px">Proj Pts</div></div>' +
-        '<div style="text-align:center"><div style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:' + (result.valid?'#22c55e':'#ef4444') + '">' + (result.valid?'✓ VALID':'✗ INVALID') + '</div><div style="color:#64748b;font-size:11px">Status</div></div>' +
+      '<div style="display:flex;gap:24px;flex-wrap:wrap">' +
+        '<div style="text-align:center"><div style="color:#22c55e;font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900">$'+result.totalSalary.toLocaleString()+'</div><div style="color:#64748b;font-size:11px">Used</div></div>' +
+        '<div style="text-align:center"><div style="color:'+((result.remaining||0)>=0?'#22c55e':'#ef4444')+';font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900">$'+result.remaining.toLocaleString()+'</div><div style="color:#64748b;font-size:11px">Remaining</div></div>' +
+        '<div style="text-align:center"><div style="color:#a78bfa;font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900">'+result.projScore+'</div><div style="color:#64748b;font-size:11px">Proj Pts</div></div>' +
+        '<div style="text-align:center"><div style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:'+(result.valid?'#22c55e':'#ef4444')+'">'+(result.valid?'✓ VALID':'✗ INVALID')+'</div><div style="color:#64748b;font-size:11px">Status</div></div>' +
       '</div>' +
+      '<button onclick="state.tab='optimizer';render()" style="background:rgba(0,255,156,.1);color:#00ff9c;border:1px solid rgba(0,255,156,.25);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px">Full Optimizer →</button>' +
     '</div>' +
-    '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">' +
+    // Pitchers
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
       pitchers.map(p => {
         const[letter]=gradeBadge(p.score);
-        return '<div style="background:#060e1a;border:1px solid rgba(124,58,237,.4);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">' +
-          '<div style="background:rgba(124,58,237,.15);color:#a78bfa;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800">SP</div>' +
-          '<div style="flex:1"><div style="color:#e8f0fa;font-weight:700">' + escapeHtml(p.name) + '</div>' +
-            '<div style="color:#64748b;font-size:11px">' + escapeHtml(p.team) + ' · $' + (p.salary||0).toLocaleString() + '</div></div>' +
-          '<div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:' + gc(letter) + '">' + letter + '</div>' +
+        const lc=gc(letter);
+        return '<div style="background:#060e1a;border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px">' +
+          '<span style="background:rgba(124,58,237,.2);color:#a78bfa;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:800">SP</span>' +
+          '<div style="flex:1"><div style="color:#e8f0fa;font-weight:700">'+escapeHtml(p.name)+'</div><div style="color:#64748b;font-size:11px">'+escapeHtml(p.team)+' · $'+p.salary.toLocaleString()+'</div></div>' +
+          '<div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:'+lc+'">'+letter+'</div>' +
           '</div>';
       }).join('') +
     '</div>' +
+    // Hitter grid (8 + flex = up to 8 hitters)
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">' +
       hitters.map(p => {
         const[letter]=gradeBadge(p.score);
-        const lc = gc(letter);
-        return '<div style="background:#0b1623;border:1px solid ' + (letter==='A+'||letter==='A'?'rgba(0,255,156,.25)':'rgba(30,41,59,.8)') + ';border-radius:10px;padding:10px 12px">' +
+        const lc=gc(letter);
+        return '<div style="background:#0b1623;border:1px solid '+(letter==='A+'||letter==='A'?'rgba(0,255,156,.25)':'rgba(30,41,59,.8)')+';border-radius:10px;padding:10px 12px">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-            '<span style="color:#64748b;font-size:10px">' + escapeHtml(p.slotLabel||p.pos) + '</span>' +
-            '<span style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:900;color:' + lc + '">' + letter + '</span>' +
+            '<span style="color:#64748b;font-size:10px;text-transform:uppercase">'+escapeHtml(p.slotLabel||p.pos)+'</span>' +
+            '<span style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:900;color:'+lc+'">'+letter+'</span>' +
           '</div>' +
-          '<div style="color:#e8f0fa;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.name) + '</div>' +
-          '<div style="color:#64748b;font-size:11px">' + escapeHtml(p.team) + '</div>' +
+          '<div style="color:#e8f0fa;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(p.name)+'</div>' +
+          '<div style="color:#64748b;font-size:11px">'+escapeHtml(p.team)+'</div>' +
           '<div style="display:flex;justify-content:space-between;margin-top:4px">' +
-            '<span style="color:#22c55e;font-size:12px;font-weight:700">$' + (p.salary||0).toLocaleString() + '</span>' +
-            '<span style="color:#94a3b8;font-size:11px">' + (p.score||0) + '/99</span>' +
+            '<span style="color:#22c55e;font-size:12px;font-weight:700">$'+p.salary.toLocaleString()+'</span>' +
+            '<span style="color:#94a3b8;font-size:11px">'+p.score+'/99</span>' +
           '</div>' +
           '</div>';
       }).join('') +
     '</div>' +
-    // Stack detection
-    ((() => {
-      const tc = {};
-      hitters.forEach(p => { tc[p.team]=(tc[p.team]||0)+1; });
-      const stks = Object.entries(tc).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]);
-      return stks.length ? '<div style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+    // Stack detection badges
+    (stks.length ?
+      '<div style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
         '<span style="color:#64748b;font-size:12px">Stacks:</span>' +
-        stks.map(([t,c])=>'<span style="background:rgba(255,208,0,.12);color:#ffd000;border:1px solid rgba(255,208,0,.3);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">' + t + ' x' + c + '</span>').join('') + '</div>' : '';
-    })()) +
+        stks.map(([t,c])=>'<span style="background:rgba(255,208,0,.12);color:#ffd000;border:1px solid rgba(255,208,0,.3);padding:3px 12px;border-radius:6px;font-size:12px;font-weight:700">'+t+' ×'+c+'</span>').join('') +
+      '</div>' : '') +
     '</div>';
 }
+window.renderAIPicksOptimizer = renderAIPicksOptimizer;
 
-// Patch the render() function to support enhanced budget and AI optimizer tabs
-const _origRenderBB = render;
-window.render = function() {
-  if(state.tab === 'budget') {
-    renderTabs();
-    renderBudgetBeasts();
-  } else if(state.tab === 'ai') {
-    renderTabs();
-    const view = document.getElementById('view');
-    if(!view) return _origRenderBB();
-    const aiSection = renderAI();
-    const optimizerSection = renderAIPicksOptimizer();
-    view.innerHTML = aiSection + '<div style="margin-top:24px">' + optimizerSection + '</div>';
-  } else {
-    _origRenderBB ? _origRenderBB() : render();
-  }
-};
+// ── FIXED RENDER ROUTING ─────────────────────────────────────────
+// Store reference to the original sync render function before it gets called again
+(function patchRenderForBudget() {
+  const _originalRender = render;
+  window.render = function renderPatched() {
+    if(state.tab === 'budget') {
+      renderTabs();
+      renderBudgetBeasts();
+      return;
+    }
+    _originalRender();
+  };
+  // Keep original accessible
+  window._coreRender = _originalRender;
+})();
