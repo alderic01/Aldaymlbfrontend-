@@ -617,31 +617,44 @@ html,body{background:#060e1a!important;background-image:none!important}
 
   // PATCH render() and sideSwitch() for budget tab routing
   function patchRender() {
-    var orig = window.render || window._coreRender;
-    if(!orig && typeof render==="function") orig = render;
-    if(!orig) { setTimeout(patchRender, 200); return; }
+  // IMMEDIATELY patch sideSwitch - does NOT require window.render to exist
+  if(typeof window.sideSwitch==="function" && !window._bbSideSwitchPatched) {
+    var oSS = window.sideSwitch;
+    window.sideSwitch = function(el, tab) {
+      if(tab==="budget") {
+        document.querySelectorAll(".sidebar-nav-item").forEach(function(x){x.classList.remove("active");});
+        if(el) el.classList.add("active");
+        if(typeof state!=="undefined") state.tab="budget";
+        if(typeof renderTabs==="function") renderTabs();
+        window.renderBudgetBeasts();
+        return;
+      }
+      oSS(el, tab);
+    };
+    window._bbSideSwitchPatched = true;
+    console.log("[BB] sideSwitch patched for budget tab");
+  }
+  // Also patch render() if it is now available
+  var orig = window.render || window._coreRender;
+  if(!orig && typeof render==="function") orig = render;
+  if(orig && !window._bbRenderPatched) {
     var patched = function(tab) {
-      if(tab==="budget") { if(typeof renderTabs==="function")renderTabs(); window.renderBudgetBeasts(); return; }
+      if(tab==="budget") {
+        if(typeof renderTabs==="function") renderTabs();
+        window.renderBudgetBeasts();
+        return;
+      }
       orig(tab);
     };
     window.render = patched;
     window._coreRender = orig;
-    if(typeof window.sideSwitch==="function") {
-      var oSS = window.sideSwitch;
-      window.sideSwitch = function(el, tab) {
-        if(tab==="budget") {
-          document.querySelectorAll(".sidebar-nav-item").forEach(function(x){x.classList.remove("active");});
-          if(el) el.classList.add("active");
-          if(typeof state!=="undefined") state.tab="budget";
-          if(typeof renderTabs==="function") renderTabs();
-          window.renderBudgetBeasts();
-          return;
-        }
-        oSS(el, tab);
-      };
-    }
+    window._bbRenderPatched = true;
+    console.log("[BB] render() patched for budget tab");
   }
-  if(document.readyState==="loading") { document.addEventListener("DOMContentLoaded", function(){ setTimeout(patchRender, 100); }); }
+  // Keep retrying until sideSwitch is available (may not exist yet on load)
+  if(!window._bbSideSwitchPatched) { setTimeout(patchRender, 100); }
+}
+if(document.readyState==="loading") { document.addEventListener("DOMContentLoaded", function(){ setTimeout(patchRender, 100); }); }
   else { setTimeout(patchRender, 100); }
   console.log("[ALLDAY MLB EDGE] Budget Beasts v5 inline — 10 factors, 30 parks, 100+ Spring 2026 players");
 })();
