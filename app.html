@@ -408,201 +408,242 @@ html,body{background:#060e1a!important;background-image:none!important}
 <script src="./assets/player-modal.js?v=420"></script>
 <script>(function(){function sideSwitch(el,tab){document.querySelectorAll(".sidebar-nav-item").forEach(function(x){x.classList.remove("active")});el.classList.add("active");if(typeof render==="function")render(tab);document.querySelectorAll("#tabs .tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tab")===tab)})}window.sideSwitch=sideSwitch;var obs=new MutationObserver(function(){document.querySelectorAll(".grade:not([data-grade])").forEach(function(el){el.setAttribute("data-grade",el.innerText.trim())})});document.addEventListener("DOMContentLoaded",function(){obs.observe(document.body,{childList:true,subtree:true})})})();</script>
 <div id="playerDetailModal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(4,8,16,.88);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;overflow-y:auto"><div style="width:min(600px,100%);background:#0b1623;border:1px solid rgba(0,255,156,.25);border-radius:20px;overflow:hidden;position:relative"><button onclick="closePlayerModal()" style="position:absolute;top:14px;right:14px;cursor:pointer;">X</button><div style="padding:24px;background:#060e1a;border-bottom:1px solid #1e293b;display:flex;gap:16px;align-items:center"><div id="pdm-av" style="width:72px;height:72px;border-radius:50%;background:#0b1623;border:2px solid #1e293b;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:30px;font-weight:900">?</div><div><div id="pdm-pn" style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:#e8f0fa">Player</div><div id="pdm-pp" style="font-size:12px;color:#64748b">POS</div><div id="pdm-ps" style="font-size:12px">-</div></div><div style="margin-left:auto;text-align:right"><div id="pdm-gb" style="font-family:Barlow Condensed,sans-serif;font-size:60px;font-weight:900;line-height:.9">A</div><div id="pdm-gs" style="font-size:12px;color:#64748b">--/99</div></div></div><div style="padding:16px;display:flex;flex-direction:column;gap:14px"><div id="pdm-sg" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div><div id="pdm-sl" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div id="pdm-si" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div id="pdm-ry"></div><div style="display:flex;gap:8px;border-top:1px solid #1e293b;padding-top:10px"><button id="pdm-wb" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,255,156,.3);background:rgba(0,255,156,.1);color:#00ff9c;cursor:pointer;">Watch Player</button><button onclick="closePlayerModal()" style="padding:10px 16px;border-radius:8px;border:1px solid #1e293b;background:#060e1a;color:#64748b;cursor:pointer;">Close</button></div></div></div></div>
+
 <script>
-// ═══════════════════════════════════════════════════════════════════
-// ALLDAY MLB EDGE — Budget Beasts v4 Inline (bypasses CDN cache)
-// Defines: window.renderBudgetBeasts, window.renderAIPicksOptimizer
-// Plus: patches render() for budget tab routing
-// ═══════════════════════════════════════════════════════════════════
-(function initBudgetBeasts() {
+// ALLDAY MLB EDGE - Budget Beasts v5 Inline (bypasses Vercel CDN cache)
+// Uses: mlb-advanced-grading.js v5.0 — 10 factors, 30 parks, 100+ spring players
+(function initBB5() {
 
-  function gc(letter) {
-    return {'A+':'#00ff9c','A':'#00e88a','B+':'#ffd000','B':'#f59e0b','C+':'#ff9e57','C':'#ff5f6d'}[letter]||'#64748b';
-  }
-
-  function posMatch(pos, slot) {
-    var p = (pos||'').toUpperCase();
-    if(slot==='OF') return p==='OF'||p==='LF'||p==='CF'||p==='RF';
-    if(slot==='C') return p==='C'||p.includes('C/1B');
-    if(slot==='1B') return p==='1B'||p.includes('C/1B');
-    return p===slot;
-  }
+  function gc(l){return{"A+":"#00ff9c","A":"#00e88a","B+":"#ffd000","B":"#f59e0b","C+":"#ff9e57","C":"#ff5f6d"}[l]||"#64748b";}
+  function glow(l){var a=l==="A+"||l==="A";var r={"A+":"0,255,156","A":"0,232,138","B+":"255,208,0","B":"245,158,11","C+":"255,158,87","C":"255,95,109"}[l]||"100,116,139";return(a?"box-shadow:0 0 18px rgba("+r+",.45);":"")+"border:1px solid rgba("+r+","+(a?".5":".3")+")";}
+  function fS(s){return "$"+(s>=1000?(s/1000).toFixed(1)+"K":s);}
 
   window.renderBudgetBeasts = function() {
-    if(typeof state === 'undefined') return;
+    var view = document.querySelector("#main-view,#view,#app-view,.view-content,.view") || document.body;
+    if(typeof state === "undefined"){ view.innerHTML="<div style='padding:40px;text-align:center;color:#64748b'>Loading...</div>"; return; }
     var maxSal = state.budgetSalaryMax || 3600;
-
-    // Use advanced engine if loaded
-    var buildFn = (typeof window.buildBudgetBeasts === 'function' && window.buildBudgetBeasts.toString().length > 500)
-      ? window.buildBudgetBeasts : null;
-    if(!buildFn && typeof buildBudgetBeasts === 'function') buildFn = buildBudgetBeasts;
-
-    var stackFn = (typeof window.buildSmartStacks === 'function') ? window.buildSmartStacks :
-                  (typeof buildSmartStacks === 'function') ? buildSmartStacks : function(){ return []; };
-
-    // Fallback inline beast builder if advanced engine not loaded
-    if(!buildFn) {
-      buildFn = function(maxS) {
-        if(!Object.keys(state.dkSalaries||{}).length) return [];
-        var teamEdgeMap = {};
-        (state.stackRows||[]).forEach(function(r){teamEdgeMap[(r.team||'').toUpperCase()]=r.score;});
-        var beasts = [];
-        for(var key in state.dkSalaries) {
-          var dk = state.dkSalaries[key];
-          if(!dk.salary||dk.salary>maxS||dk.salary<2000) continue;
-          if(/^(SP|RP|P)$/i.test(dk.pos||'')) continue;
-          var teamEdge = teamEdgeMap[(dk.team||'').toUpperCase()] || 52;
-          var ptsBias = dk.avgPts>0 ? Math.min(28, dk.avgPts*3.8) : 16;
-          var adjScore = Math.max(25, Math.min(95, Math.round(teamEdge*0.62 + ptsBias)));
-          if(adjScore < 68) continue;
-          var vs = dk.salary>0 ? Math.round((adjScore/(dk.salary/1000))*10)/10 : 0;
-          var letter = adjScore>=92?'A+':adjScore>=84?'A':adjScore>=76?'B+':'B';
-          beasts.push(Object.assign({}, dk, {key:key, adjScore:adjScore, valueScore:vs, graded:false, letter:letter, teamEdge:teamEdge, projPts:dk.avgPts||Math.round(adjScore*0.41)}));
-        }
-        return beasts.sort(function(a,b){return b.valueScore-a.valueScore;});
-      };
+    var beasts = [];
+    var buildFn = (typeof window.buildBudgetBeasts==="function" && window.buildBudgetBeasts.toString().length>500) ? window.buildBudgetBeasts : (typeof buildBudgetBeasts==="function" ? buildBudgetBeasts : null);
+    if(buildFn) { try { beasts = buildFn(maxSal); } catch(e){console.warn("buildFn err",e);} }
+    if(!beasts.length && Object.keys(state.dkSalaries||{}).length) {
+      var temap = {}; (state.stackRows||[]).forEach(function(r){temap[(r.team||"").toUpperCase()]=r.score;});
+      Object.entries(state.dkSalaries).forEach(function(kv) {
+        var dk=kv[1]; if(!dk.salary||dk.salary>maxSal||dk.salary<2000) return;
+        if(/^(SP|RP|P)$/i.test(dk.pos||"")) return;
+        var te=temap[(dk.team||"").toUpperCase()]||52;
+        var pt=dk.avgPts>0?Math.min(28,dk.avgPts*3.9):16;
+        var sp=typeof springTrainingBoost==="function"?springTrainingBoost(dk.name):0;
+        var a=Math.max(28,Math.min(94,Math.round(te*0.63+pt+sp)));
+        if(a<68) return;
+        var l=a>=92?"A+":a>=84?"A":a>=76?"B+":"B";
+        beasts.push(Object.assign({},dk,{key:kv[0],adjScore:a,valueScore:dk.salary>0?Math.round((a/(dk.salary/1000))*10)/10:0,graded:false,letter:l,projPts:dk.avgPts||Math.round(a*.41)}));
+      });
+      beasts.sort(function(a,b){return b.valueScore-a.valueScore;});
     }
-
-    var beasts = buildFn(maxSal);
-    var stacks = stackFn();
-    var aCount = beasts.filter(function(b){return b.letter==='A+'||b.letter==='A';}).length;
-    var bCount = beasts.filter(function(b){return b.letter==='B+'||b.letter==='B';}).length;
-    var dkCount = Object.keys(state.dkSalaries||{}).length;
-
-    var positions = ['C','1B','2B','3B','SS','OF'];
-    var posHtml = positions.map(function(pos) {
-      var players = beasts.filter(function(p){ return posMatch(p.pos, pos); }).slice(0,8);
-      if(!players.length) return '';
-      var rows = players.map(function(p) {
-        var lc = gc(p.letter);
-        var glow = (p.letter==='A+'||p.letter==='A') ? '0 0 14px rgba(0,255,156,.25)' : 'none';
-        var border = (p.letter==='A+'||p.letter==='A') ? 'rgba(0,255,156,.35)' : 'rgba(30,41,59,.9)';
-        var esc = typeof escapeHtml==='function' ? escapeHtml : function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
-        return '<div style="display:grid;grid-template-columns:38px 1fr 90px 68px 58px;gap:8px;align-items:center;padding:9px 14px;background:#0b1623;border:1px solid '+border+';border-radius:8px;margin-bottom:4px;box-shadow:'+glow+'">' +
-          '<div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:'+lc+';line-height:1">'+esc(p.letter)+'</div>' +
-          '<div><div style="color:#e8f0fa;font-weight:700;font-size:13px">'+esc(p.name)+'</div><div style="color:#64748b;font-size:11px">'+esc(p.team)+' · '+esc(p.pos)+(p.graded?' · <span style="color:#00ff9c">✓ Graded</span>':' · Est.')+'</div></div>' +
-          '<div style="text-align:right"><div style="color:#22c55e;font-weight:800;font-size:14px">$'+(p.salary||0).toLocaleString()+'</div><div style="color:#64748b;font-size:11px">'+(p.avgPts||0).toFixed(1)+' avg pts</div></div>' +
-          '<div style="text-align:right"><div style="color:#a78bfa;font-weight:700;font-size:13px">'+(p.adjScore||0).toFixed(0)+'/99</div><div style="color:#64748b;font-size:11px">grade</div></div>' +
-          '<div style="text-align:right"><div style="color:#ffd000;font-weight:800;font-size:13px">'+(p.valueScore||0).toFixed(1)+'</div><div style="color:#64748b;font-size:11px">val/k</div></div>' +
-          '</div>';
-      }).join('');
-      var posColor = pos==='OF'?'rgba(167,139,250,.1)':'rgba(0,255,156,.07)';
-      return '<div style="margin-bottom:20px">' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 14px;background:'+posColor+';border:1px solid rgba(255,255,255,.05);border-radius:8px">' +
-          '<span style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:900;color:#e8f0fa;letter-spacing:2px">'+pos+'</span>' +
-          '<span style="color:#64748b;font-size:12px">'+players.length+' value play'+(players.length!==1?'s':'')+'</span>' +
-          '<span style="margin-left:auto;color:'+gc(players[0].letter)+';font-size:12px;font-weight:700">Top: '+(typeof escapeHtml==='function'?escapeHtml(players[0].name):players[0].name)+'</span>' +
-        '</div>' + rows + '</div>';
-    }).join('');
-
-    var stacksHtml = stacks.length ? stacks.map(function(st, idx) {
-      var borderColor = idx===0?'rgba(0,255,156,.4)':idx===1?'rgba(255,208,0,.3)':'rgba(100,116,139,.3)';
-      var badgeBg = idx===0?'linear-gradient(135deg,#00ff9c,#00b87a)':idx===1?'linear-gradient(135deg,#ffd000,#f59e0b)':'rgba(100,116,139,.2)';
-      var esc2 = typeof escapeHtml==='function' ? escapeHtml : function(s){return String(s||'');};
-      var pitcherCards = [st.sp1,st.sp2].filter(Boolean).map(function(sp){
-        return '<div style="background:#060e1a;border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px"><span style="background:rgba(124,58,237,.2);color:#a78bfa;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:800">SP</span><span style="color:#e8f0fa;font-size:13px;font-weight:600;flex:1">'+esc2(sp.name)+'</span><span style="color:#22c55e;font-size:13px">$'+(sp.salary||0).toLocaleString()+'</span><span style="color:#a78bfa;font-size:12px">'+(sp.adjScore||sp.score||50)+'/99</span></div>';
-      }).join('');
-      var hitterCards = (st.hitters||[]).map(function(p){
-        var bc = p.isStackTeam?'rgba(255,208,0,.4)':p.isOpp?'rgba(59,130,246,.35)':'rgba(30,41,59,.6)';
-        return '<div style="background:#0b1623;border:1px solid '+bc+';border-radius:8px;padding:8px 10px"><div style="color:#64748b;font-size:10px;display:flex;justify-content:space-between"><span>'+esc2(p.slot||p.pos)+'</span><span style="color:'+(p.isStackTeam?'#ffd000':p.isOpp?'#60a5fa':'#475569')+'">'+esc2(p.team)+(p.isStackTeam?' ★':p.isOpp?' ↺':'')+'</span></div><div style="color:#e8f0fa;font-size:12px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(p.name)+'</div><div style="color:#64748b;font-size:11px;margin-top:2px">$'+(p.salary||0).toLocaleString()+'</div></div>';
-      }).join('');
-      return '<div style="background:linear-gradient(180deg,#0d1827,#0b1623);border:1px solid '+borderColor+';border-radius:16px;padding:20px;margin-bottom:16px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap"><span style="background:'+badgeBg+';color:'+(idx<2?'#060e1a':'#94a3b8')+';padding:4px 12px;border-radius:12px;font-size:11px;font-weight:900;letter-spacing:1.5px">'+esc2(st.badge)+'</span><strong style="color:#e8f0fa;font-size:15px">'+esc2(st.label)+' — <span style="color:#00ff9c">'+esc2(st.stackTeam)+'</span> vs <span style="color:#f59e0b">'+esc2(st.stackOpp)+'</span></strong><span style="margin-left:auto;padding:4px 14px;border-radius:8px;font-size:13px;font-weight:700;background:'+(st.valid?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)')+';color:'+(st.valid?'#22c55e':'#ef4444')+';border:1px solid '+(st.valid?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)')+'">$'+(st.totalSalary||0).toLocaleString()+' '+(st.valid?'✓ VALID':'OVER CAP')+'</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+pitcherCards+'</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+hitterCards+'</div><div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;color:#64748b;font-size:12px"><span>★ '+(st.stackCount||0)+' from '+esc2(st.stackTeam)+'</span><span>↺ '+(st.bringBackCount||0)+' bring-back</span><span>Proj: <strong style="color:#a78bfa">'+(st.projPts||0).toFixed(0)+' pts</strong></span><span>Rem: <strong style="color:'+((st.remaining||0)>=0?'#22c55e':'#ef4444')+'">$'+(st.remaining||0).toLocaleString()+'</strong></span></div></div>';
-    }).join('') : '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center;color:#475569">Load today&apos;s matchups &amp; sync DK salaries to see smart stacks.</div>';
-
-    var aiHtml = (typeof window.renderAIPicksOptimizer==='function') ? window.renderAIPicksOptimizer() :
-      '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:24px;text-align:center;color:#475569">Sync DK salaries for AI optimizer.</div>';
-
-    var viewEl = document.getElementById('view');
-    if(!viewEl) return;
-    viewEl.innerHTML = '<div style="padding:24px;max-width:1400px;margin:0 auto">' +
-      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap">' +
-        '<div><h2 style="font-family:Barlow Condensed,sans-serif;font-size:42px;font-weight:900;color:#e8f0fa;letter-spacing:1px;margin:0;line-height:1">🔥 BUDGET BEASTS</h2><p style="color:#64748b;font-size:13px;margin:4px 0 0">A &amp; B grade value plays under $'+maxSal.toLocaleString()+' · Smart $50K stacks · DK Classic</p></div>' +
-        '<button onclick="(typeof syncDKSalaries===\'function\'?syncDKSalaries():Promise.resolve()).then(function(){window.renderBudgetBeasts&&window.renderBudgetBeasts();})" style="margin-left:auto;background:linear-gradient(135deg,#00ff9c,#00b87a);color:#060e1a;border:none;padding:10px 24px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:900;box-shadow:0 0 20px rgba(0,255,156,.3)">⚡ Sync DK Salaries</button>' +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap;background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:14px 18px">' +
-        '<div style="display:flex;align-items:center;gap:10px">' +
-          '<label style="color:#94a3b8;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase">Max Salary</label>' +
-          '<input type="range" min="2500" max="4500" step="100" value="'+maxSal+'" id="budgetSlider" style="width:160px;accent-color:#00ff9c" oninput="state.budgetSalaryMax=+this.value;document.getElementById(\'budgetVal\').textContent=\'$\'+(+this.value).toLocaleString();window.renderBudgetBeasts&&window.renderBudgetBeasts();">' +
-          '<span id="budgetVal" style="color:#ffd000;font-weight:900;font-size:15px;min-width:58px">$'+maxSal.toLocaleString()+'</span>' +
-        '</div>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">' +
-          '<span style="padding:4px 14px;border-radius:999px;background:rgba(0,255,156,.12);color:#00ff9c;border:1px solid rgba(0,255,156,.3);font-size:12px;font-weight:800">'+aCount+' A Grade</span>' +
-          '<span style="padding:4px 14px;border-radius:999px;background:rgba(255,208,0,.12);color:#ffd000;border:1px solid rgba(255,208,0,.3);font-size:12px;font-weight:800">'+bCount+' B Grade</span>' +
-          '<span style="padding:4px 14px;border-radius:999px;background:rgba(148,163,184,.08);color:#94a3b8;border:1px solid rgba(148,163,184,.2);font-size:12px">'+beasts.length+' total</span>' +
-          (dkCount?'<span style="padding:4px 14px;border-radius:999px;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.25);font-size:12px">'+dkCount+' DK loaded</span>':'') +
-        '</div>' +
-      '</div>' +
-      '<div style="margin-bottom:36px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#e8f0fa;margin:0;text-transform:uppercase;letter-spacing:1px">🎯 Value Plays by Position</h3><span style="font-size:12px;color:#64748b">A &amp; B grades · sorted by value/k</span></div>' +
-      (posHtml || '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:40px;text-align:center"><p style="color:#475569;font-size:15px;margin:0">Load today\'s matchups to see value plays.<br><span style="font-size:12px;color:#334155">Select a game → Hitter Lab → return here.</span></p></div>') +
-      '</div>' +
-      '<div style="margin-bottom:36px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#a78bfa;margin:0;text-transform:uppercase;letter-spacing:1px">📊 Smart $50K Stacks (2 SP + 8 Batters)</h3></div>' + stacksHtml + '</div>' +
-      '<div style="margin-bottom:36px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#00ff9c;margin:0;text-transform:uppercase;letter-spacing:1px">⚡ AI Picks — $50K Optimized Lineup (2 SP)</h3></div>' + aiHtml + '</div>' +
-      '</div>';
-  };
-
-  window.renderAIPicksOptimizer = function() {
-    var result = (typeof optimizeDKLineup==='function') ? optimizeDKLineup((typeof state!=='undefined'&&state.optimizerStackTeam)||'') : null;
-    if(!result||!result.lineup||!result.lineup.length) {
-      return '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center"><p style="color:#475569;margin:0">Load DK salaries + matchups for the $50K optimized lineup.</p></div>';
-    }
-    var pitchers = result.lineup.filter(function(p){return p.isPitcher;});
-    var hitters = result.lineup.filter(function(p){return !p.isPitcher;});
-    var tc={};
-    hitters.forEach(function(p){tc[p.team]=(tc[p.team]||0)+1;});
-    var stks=Object.entries(tc).filter(function(e){return e[1]>=2;}).sort(function(a,b){return b[1]-a[1];});
-    var esc3 = typeof escapeHtml==='function'?escapeHtml:function(s){return String(s||'');};
-    var pitcherCards = pitchers.map(function(p){
-      var gb=typeof gradeBadge==='function'?gradeBadge(p.score):['B','watch'];
-      var letter=gb[0];
-      var lc=gc(letter);
-      return '<div style="background:#060e1a;border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px"><span style="background:rgba(124,58,237,.2);color:#a78bfa;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:800">SP</span><div style="flex:1"><div style="color:#e8f0fa;font-weight:700">'+esc3(p.name)+'</div><div style="color:#64748b;font-size:11px">'+esc3(p.team)+' · $'+p.salary.toLocaleString()+'</div></div><div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:'+lc+'">'+letter+'</div></div>';
-    }).join('');
-    var hitterCards = hitters.map(function(p){
-      var gb=typeof gradeBadge==='function'?gradeBadge(p.score):['B','watch'];
-      var letter=gb[0];
-      var lc=gc(letter);
-      return '<div style="background:#0b1623;border:1px solid '+(letter==='A+'||letter==='A'?'rgba(0,255,156,.25)':'rgba(30,41,59,.8)')+';border-radius:10px;padding:10px 12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="color:#64748b;font-size:10px;text-transform:uppercase">'+esc3(p.slotLabel||p.pos)+'</span><span style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:900;color:'+lc+'">'+letter+'</span></div><div style="color:#e8f0fa;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc3(p.name)+'</div><div style="color:#64748b;font-size:11px">'+esc3(p.team)+'</div><div style="display:flex;justify-content:space-between;margin-top:4px"><span style="color:#22c55e;font-size:12px;font-weight:700">$'+p.salary.toLocaleString()+'</span><span style="color:#94a3b8;font-size:11px">'+p.score+'/99</span></div></div>';
-    }).join('');
-    return '<div style="background:linear-gradient(180deg,#0d1827,#0b1623);border:1px solid rgba(0,255,156,.3);border-radius:16px;padding:20px"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px"><div style="display:flex;gap:20px;flex-wrap:wrap"><div style="text-align:center"><div style="color:#22c55e;font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900">$'+result.totalSalary.toLocaleString()+'</div><div style="color:#64748b;font-size:11px">Used</div></div><div style="text-align:center"><div style="color:'+((result.remaining||0)>=0?'#22c55e':'#ef4444')+';font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900">$'+result.remaining.toLocaleString()+'</div><div style="color:#64748b;font-size:11px">Remaining</div></div><div style="text-align:center"><div style="color:#a78bfa;font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900">'+result.projScore+'</div><div style="color:#64748b;font-size:11px">Proj Pts</div></div><div style="text-align:center"><div style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:'+(result.valid?'#22c55e':'#ef4444')+'">'+(result.valid?'✓ VALID':'✗ INVALID')+'</div><div style="color:#64748b;font-size:11px">Status</div></div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+pitcherCards+'</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+hitterCards+'</div>'+(stks.length?'<div style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="color:#64748b;font-size:12px">Stacks:</span>'+stks.map(function(e){return '<span style="background:rgba(255,208,0,.12);color:#ffd000;border:1px solid rgba(255,208,0,.3);padding:3px 12px;border-radius:6px;font-size:12px;font-weight:700">'+e[0]+' ×'+e[1]+'</span>';}).join('')+'</div>':'')+'</div>';
-  };
-
-  // Patch render() for budget tab routing
-  function patchRender() {
-    var original = (typeof render==='function') ? render : function(){};
-    var patched = function() {
-      if(typeof state!=='undefined' && state.tab==='budget') {
-        if(typeof renderTabs==='function') renderTabs();
-        window.renderBudgetBeasts();
-        return;
+    var aC=beasts.filter(function(b){return b.letter==="A+"||b.letter==="A";}).length;
+    var bC=beasts.filter(function(b){return b.letter==="B+"||b.letter==="B";}).length;
+    var dkC=Object.keys(state.dkSalaries||{}).length;
+    var byPos={"C":[],"1B":[],"2B":[],"3B":[],"SS":[],"OF":[]};
+    beasts.forEach(function(b){
+      var p=(b.pos||"").toUpperCase();
+      if(p==="C"||p.includes("C/"))byPos.C.push(b);
+      else if(p==="1B"||p.includes("1B"))byPos["1B"].push(b);
+      else if(p==="2B"||p.includes("2B"))byPos["2B"].push(b);
+      else if(p==="3B"||p.includes("3B"))byPos["3B"].push(b);
+      else if(p==="SS"||p.includes("SS"))byPos.SS.push(b);
+      else if(["OF","LF","CF","RF"].includes(p))byPos.OF.push(b);
+    });
+    var stacks=[];
+    var sfn=(typeof window.buildSmartStacks==="function")?window.buildSmartStacks:(typeof buildSmartStacks==="function"?buildSmartStacks:null);
+    if(sfn){try{stacks=sfn();}catch(e){console.warn("stacks err",e);}}
+    var posColors={"C":"rgba(139,92,246,.2)","1B":"rgba(59,130,246,.2)","2B":"rgba(16,185,129,.2)","3B":"rgba(239,68,68,.2)","SS":"rgba(245,158,11,.2)","OF":"rgba(0,229,170,.2)"};
+    var posIcons={"C":"⚾","1B":"🏠","2B":"💨","3B":"🔥","SS":"⚡","OF":"🌿"};
+    var H = "";
+    H+="<div style='padding:20px;max-width:1400px;margin:0 auto'>";
+    // Header
+    H+="<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px'>";
+    H+="<div style='display:flex;align-items:center;gap:14px'><span style='font-size:32px'>🔥</span>";
+    H+="<div><h2 style='margin:0;font-family:Barlow Condensed,sans-serif;font-size:36px;font-weight:900;color:#fff;letter-spacing:1px'>BUDGET BEASTS</h2>";
+    H+="<p style='margin:0;color:#64748b;font-size:13px'>A & B grade value plays under $3,600 · Smart $50K stacks · DK Classic</p></div></div>";
+    H+="<div style='display:flex;gap:10px;flex-wrap:wrap;align-items:center'>";
+    H+="<button onclick='if(typeof syncDKSalaries==="function")syncDKSalaries()' style='padding:10px 18px;background:linear-gradient(135deg,#00e5aa,#00b8d4);color:#000;font-weight:700;border:none;border-radius:10px;cursor:pointer;font-size:13px'>⚡ Sync DK Salaries</button>";
+    H+="<button onclick='window.renderBudgetBeasts()' style='padding:10px 18px;background:#1e293b;color:#94a3b8;font-weight:600;border:1px solid #334155;border-radius:10px;cursor:pointer;font-size:13px'>↺ Refresh</button></div></div>";
+    // Stats bar
+    H+="<div style='display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap'>";
+    H+="<label style='color:#94a3b8;font-size:12px;font-weight:600'>MAX SALARY</label>";
+    H+="<input type='range' min='2500' max='4500' step='100' value='"+maxSal+"' style='width:120px;accent-color:#00e88a' onchange='if(typeof state!=="undefined")state.budgetSalaryMax=+this.value;document.getElementById("bbsv").textContent="$"+this.value;window.renderBudgetBeasts()'>";
+    H+="<span id='bbsv' style='color:#00e88a;font-weight:700;font-size:15px'>$"+maxSal+"</span>";
+    H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(0,232,138,.15);color:#00e88a;font-size:12px;font-weight:700'>"+aC+" A Grade</span>";
+    H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(245,158,11,.15);color:#f59e0b;font-size:12px;font-weight:700'>"+bC+" B Grade</span>";
+    H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(148,163,184,.1);color:#94a3b8;font-size:12px'>"+(aC+bC)+" total</span>";
+    H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(34,197,94,.1);color:#22c55e;font-size:12px'>"+dkC+" DK loaded</span>";
+    if((state.games||[]).length>0)H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(99,102,241,.1);color:#818cf8;font-size:12px'>"+state.games.length+" games</span>";
+    H+="</div>";
+    // VALUE PLAYS BY POSITION
+    H+="<div style='margin-bottom:24px'>";
+    H+="<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px'><span style='font-size:20px'>🎯</span>";
+    H+="<h3 style='margin:0;font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:900;color:#fff'>VALUE PLAYS BY POSITION</h3>";
+    H+="<span style='color:#64748b;font-size:12px'>A & B grades · sorted by value/k</span></div>";
+    ["C","1B","2B","3B","SS","OF"].forEach(function(pos){
+      var pl=byPos[pos]||[];
+      H+="<div style='margin-bottom:14px;background:#0d1520;border:1px solid #1e293b;border-radius:14px;overflow:hidden'>";
+      H+="<div style='padding:10px 16px;background:"+posColors[pos]+";display:flex;justify-content:space-between;align-items:center'>";
+      H+="<span style='font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:800;color:#fff'>"+posIcons[pos]+" "+pos+"</span>";
+      H+="<span style='color:#64748b;font-size:12px'>"+pl.length+" play"+(pl.length!==1?"s":"")+" · Top: "+(pl[0]?pl[0].name:"none")+"</span></div>";
+      if(!pl.length){H+="<div style='padding:20px;text-align:center;color:#64748b;font-size:13px'>No A/B grade players at "+pos+"</div>";}
+      else{
+        H+="<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:14px'>";
+        pl.slice(0,6).forEach(function(p){
+          var c=gc(p.letter);
+          H+="<div style='background:#121c2e;border-radius:12px;padding:14px;position:relative;"+glow(p.letter)+"'>";
+          H+="<div style='position:absolute;top:10px;right:10px;padding:3px 9px;border-radius:6px;font-weight:800;font-size:12px;background:rgba(0,0,0,.4);color:"+c+"'>"+p.letter+"</div>";
+          H+="<div style='font-weight:700;color:#f1f5f9;font-size:14px;padding-right:40px'>"+p.name+"</div>";
+          H+="<div style='color:#64748b;font-size:11px;margin:3px 0'>"+p.team+" · "+p.pos+" · "+fS(p.salary)+"</div>";
+          H+="<div style='display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #1e293b'>";
+          H+="<div><div style='color:#64748b;font-size:10px;margin-bottom:2px'>AVG PTS</div><div style='color:#f1f5f9;font-weight:700'>"+((p.avgPts||p.projPts||0).toFixed(1))+"</div></div>";
+          H+="<div><div style='color:#64748b;font-size:10px;margin-bottom:2px'>SCORE</div><div style='color:"+c+";font-weight:700'>"+p.adjScore+"/99</div></div>";
+          H+="<div><div style='color:#64748b;font-size:10px;margin-bottom:2px'>VAL/K</div><div style='color:#00e88a;font-weight:700'>"+p.valueScore+"</div></div>";
+          H+="</div>";
+          H+=p.graded?"<div style='margin-top:6px;font-size:9px;color:#22c55e;font-weight:600'>✓ 10-Factor Graded</div>":"<div style='margin-top:6px;font-size:9px;color:#64748b'>Est. — open Hitter Lab for full grade</div>";
+          H+="</div>";
+        });
+        H+="</div>";
       }
-      original();
+      H+="</div>";
+    });
+    H+="</div>";
+    // SMART $50K STACKS
+    H+="<div style='margin-bottom:24px'>";
+    H+="<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px'><span style='font-size:20px'>💰</span>";
+    H+="<h3 style='margin:0;font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:900;color:#fff'>SMART $50K STACKS</h3>";
+    H+="<span style='color:#64748b;font-size:12px'>2 SP + 8 batters · $50K cap · greedy-optimized</span></div>";
+    if(!stacks.length){
+      H+="<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;padding:40px;text-align:center;color:#64748b'><p style='margin:0'>⚡ Load today's slate + stack rankings to generate $50K lineups.</p></div>";
+    } else {
+      stacks.forEach(function(sk){
+        var vc=sk.valid?"#22c55e":"#ef4444";
+        H+="<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;margin-bottom:16px;overflow:hidden'>";
+        H+="<div style='padding:14px 18px;background:linear-gradient(135deg,rgba(0,229,170,.08),rgba(0,184,212,.05));display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e293b'>";
+        H+="<div style='display:flex;align-items:center;gap:10px'>";
+        H+="<span style='padding:4px 10px;background:rgba(0,229,170,.15);color:#00e5aa;border-radius:6px;font-weight:800;font-size:11px'>"+sk.badge+"</span>";
+        H+="<span style='font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:#fff'>"+sk.stackTeam+"</span>";
+        H+="<span style='color:#64748b'>vs</span>";
+        H+="<span style='font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:#94a3b8'>"+sk.stackOpp+"</span>";
+        H+="<span style='padding:3px 8px;background:rgba(245,158,11,.1);color:#f59e0b;border-radius:6px;font-size:11px;font-weight:700'>★×"+sk.stackCount+"</span>";
+        if(sk.bringBackCount>0)H+="<span style='padding:3px 8px;background:rgba(148,163,184,.1);color:#94a3b8;border-radius:6px;font-size:11px'>↺×"+sk.bringBackCount+"</span>";
+        H+="</div><div style='display:flex;gap:14px;align-items:center'>";
+        H+="<div style='text-align:right'><div style='color:#94a3b8;font-size:11px'>SALARY</div><div style='color:#f1f5f9;font-weight:700'>$"+sk.totalSalary.toLocaleString()+"</div></div>";
+        H+="<div style='text-align:right'><div style='color:#94a3b8;font-size:11px'>PROJ PTS</div><div style='color:#00e88a;font-weight:700'>"+sk.projPts+"</div></div>";
+        H+="<span style='padding:5px 12px;border-radius:8px;font-weight:700;font-size:12px;background:rgba("+(sk.valid?"34,197,94":"239,68,68")+",.15);color:"+vc+"'>"+(sk.valid?"✓ VALID":"✗ INVALID")+"</span>";
+        H+="</div></div>";
+        H+="<div style='padding:12px 18px;border-bottom:1px solid #1e293b;display:flex;gap:12px'>";
+        [sk.sp1,sk.sp2].forEach(function(sp){
+          if(!sp)return;
+          H+="<div style='background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:10px 14px;flex:1'>";
+          H+="<div style='color:#a78bfa;font-size:10px;font-weight:700;margin-bottom:4px'>SP</div>";
+          H+="<div style='color:#f1f5f9;font-weight:700'>"+sp.name+"</div>";
+          H+="<div style='color:#64748b;font-size:11px'>"+sp.team+" · "+fS(sp.salary)+"</div></div>";
+        });
+        H+="</div>";
+        H+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 18px'>";
+        (sk.hitters||[]).forEach(function(h){
+          H+="<div style='background:#0a1628;border:1px solid #1e293b;border-radius:8px;padding:10px'>";
+          H+="<div style='color:#64748b;font-size:9px;font-weight:700'>"+h.slot+"</div>";
+          H+="<div style='color:#f1f5f9;font-size:12px;font-weight:600;margin:2px 0'>"+h.name+(h.isStackTeam?" ★":"")+(h.isOpp?" ↺":"")+"</div>";
+          H+="<div style='color:#64748b;font-size:10px'>"+h.team+" · "+fS(h.salary||0)+"</div></div>";
+        });
+        H+="</div></div>";
+      });
+    }
+    H+="</div>";
+    // AI Picks $50K Optimizer section
+    H+="<div id='bb-ai-opt-container'></div>";
+    H+="</div>";
+    view.innerHTML = H;
+    // Fill AI optimizer
+    var aoc = view.querySelector("#bb-ai-opt-container");
+    if(aoc && typeof window.renderAIPicksOptimizer==="function") {
+      try { aoc.innerHTML = window.renderAIPicksOptimizerHTML ? window.renderAIPicksOptimizerHTML() : renderAIOptimizerHtml(); } catch(e){}
+    }
+  };
+
+  // AI Picks $50K Optimizer HTML builder
+  function renderAIOptimizerHtml() {
+    var rfn = typeof optimizeDKLineup==="function" ? optimizeDKLineup : null;
+    if(!rfn) return "<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;padding:40px;text-align:center;color:#64748b'><p style='margin:0'>🤖 AI Picks require DK salaries + matchup data. Load a slate first.</p></div>";
+    var result = rfn((typeof state!=="undefined"&&state.optimizerStackTeam)||"");
+    if(!result||!result.lineup||!result.lineup.length) return "<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;padding:40px;text-align:center;color:#64748b'><p>No optimized lineup yet.</p></div>";
+    var pitchers=result.lineup.filter(function(p){return p.isPitcher;});
+    var hitters=result.lineup.filter(function(p){return !p.isPitcher;});
+    var totalSal=result.lineup.reduce(function(s,p){return s+(p.salary||0);},0);
+    var rem=50000-totalSal, valid=totalSal<=50000&&pitchers.length>=2;
+    var tc={};hitters.forEach(function(p){tc[p.team]=(tc[p.team]||0)+1;});
+    var stks=Object.entries(tc).filter(function(e){return e[1]>=2;}).sort(function(a,b){return b[1]-a[1];});
+    var H="<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;margin-bottom:24px;overflow:hidden'>";
+    H+="<div style='padding:16px 20px;background:linear-gradient(135deg,rgba(0,229,170,.1),rgba(99,102,241,.08));border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'>";
+    H+="<div style='display:flex;align-items:center;gap:10px'><span style='font-size:22px'>🤖</span>";
+    H+="<div><h3 style='margin:0;font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:#fff'>AI PICKS · $50K LINEUP</h3>";
+    H+="<p style='margin:0;color:#64748b;font-size:12px'>Optimal DraftKings Classic · 2 SP + 8 batters · 10-Factor grades</p></div></div>";
+    H+="<div style='display:flex;gap:12px;align-items:center;flex-wrap:wrap'>";
+    H+="<div style='text-align:right'><div style='color:#64748b;font-size:10px'>USED</div><div style='color:#f1f5f9;font-weight:700;font-size:15px'>$"+totalSal.toLocaleString()+"</div></div>";
+    H+="<div style='text-align:right'><div style='color:#64748b;font-size:10px'>REMAINING</div><div style='color:"+(rem>=0?"#22c55e":"#ef4444")+";font-weight:700;font-size:15px'>$"+rem.toLocaleString()+"</div></div>";
+    H+="<div style='text-align:right'><div style='color:#64748b;font-size:10px'>PROJ PTS</div><div style='color:#00e88a;font-weight:700;font-size:15px'>"+((result.projectedPts||0).toFixed(1))+"</div></div>";
+    H+="<span style='padding:6px 14px;border-radius:8px;font-weight:700;font-size:12px;background:rgba("+(valid?"34,197,94":"239,68,68")+",.15);color:"+(valid?"#22c55e":"#ef4444")+"'>"+(valid?"✓ VALID":"✗ INVALID")+"</span>";
+    stks.forEach(function(s){H+="<span style='padding:5px 10px;background:rgba(0,229,170,.12);color:#00e5aa;border-radius:6px;font-size:11px;font-weight:700'>"+s[0]+"×"+s[1]+"</span>";});
+    H+="</div></div>";
+    H+="<div style='padding:12px 20px;border-bottom:1px solid #1e293b;display:flex;gap:12px'>";
+    pitchers.forEach(function(sp){
+      H+="<div style='background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:12px 16px;flex:1'>";
+      H+="<div style='color:#a78bfa;font-size:10px;font-weight:700;margin-bottom:4px'>SP · "+sp.pos+"</div>";
+      H+="<div style='color:#f1f5f9;font-weight:700'>"+sp.name+"</div>";
+      H+="<div style='color:#64748b;font-size:11px'>"+sp.team+" · $"+sp.salary.toLocaleString()+"</div></div>";
+    });
+    H+="</div>";
+    H+="<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:14px 20px'>";
+    hitters.forEach(function(h){
+      H+="<div style='background:#121c2e;border:1px solid #1e293b;border-radius:10px;padding:12px'>";
+      H+="<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px'>";
+      H+="<div><div style='color:#64748b;font-size:9px;font-weight:700'>"+h.pos+"</div>";
+      H+="<div style='color:#f1f5f9;font-weight:700;font-size:13px'>"+h.name+"</div>";
+      H+="<div style='color:#64748b;font-size:11px'>"+h.team+" · $"+h.salary.toLocaleString()+"</div></div></div>";
+      H+="<div style='color:#00e88a;font-size:11px;font-weight:600'>"+((h.avgPts||0).toFixed(1))+" pts avg</div>";
+      H+="</div>";
+    });
+    H+="</div></div>";
+    return H;
+  }
+  window.renderAIPicksOptimizer = renderAIOptimizerHtml;
+  window.renderAIPicksOptimizerHTML = renderAIOptimizerHtml;
+
+  // PATCH render() and sideSwitch() for budget tab routing
+  function patchRender() {
+    var orig = window.render || window._coreRender;
+    if(!orig && typeof render==="function") orig = render;
+    if(!orig) { setTimeout(patchRender, 200); return; }
+    var patched = function(tab) {
+      if(tab==="budget") { if(typeof renderTabs==="function")renderTabs(); window.renderBudgetBeasts(); return; }
+      orig(tab);
     };
     window.render = patched;
-    window._coreRender = original;
-    if(typeof window.sideSwitch==='function') {
-      var origSide = window.sideSwitch;
+    window._coreRender = orig;
+    if(typeof window.sideSwitch==="function") {
+      var oSS = window.sideSwitch;
       window.sideSwitch = function(el, tab) {
-        if(tab==='budget') {
-          document.querySelectorAll('.sidebar-nav-item').forEach(function(x){x.classList.remove('active');});
-          if(el) el.classList.add('active');
-          if(typeof state!=='undefined') state.tab='budget';
-          if(typeof renderTabs==='function') renderTabs();
+        if(tab==="budget") {
+          document.querySelectorAll(".sidebar-nav-item").forEach(function(x){x.classList.remove("active");});
+          if(el) el.classList.add("active");
+          if(typeof state!=="undefined") state.tab="budget";
+          if(typeof renderTabs==="function") renderTabs();
           window.renderBudgetBeasts();
           return;
         }
-        origSide(el, tab);
+        oSS(el, tab);
       };
     }
   }
-
-  // Run patch after all scripts have loaded
-  if(document.readyState==='loading') {
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(patchRender, 100); });
-  } else {
-    setTimeout(patchRender, 100);
-  }
-
-  console.log('[ALLDAY MLB EDGE] Budget Beasts v4 inline loaded');
+  if(document.readyState==="loading") { document.addEventListener("DOMContentLoaded", function(){ setTimeout(patchRender, 100); }); }
+  else { setTimeout(patchRender, 100); }
+  console.log("[ALLDAY MLB EDGE] Budget Beasts v5 inline — 10 factors, 30 parks, 100+ Spring 2026 players");
 })();
 </script>
 </body>
