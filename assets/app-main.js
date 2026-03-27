@@ -251,6 +251,7 @@ function render(){
   if(state.tab==='launch')view.innerHTML=renderLaunchpad();
   if(state.tab==='pricing')view.innerHTML=renderPricing();
   if(state.tab==='notes')view.innerHTML=renderNotes();
+ if(state.tab==='budget'){renderTabs();renderBudgetBeasts();return;}
   document.querySelectorAll('[data-game]').forEach(el=>el.onclick=async()=>{state.tab='hitterlab';render();view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`;await loadSelectedGame(Number(el.dataset.game));});
   document.querySelectorAll('[data-gamepick]').forEach(el=>el.onclick=async()=>{state.tab='hitterlab';render();view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`;await loadSelectedGame(Number(el.dataset.gamepick));});
   document.querySelectorAll('[data-watch-team]').forEach(el=>el.onclick=e=>{e.stopPropagation();toggleWatch({type:'team',name:el.dataset.watchTeam,gamePk:Number(el.dataset.watchGame)});});
@@ -436,7 +437,7 @@ function renderBudgetBeasts() {
       '</div>';
   }).join('') : '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center;color:#475569">Load today's matchups and sync DK salaries to see smart stacks.</div>';
 
-  view.innerHTML =
+  document.getElementById('view').innerHTML =
     '<div style="padding:24px;max-width:1400px;margin:0 auto">' +
     
     // Header
