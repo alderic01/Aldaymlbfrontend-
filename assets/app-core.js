@@ -152,9 +152,32 @@ function systemOptimizationLens(hitter,oppPitcher,context={}){let score=50;score
 function patternMatchingLens(hitter,oppPitcher,park,context={}){const splits=projectedSplitMetrics(hitter,oppPitcher,!!context.isHome,context.travel||{}),pTen=pitcherTendencies(oppPitcher),pen=bullpenLeverageForHitter(hitter,context.oppBullpen);let score=50;score+=Math.max(-12,Math.min(16,(splits.lrOps-Number(hitter.ops||.720))*100));score+=((park.hr||1)-1)*24+((park.run||1)-1)*18;score+=(pTen.attack-50)*0.28;score+=(pen.score-50)*0.35;score=Math.max(20,Math.min(80,Math.round(score)));return{score,label:score>=62?'Pattern match':score<=42?'Pattern weak':'Pattern neutral',bullpen:pen};}
 function triModelCollabLens(hitter,oppPitcher,park,context={}){const market=marketPulseForSide(context.game||{},context.side||(context.isHome?'home':'away')),system=systemOptimizationLens(hitter,oppPitcher,context),pattern=patternMatchingLens(hitter,oppPitcher,park,context);const overall=Math.round(market.score*0.34+system.score*0.26+pattern.score*0.40);return{market,system,pattern,overall,summary:overall>=62?'Consensus boost':overall<=42?'Consensus caution':'Mixed consensus'};}
 
-function hitterGrade(h,oppPitcher,park,context={}){const avg=Number(h.avg||0),ops=Number(h.ops||(Number(h.obp||0)+Number(h.slg||0))),slg=Number(h.slg||0),hr=Number(h.hr||0),pa=Number(h.pa||0);const pWeak=pitcherWeakness(oppPitcher),splits=projectedSplitMetrics(h,oppPitcher,!!context.isHome,context.travel||{}),collab=triModelCollabLens(h,oppPitcher,park,context);let score=0;score+=avg>=.300?24:avg>=.280?19:avg>=.260?15:avg>=.240?10:6;score+=ops>=.950?22:ops>=.850?18:ops>=.775?14:ops>=.700?10:6;score+=slg>=.550?18:slg>=.480?14:slg>=.430?11:slg>=.380?8:5;score+=Math.min(16,(pa?hr/pa*500:0)*1.5);score+=Math.round((pWeak-50)*0.35);score+=Math.round(((park.hr||1)-1)*40+((park.run||1)-1)*35);score+=Math.round((splits.splitEdge||0)*0.08);score-=Math.round((context.travel?.penalty||0)*1.5);score+=Math.round((collab.market.score-50)*0.16+(collab.system.score-50)*0.12+(collab.pattern.score-50)*0.18);score=Math.max(25,Math.min(99,Math.round(score)));const[letter,style]=gradeBadge(score);const reasons=[`${fmtPct(avg)} AVG`,`${fmtPct(ops)} OPS`,`${splits.lrLabel} ${fmtPct(splits.lrOps)} OPS`,`${splits.venueLabel} ${fmtPct(splits.venueOps)} OPS`,`Travel ${context.travel?.hours?`${fmtNum(context.travel.hours,1)}h`:'minimal'}`,`vs ${oppPitcher.name||'TBD'} attack ${pitcherTendencies(oppPitcher).attack}`,`${park.short} HR factor ${fmtNum(park.hr,2)}`,`${collab.market.label}`,`Pattern ${collab.pattern.label}`,`System ${collab.system.label}`];return{score,letter,style,reasons,splits,collab};}
-
-function normalizeStatus(status){if(status==='In Progress')return'Live';return status;}
+function hitterGrade(h,oppPitcher,park,context={}){
+  // Use 10-factor advanced engine if loaded (mlb-advanced-grading.js)
+  if(typeof hitterGrade10Factor==='function'){
+    const result=hitterGrade10Factor(h,oppPitcher,park,context);
+    // Attach collab for backward compat
+    result.collab=context.collab||{market:{score:50,label:'Neutral'},system:{score:50,label:'Neutral'},pattern:{score:50,label:'Neutral',bullpen:{score:50,label:'Mixed'}}};
+    return result;
+  }
+  // Fallback: original 8-factor engine
+  const avg=Number(h.avg||0),ops=Number(h.ops||(Number(h.obp||0)+Number(h.slg||0))),slg=Number(h.slg||0),hr=Number(h.hr||0),pa=Number(h.pa||0);
+  const pWeak=pitcherWeakness(oppPitcher),splits=projectedSplitMetrics(h,oppPitcher,!!context.isHome,context.travel||{}),collab=triModelCollabLens(h,oppPitcher,park,context);
+  let score=0;
+  score+=avg>=.300?24:avg>=.280?19:avg>=.260?15:avg>=.240?10:6;
+  score+=ops>=.950?22:ops>=.850?18:ops>=.775?14:ops>=.700?10:6;
+  score+=slg>=.550?18:slg>=.480?14:slg>=.430?11:slg>=.380?8:5;
+  score+=Math.min(16,(pa?hr/pa*500:0)*1.5);
+  score+=Math.round((pWeak-50)*0.35);
+  score+=Math.round(((park.hr||1)-1)*40+((park.run||1)-1)*35);
+  score+=Math.round((splits.splitEdge||0)*0.08);
+  score-=Math.round((context.travel?.penalty||0)*1.5);
+  score+=Math.round((collab.market.score-50)*0.16+(collab.system.score-50)*0.12+(collab.pattern.score-50)*0.18);
+  score=Math.max(25,Math.min(99,Math.round(score)));
+  const[letter,style]=gradeBadge(score);
+  const reasons=[avg+' AVG',ops+' OPS',splits.lrLabel+' '+splits.lrOps+' OPS',splits.venueLabel+' '+splits.venueOps+' OPS','Travel '+(context.travel?.hours?context.travel.hours+'h':'minimal'),'vs '+(oppPitcher.name||'TBD'),park.short+' HR '+park.hr,collab.market.label,'Pattern '+collab.pattern.label,'System '+collab.system.label];
+  return{score,letter,style,reasons,splits,collab};
+} function normalizeStatus(status){if(status==='In Progress')return'Live';return status;}
 function parseIP(ip){if(ip==null||ip==='')return 0;const s=String(ip);if(!s.includes('.'))return Number(s)||0;const[whole,frac]=s.split('.');return(Number(whole)||0)+(frac==='1'?1:frac==='2'?2:0)/3;}
 function haversineMiles(lat1,lon1,lat2,lon2){const R=3958.8,toRad=d=>d*Math.PI/180,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1),a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(a));}
 function classifyTravel(miles,restDays){if(!miles)return{hours:0,label:'No travel',penalty:0};const hours=Math.round((miles/500+1.5)*10)/10;let penalty=miles>1800?7:miles>1000?4:miles>450?2:0;if(restDays<=1&&miles>900)penalty+=3;else if(restDays<=1&&miles>450)penalty+=1;return{hours,label:miles>1800?'Cross-country':miles>900?'Flight spot':miles>250?'Road hop':'Short turn',penalty};}
@@ -610,48 +633,91 @@ async function startCheckout(plan) {
 })();
 
 
-// ============================================================
-// BUDGET BEASTS INTEGRATION (uses state from app-core)
-// ============================================================
+// ═══════════════════════════════════════════════════════════
+// BUDGET BEASTS + AI PICKS INTEGRATION (delegates to mlb-advanced-grading.js)
+// ═══════════════════════════════════════════════════════════
+
+// buildBudgetBeasts — defers to advanced engine, or uses inline fallback
 function buildBudgetBeasts(maxSalary) {
   maxSalary = maxSalary || 3600;
   if(!Object.keys(state.dkSalaries||{}).length) return [];
+
   const gradedMap = {};
-  if(state.selectedGameData) {
+  if(state.selectedGameData){
     [...(state.selectedGameData.awayHitters||[]),...(state.selectedGameData.homeHitters||[])].forEach(h=>{gradedMap[h.name.toLowerCase()]=h;});
   }
   const teamEdgeMap = {};
   (state.stackRows||[]).forEach(r=>{teamEdgeMap[(r.team||'').toUpperCase()]=r.score;});
+
+  const gameByTeam = {};
+  (state.games||[]).forEach(g=>{
+    gameByTeam[(g.away.abbr||'').toUpperCase()]={game:g,side:'away'};
+    gameByTeam[(g.home.abbr||'').toUpperCase()]={game:g,side:'home'};
+  });
+
   const beasts = [];
-  for(const [key,dk] of Object.entries(state.dkSalaries)) {
+  for(const[key,dk] of Object.entries(state.dkSalaries)){
     if(!dk.salary||dk.salary>maxSalary||dk.salary<2000) continue;
     const isPitcher=/^(SP|RP|P)$/i.test(dk.pos||'');
     if(isPitcher) continue;
+
     const teamKey=(dk.team||'').toUpperCase();
-    const teamEdge=teamEdgeMap[teamKey]||50;
-    let adjScore=50,graded=false;
+    const teamEdge=teamEdgeMap[teamKey]||52;
+    let adjScore=52, graded=false;
+
+    // Try exact match
     const exact=gradedMap[key];
     if(exact){adjScore=exact.grade.score;graded=true;}
-    else {
-      const fuzzy=Object.entries(gradedMap).find(([k])=>fuzzyNameMatch(dk.name,k));
+    else{
+      // Fuzzy name match
+      const fuzzy=Object.entries(gradedMap).find(([k])=>{
+        const na=dk.name.toLowerCase().replace(/[^a-z ]/g,'');
+        const nb=k.replace(/[^a-z ]/g,'');
+        const pa=na.split(' '),pb=nb.split(' ');
+        if(pa.length>=2&&pb.length>=2) return pa[pa.length-1]===pb[pb.length-1]&&pa[0][0]===pb[0][0];
+        return na===nb;
+      });
       if(fuzzy){adjScore=fuzzy[1].grade.score;graded=true;}
-      else{const ptsBias=dk.avgPts>0?Math.min(25,dk.avgPts*3.5):15;adjScore=Math.max(25,Math.min(95,Math.round(teamEdge*0.55+ptsBias)));}
+      else{
+        // Smart estimate with park factor + spring training
+        const ctx=gameByTeam[teamKey];
+        const ptsBias=dk.avgPts>0?Math.min(28,dk.avgPts*3.8):16;
+        const springB=typeof springTrainingBoost==='function'?springTrainingBoost(dk.name):0;
+        let parkBoost=0;
+        if(ctx){
+          const pk=parkFor(ctx.game.venue?.name||'');
+          parkBoost=Math.round((pk.hr-1)*18+(pk.run-1)*12);
+        }
+        adjScore=Math.max(25,Math.min(95,Math.round(teamEdge*0.62+ptsBias+springB+parkBoost)));
+      }
     }
+
     if(adjScore<68) continue;
+
     const vs=dk.salary>0?Math.round((adjScore/(dk.salary/1000))*10)/10:0;
-    const[letter]=gradeBadge(adjScore);
-    beasts.push({...dk,key,adjScore,valueScore:vs,graded,letter,teamEdge,projPts:dk.avgPts||Math.round(adjScore*0.4)});
+    let letter;
+    if(adjScore>=92)letter='A+';
+    else if(adjScore>=84)letter='A';
+    else if(adjScore>=76)letter='B+';
+    else letter='B';
+
+    beasts.push({...dk,key,adjScore,valueScore:vs,graded,letter,teamEdge,projPts:dk.avgPts||Math.round(adjScore*0.41)});
   }
   return beasts.sort((a,b)=>b.valueScore-a.valueScore);
 }
 
-function buildSmartStacks() {
+// buildSmartStacks — delegates to advanced engine or uses inline version
+function buildSmartStacks(){
+  // If advanced engine is loaded, use it
+  if(typeof window._advSmartStacks==='function') return window._advSmartStacks();
+
   const CAP=50000;
   if(!Object.keys(state.dkSalaries||{}).length||!state.stackRows.length) return [];
   const allPitchers=buildDKPlayerPool().filter(p=>p.isPitcher).sort((a,b)=>b.compositeScore-a.compositeScore).slice(0,20);
   const stacks=[];
   const topTeams=state.stackRows.slice(0,3);
-  for(const stackRow of topTeams) {
+
+  for(const stackRow of topTeams){
     const stackTeam=(stackRow.team||'').toUpperCase();
     const stackOpp=(stackRow.opponent||'').toUpperCase();
     const eligiblePitchers=allPitchers.filter(p=>(p.team||'').toUpperCase()!==stackOpp);
@@ -666,39 +732,25 @@ function buildSmartStacks() {
       return{...p,compositeScore:p.compositeScore+(isStack?14:isOpp?6:0),isStackTeam:isStack,isOpp};
     }).sort((a,b)=>b.compositeScore-a.compositeScore);
     const SLOTS=['C','1B','2B','3B','SS','OF','OF','OF'];
-    const lineup=[];
-    const used=new Set([sp1.name,sp2.name]);
+    const lineup=[],used=new Set([sp1.name,sp2.name]);
     let salaryUsed=spSalary;
-    for(const slot of SLOTS) {
-      const validPos={'C':['C'],'1B':['1B'],'2B':['2B'],'3B':['3B'],'SS':['SS'],'OF':['OF']}[slot]||[slot];
+    for(const slot of SLOTS){
       const remaining=CAP-salaryUsed-(SLOTS.length-lineup.length-1)*2500;
+      const validPos={'C':['C'],'1B':['1B'],'2B':['2B'],'3B':['3B'],'SS':['SS'],'OF':['OF']}[slot]||[slot];
       const candidate=hitterPool.find(p=>{
-        if(used.has(p.name)) return false;
-        if(p.salary>remaining) return false;
+        if(used.has(p.name)||p.salary>remaining) return false;
         const pos=(p.pos||'').toUpperCase();
         return validPos.some(vp=>pos.includes(vp));
       });
       if(candidate){lineup.push({...candidate,slot});used.add(candidate.name);salaryUsed+=candidate.salary||0;}
     }
     const totalSalary=salaryUsed;
-    const valid=totalSalary<=CAP&&lineup.length===8;
-    stacks.push({
-      stackTeam,stackOpp,
-      badge:'STACK #'+(stacks.length+1),
-      label:stackRow.level||'Priority',
-      sp1,sp2,hitters:lineup,totalSalary,valid,
-      stackCount:lineup.filter(p=>p.isStackTeam).length,
-      bringBackCount:lineup.filter(p=>p.isOpp).length,
-      projPts:Math.round((sp1.projPts||sp1.score*0.4)+(sp2.projPts||sp2.score*0.4)+lineup.reduce((s,p)=>s+(p.projPts||p.score*0.38),0)),
-      remaining:CAP-totalSalary
-    });
+    stacks.push({stackTeam,stackOpp,badge:'STACK #'+(stacks.length+1),label:stackRow.level||'Priority',sp1,sp2,hitters:lineup,totalSalary,valid:totalSalary<=CAP&&lineup.length===8,stackCount:lineup.filter(p=>p.isStackTeam).length,bringBackCount:lineup.filter(p=>p.isOpp).length,projPts:Math.round((sp1.projPts||sp1.score*0.4)+(sp2.projPts||sp2.score*0.4)+lineup.reduce((s,p)=>s+(p.projPts||p.score*0.38),0)),remaining:CAP-totalSalary});
   }
   return stacks;
 }
 
-// AI PICKS $50K OPTIMIZER - Full lineup with 2 pitchers
-function buildAIPicksLineup() {
-  const result = optimizeDKLineup(state.optimizerStackTeam || '');
-  if(!result) return null;
-  return result;
+// buildAIPicksLineup — wraps optimizeDKLineup (ensures 2 SPs)
+function buildAIPicksLineup(){
+  return optimizeDKLineup(state.optimizerStackTeam||'');
 }
