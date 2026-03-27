@@ -308,7 +308,7 @@ async function generateAIPicks(){
   const games=state.games.map(g=>({away:{abbr:g.away?.abbr,name:g.away?.name},home:{abbr:g.home?.abbr,name:g.home?.name},venue:{name:g.venue?.name},awayPitcher:{name:g.awayPitcher?.name,era:g.awayPitcher?.era,whip:g.awayPitcher?.whip},homePitcher:{name:g.homePitcher?.name,era:g.homePitcher?.era,whip:g.homePitcher?.whip},status:g.status}));
   try{
     const _aiBase=(state.apiConfig?.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');
-    const resp=await fetch(_aiBase+'/api/ai-picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({games,date:state.selectedDate,mode:state.aiMode,dkSalaries:Object.values(state.dkSalaries||{}).filter(function(p){return p.pos&&p.pos!=='RP';}).sort(function(a,b){var posOrder={'SP':0,'C':1,'1B':2,'2B':3,'3B':4,'SS':5,'OF':6};var pa=posOrder[a.pos]!==undefined?posOrder[a.pos]:7;var pb=posOrder[b.pos]!==undefined?posOrder[b.pos]:7;return pa-pb||(b.avgPts||0)-(a.avgPts||0);}).slice(0,55).map(function(p){return{n:p.name,pos:p.pos,sal:p.salary,pts:p.avgPts,team:p.team};})})});
+    const resp=await fetch(_aiBase+'/api/ai-picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({games,date:state.selectedDate,mode:state.aiMode,dkSalaries:Object.values(state.dkSalaries||{}).filter(function(p){return p.pos&&p.pos!=='RP';}).sort(function(a,b){return (b.avgPts||0)-(a.avgPts||0);}).slice(0,55).map(function(p){return{n:p.name,pos:p.pos,sal:p.salary,pts:p.avgPts,team:p.team};})})});
     const data=await resp.json();
     if(!resp.ok||!data.ok)throw new Error(data.error||'AI request failed');
     state.aiLastResult=data;
@@ -443,7 +443,7 @@ window.renderBudgetBeasts = function renderBudgetBeasts() {
         '<span>Rem: <strong style="color:'+((st.remaining||0)>=0?'#22c55e':'#ef4444')+'">$'+(st.remaining||0).toLocaleString()+'</strong></span>' +
       '</div>' +
     '</div>';
-  }).join('') : '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center;color:#475569">Load today's matchups &amp; sync DK salaries to see smart stacks.</div>';
+  }).join('') : '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center;color:#475569">Load today\'s matchups &amp; sync DK salaries to see smart stacks.</div>';
 
   // AI Lineup optimizer
   var aiHtml = window.renderAIPicksOptimizer ? window.renderAIPicksOptimizer() :
@@ -460,13 +460,13 @@ window.renderBudgetBeasts = function renderBudgetBeasts() {
         '<h2 style="font-family:Barlow Condensed,sans-serif;font-size:42px;font-weight:900;color:#e8f0fa;letter-spacing:1px;margin:0;line-height:1">🔥 BUDGET BEASTS</h2>' +
         '<p style="color:#64748b;font-size:13px;margin:4px 0 0">A &amp; B grade value plays under $'+maxSal.toLocaleString()+' · Smart $50K stacks · DK Classic</p>' +
       '</div>' +
-      '<button onclick="(typeof syncDKSalaries==='function'?syncDKSalaries():Promise.resolve()).then(function(){if(window.renderBudgetBeasts)window.renderBudgetBeasts();})" style="margin-left:auto;background:linear-gradient(135deg,#00ff9c,#00b87a);color:#060e1a;border:none;padding:10px 24px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:900;letter-spacing:.5px;box-shadow:0 0 20px rgba(0,255,156,.3)">⚡ Sync DK Salaries</button>' +
+      '<button onclick="(typeof syncDKSalaries===\'function\'?syncDKSalaries():Promise.resolve()).then(function(){if(window.renderBudgetBeasts)window.renderBudgetBeasts();})" style="margin-left:auto;background:linear-gradient(135deg,#00ff9c,#00b87a);color:#060e1a;border:none;padding:10px 24px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:900;letter-spacing:.5px;box-shadow:0 0 20px rgba(0,255,156,.3)">⚡ Sync DK Salaries</button>' +
     '</div>' +
     // FILTER BAR
     '<div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap;background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:14px 18px">' +
       '<div style="display:flex;align-items:center;gap:10px">' +
         '<label style="color:#94a3b8;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase">Max Salary</label>' +
-        '<input type="range" min="2500" max="4500" step="100" value="'+maxSal+'" id="budgetSlider" style="width:160px;accent-color:#00ff9c" oninput="state.budgetSalaryMax=+this.value;document.getElementById('budgetVal').textContent='$'+(+this.value).toLocaleString();if(window.renderBudgetBeasts)window.renderBudgetBeasts();">' +
+        '<input type="range" min="2500" max="4500" step="100" value="'+maxSal+'" id="budgetSlider" style="width:160px;accent-color:#00ff9c" oninput="state.budgetSalaryMax=+this.value;document.getElementById(\'budgetVal\').textContent=\'$\'+(+this.value).toLocaleString();if(window.renderBudgetBeasts)window.renderBudgetBeasts();">' +
         '<span id="budgetVal" style="color:#ffd000;font-weight:900;font-size:15px;min-width:58px">$'+maxSal.toLocaleString()+'</span>' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">' +
@@ -482,7 +482,7 @@ window.renderBudgetBeasts = function renderBudgetBeasts() {
         '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#e8f0fa;margin:0;text-transform:uppercase;letter-spacing:1px">🎯 Value Plays by Position</h3>' +
         '<span style="font-size:12px;color:#64748b">A &amp; B grades · sorted by value/k</span>' +
       '</div>' +
-      (posHtml || '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:40px;text-align:center"><p style="color:#475569;font-size:15px;margin:0">Load today's matchups to see value plays.<br><span style="font-size:12px;color:#334155">Select a game → Hitter Lab → return here.</span></p></div>') +
+      (posHtml || '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:40px;text-align:center"><p style="color:#475569;font-size:15px;margin:0">Load today\'s matchups to see value plays.<br><span style="font-size:12px;color:#334155">Select a game → Hitter Lab → return here.</span></p></div>') +
     '</div>' +
     // SMART STACKS
     '<div style="margin-bottom:36px">' +
@@ -511,7 +511,7 @@ window.renderAIPicksOptimizer = function renderAIPicksOptimizer() {
   if(!result||!result.lineup||!result.lineup.length) {
     return '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center">' +
       '<p style="color:#475569;margin:0">Load DK salaries + matchups for the $50K optimized lineup (2 SP required).</p>' +
-      '<button onclick="if(typeof state!=='undefined'){state.tab='optimizer';}if(window.renderPatched)window.renderPatched();else if(window._coreRender)window._coreRender();" style="margin-top:12px;background:rgba(0,255,156,.12);color:#00ff9c;border:1px solid rgba(0,255,156,.3);padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px">Open Optimizer →</button>' +
+      '<button onclick="if(typeof state!==\'undefined\'){state.tab=\'optimizer\';}if(window.renderPatched)window.renderPatched();else if(window._coreRender)window._coreRender();" style="margin-top:12px;background:rgba(0,255,156,.12);color:#00ff9c;border:1px solid rgba(0,255,156,.3);padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px">Open Optimizer →</button>' +
     '</div>';
   }
   function gc(letter) {
