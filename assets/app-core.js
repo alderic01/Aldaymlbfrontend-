@@ -608,3 +608,97 @@ async function startCheckout(plan) {
           window.history.replaceState({}, '', window.location.pathname);
     }
 })();
+
+
+// ============================================================
+// BUDGET BEASTS INTEGRATION (uses state from app-core)
+// ============================================================
+function buildBudgetBeasts(maxSalary) {
+  maxSalary = maxSalary || 3600;
+  if(!Object.keys(state.dkSalaries||{}).length) return [];
+  const gradedMap = {};
+  if(state.selectedGameData) {
+    [...(state.selectedGameData.awayHitters||[]),...(state.selectedGameData.homeHitters||[])].forEach(h=>{gradedMap[h.name.toLowerCase()]=h;});
+  }
+  const teamEdgeMap = {};
+  (state.stackRows||[]).forEach(r=>{teamEdgeMap[(r.team||'').toUpperCase()]=r.score;});
+  const beasts = [];
+  for(const [key,dk] of Object.entries(state.dkSalaries)) {
+    if(!dk.salary||dk.salary>maxSalary||dk.salary<2000) continue;
+    const isPitcher=/^(SP|RP|P)$/i.test(dk.pos||'');
+    if(isPitcher) continue;
+    const teamKey=(dk.team||'').toUpperCase();
+    const teamEdge=teamEdgeMap[teamKey]||50;
+    let adjScore=50,graded=false;
+    const exact=gradedMap[key];
+    if(exact){adjScore=exact.grade.score;graded=true;}
+    else {
+      const fuzzy=Object.entries(gradedMap).find(([k])=>fuzzyNameMatch(dk.name,k));
+      if(fuzzy){adjScore=fuzzy[1].grade.score;graded=true;}
+      else{const ptsBias=dk.avgPts>0?Math.min(25,dk.avgPts*3.5):15;adjScore=Math.max(25,Math.min(95,Math.round(teamEdge*0.55+ptsBias)));}
+    }
+    if(adjScore<68) continue;
+    const vs=dk.salary>0?Math.round((adjScore/(dk.salary/1000))*10)/10:0;
+    const[letter]=gradeBadge(adjScore);
+    beasts.push({...dk,key,adjScore,valueScore:vs,graded,letter,teamEdge,projPts:dk.avgPts||Math.round(adjScore*0.4)});
+  }
+  return beasts.sort((a,b)=>b.valueScore-a.valueScore);
+}
+
+function buildSmartStacks() {
+  const CAP=50000;
+  if(!Object.keys(state.dkSalaries||{}).length||!state.stackRows.length) return [];
+  const allPitchers=buildDKPlayerPool().filter(p=>p.isPitcher).sort((a,b)=>b.compositeScore-a.compositeScore).slice(0,20);
+  const stacks=[];
+  const topTeams=state.stackRows.slice(0,3);
+  for(const stackRow of topTeams) {
+    const stackTeam=(stackRow.team||'').toUpperCase();
+    const stackOpp=(stackRow.opponent||'').toUpperCase();
+    const eligiblePitchers=allPitchers.filter(p=>(p.team||'').toUpperCase()!==stackOpp);
+    const sp1=eligiblePitchers[0],sp2=eligiblePitchers[1];
+    if(!sp1||!sp2) continue;
+    const spSalary=(sp1.salary||0)+(sp2.salary||0);
+    if(spSalary>35000) continue;
+    const hitterBudget=CAP-spSalary;
+    const hitterPool=buildDKPlayerPool().filter(p=>!p.isPitcher&&p.name!==sp1.name&&p.name!==sp2.name).map(p=>{
+      const t=(p.team||'').toUpperCase();
+      const isStack=t===stackTeam,isOpp=t===stackOpp;
+      return{...p,compositeScore:p.compositeScore+(isStack?14:isOpp?6:0),isStackTeam:isStack,isOpp};
+    }).sort((a,b)=>b.compositeScore-a.compositeScore);
+    const SLOTS=['C','1B','2B','3B','SS','OF','OF','OF'];
+    const lineup=[];
+    const used=new Set([sp1.name,sp2.name]);
+    let salaryUsed=spSalary;
+    for(const slot of SLOTS) {
+      const validPos={'C':['C'],'1B':['1B'],'2B':['2B'],'3B':['3B'],'SS':['SS'],'OF':['OF']}[slot]||[slot];
+      const remaining=CAP-salaryUsed-(SLOTS.length-lineup.length-1)*2500;
+      const candidate=hitterPool.find(p=>{
+        if(used.has(p.name)) return false;
+        if(p.salary>remaining) return false;
+        const pos=(p.pos||'').toUpperCase();
+        return validPos.some(vp=>pos.includes(vp));
+      });
+      if(candidate){lineup.push({...candidate,slot});used.add(candidate.name);salaryUsed+=candidate.salary||0;}
+    }
+    const totalSalary=salaryUsed;
+    const valid=totalSalary<=CAP&&lineup.length===8;
+    stacks.push({
+      stackTeam,stackOpp,
+      badge:'STACK #'+(stacks.length+1),
+      label:stackRow.level||'Priority',
+      sp1,sp2,hitters:lineup,totalSalary,valid,
+      stackCount:lineup.filter(p=>p.isStackTeam).length,
+      bringBackCount:lineup.filter(p=>p.isOpp).length,
+      projPts:Math.round((sp1.projPts||sp1.score*0.4)+(sp2.projPts||sp2.score*0.4)+lineup.reduce((s,p)=>s+(p.projPts||p.score*0.38),0)),
+      remaining:CAP-totalSalary
+    });
+  }
+  return stacks;
+}
+
+// AI PICKS $50K OPTIMIZER - Full lineup with 2 pitchers
+function buildAIPicksLineup() {
+  const result = optimizeDKLineup(state.optimizerStackTeam || '');
+  if(!result) return null;
+  return result;
+}
