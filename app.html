@@ -471,7 +471,7 @@ html,body{background:#060e1a!important;background-image:none!important}
     // Stats bar
     H+="<div style='display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap'>";
     H+="<label style='color:#94a3b8;font-size:12px;font-weight:600'>MAX SALARY</label>";
-    H+="<input type='range' min='2500' max='4500' step='100' value='"+maxSal+"' style='width:120px;accent-color:#00e88a' onchange='if(typeof state!=="undefined")state.budgetSalaryMax=+this.value;document.getElementById("bbsv").textContent="$"+this.value;window.renderBudgetBeasts()'>";
+    H+="<input type='range' min='2500' max='4500' step='100' value='"+maxSal+"' style='width:120px;accent-color:#00e88a' onchange='if(typeof state!=='undefined')state.budgetSalaryMax=+this.value;document.getElementById('bbsv').textContent='$'+this.value;window.renderBudgetBeasts()'>";
     H+="<span id='bbsv' style='color:#00e88a;font-weight:700;font-size:15px'>$"+maxSal+"</span>";
     H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(0,232,138,.15);color:#00e88a;font-size:12px;font-weight:700'>"+aC+" A Grade</span>";
     H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(245,158,11,.15);color:#f59e0b;font-size:12px;font-weight:700'>"+bC+" B Grade</span>";
