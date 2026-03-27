@@ -350,194 +350,221 @@ render();
 
 
 function renderBudgetBeasts() {
-    const maxSal = state.budgetSalaryMax || 5000;
-    const beasts = buildBudgetBeasts(maxSal);
-    const stacks = buildSmartStacks();
+  const maxSal = state.budgetSalaryMax || 3600;
+  const beasts = buildBudgetBeasts(maxSal);
+  const stacks = buildSmartStacks();
+  const aiLineup = state.aiPicksLineup || null;
 
-  // Value plays by position
-  const positions = ['C','1B','2B','3B','SS','OF','SP'];
-    const byPos = positions.map(pos => {
-          const players = beasts.filter(p => p.pos === pos).slice(0, 5);
-          if (!players.length) return '';
-          return `
-                <div style="margin-bottom:14px;">
-                        <div style="color:#f59e0b;font-size:12px;font-weight:700;margin-bottom:6px;">${pos}</div>
-                                ${players.map(p => `
-                                          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:#0f172a;border-radius:6px;margin-bottom:4px;">
-                                                      <span style="color:#e2e8f0;font-size:13px;">${p.name}</span>
-                                                                  <span style="color:#94a3b8;font-size:12px;">${p.team}</span>
-                                                                              <span style="color:#22c55e;font-size:12px;">$${p.salary?.toLocaleString()}</span>
-                                                                                          <span style="color:#a78bfa;font-size:12px;">${p.adjScore?.toFixed(1)}</span>
-                                                                                                      <span style="color:#f59e0b;font-size:11px;">Val: ${p.valueScore?.toFixed(2)}</span>
-                                                                                                                </div>
-                                                                                                                        `).join('')}
-                                                                                                                              </div>
-                                                                                                                                  `;
-    }).join('');
+  // Grade color helper
+  function gc(letter) {
+    return {'A+':'#00ff9c','A':'#00e88a','B+':'#ffd000','B':'#f59e0b','C+':'#ff9e57','C':'#ff5f6d'}[letter]||'#64748b';
+  }
 
-  // Smart Stacks
-  const stacksHtml = stacks.length ? stacks.map(st => `
-      <div style="background:#1a1a2e;border:1px solid #334;border-radius:10px;padding:16px;margin-bottom:16px;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                    <span style="background:#7c3aed;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;">${st.badge}</span>
-                            <strong style="color:#e2e8f0;font-size:15px;">${st.label} — ${st.stackTeam}</strong>
-                                    <span style="margin-left:auto;color:${st.valid?'#22c55e':'#ef4444'};font-size:13px;">
-                                              $${st.totalSalary.toLocaleString()} / $50,000 ${st.valid ? '✓' : 'OVER CAP'}
-                                                      </span>
-                                                            </div>
-                                                                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-                                                                          ${[st.sp1, st.sp2].filter(Boolean).map(sp => `
-                                                                                    <div style="background:#0f172a;border:1px solid #7c3aed;border-radius:7px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
-                                                                                                <span style="color:#a78bfa;font-size:12px;font-weight:700;">SP</span>
-                                                                                                            <span style="color:#e2e8f0;font-size:13px;">${sp.name}</span>
-                                                                                                                        <span style="color:#94a3b8;font-size:12px;">$${sp.salary?.toLocaleString()}</span>
-                                                                                                                                    <span style="color:#22c55e;font-size:12px;">${sp.adjScore?.toFixed(1)}</span>
-                                                                                                                                              </div>
-                                                                                                                                                      `).join('')}
-                                                                                                                                                            </div>
-                                                                                                                                                                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-                                                                                                                                                                          ${st.hitters.map(p => `
-                                                                                                                                                                                    <div style="background:#0f172a;border:1px solid ${p.team===st.stackTeam?'#f59e0b':p.team===st.stackOpp?'#3b82f6':'#334'};border-radius:7px;padding:6px 10px;display:flex;flex-direction:column;gap:2px;">
-                                                                                                                                                                                                <span style="color:#94a3b8;font-size:11px;">${p.pos} · ${p.team}</span>
-                                                                                                                                                                                                            <span style="color:#e2e8f0;font-size:12px;font-weight:600;">${p.name}</span>
-                                                                                                                                                                                                                        <span style="color:#64748b;font-size:11px;">$${p.salary?.toLocaleString()} · ${p.adjScore?.toFixed(1)}pts</span>
-                                                                                                                                                                                                                                  </div>
-                                                                                                                                                                                                                                          `).join('')}
-                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                      <div style="margin-top:10px;color:#64748b;font-size:12px;">
-                                                                                                                                                                                                                                                              Stack: ${st.stackCount} from ${st.stackTeam} · Bring-back: ${st.bringBackCount} from ${st.stackOpp} · Proj: ${st.projPts?.toFixed(1)}pts
-                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                          `).join('') : '<p style="color:#64748b;">No stacks available — load today\'s matchups first.</p>';
+  // By position
+  const positions = ['C','1B','2B','3B','SS','OF'];
+  const byPos = positions.map(pos => {
+    const players = beasts.filter(p => (p.pos||'').toUpperCase().includes(pos)).slice(0, 6);
+    if(!players.length) return '';
+    return '<div style="margin-bottom:16px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+      '<span style="background:rgba(0,255,156,.15);color:#00ff9c;border:1px solid rgba(0,255,156,.3);padding:3px 10px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:1px">' + pos + '</span>' +
+      '<span style="color:#64748b;font-size:12px">' + players.length + ' value plays</span>' +
+      '</div>' +
+      players.map(p => {
+        const letterColor = gc(p.letter);
+        return '<div style="display:grid;grid-template-columns:auto 1fr auto auto auto;gap:8px;align-items:center;padding:8px 12px;background:#0b1623;border:1px solid ' + (p.letter==='A+'||p.letter==='A'?'rgba(0,255,156,.25)':'rgba(30,41,59,.8)') + ';border-radius:8px;margin-bottom:4px;cursor:pointer;transition:all .2s" ' +
+          'onmouseover="this.style.borderColor='' + letterColor + '33'" onmouseout="this.style.borderColor='' + (p.letter==='A+'||p.letter==='A'?'rgba(0,255,156,.25)':'rgba(30,41,59,.8)') + ''">' +
+          '<div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:' + letterColor + ';line-height:1;min-width:32px">' + escapeHtml(p.letter) + '</div>' +
+          '<div>' +
+            '<div style="color:#e8f0fa;font-weight:700;font-size:13px">' + escapeHtml(p.name) + '</div>' +
+            '<div style="color:#64748b;font-size:11px">' + escapeHtml(p.team) + ' · ' + escapeHtml(p.pos) + (p.graded ? ' · <span style="color:#00ff9c">Graded</span>' : ' · Estimated') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right"><div style="color:#22c55e;font-weight:700;font-size:14px">$' + (p.salary||0).toLocaleString() + '</div>' +
+            '<div style="color:#64748b;font-size:11px">' + (p.avgPts||0).toFixed(1) + ' avg pts</div>' +
+          '</div>' +
+          '<div style="text-align:right"><div style="color:#a78bfa;font-weight:700;font-size:13px">' + (p.adjScore||0).toFixed(0) + '/99</div>' +
+            '<div style="color:#64748b;font-size:11px">grade</div>' +
+          '</div>' +
+          '<div style="text-align:right"><div style="color:#f59e0b;font-weight:800;font-size:13px">' + (p.valueScore||0).toFixed(2) + '</div>' +
+            '<div style="color:#64748b;font-size:11px">val/k</div>' +
+          '</div>' +
+          '</div>';
+      }).join('') +
+      '</div>';
+  }).join('');
 
-  document.getElementById('app').innerHTML = `
-      <div style="padding:20px;max-width:1100px;margin:0 auto;">
-            <h2 style="color:#e2e8f0;margin-bottom:4px;">Budget Beasts</h2>
-                  <p style="color:#64748b;margin-bottom:20px;">Value plays + smart stacks under your salary cap</p>
+  // Smart Stacks HTML
+  const stacksHtml = stacks.length ? stacks.map((st, idx) => {
+    const borderColor = idx===0?'rgba(0,255,156,.35)':idx===1?'rgba(255,208,0,.25)':'rgba(30,41,59,.8)';
+    return '<div style="background:linear-gradient(180deg,#0d1827,#0b1623);border:1px solid ' + borderColor + ';border-radius:16px;padding:20px;margin-bottom:16px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">' +
+        '<span style="background:' + (idx===0?'linear-gradient(135deg,#00ff9c,#00b87a)':idx===1?'linear-gradient(135deg,#ffd000,#f59e0b)':'rgba(100,116,139,.2)') + ';color:' + (idx<2?'#060e1a':'#94a3b8') + ';padding:4px 12px;border-radius:12px;font-size:11px;font-weight:800;letter-spacing:1px">' + escapeHtml(st.badge) + '</span>' +
+        '<strong style="color:#e8f0fa;font-size:16px">' + escapeHtml(st.label) + ' — <span style="color:#00ff9c">' + escapeHtml(st.stackTeam) + '</span> stack</strong>' +
+        '<span style="margin-left:auto;padding:4px 12px;border-radius:8px;font-size:13px;font-weight:700;background:' + (st.valid?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)') + ';color:' + (st.valid?'#22c55e':'#ef4444') + ';border:1px solid ' + (st.valid?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)') + '">$' + (st.totalSalary||0).toLocaleString() + ' / $50,000 ' + (st.valid?'✓ Valid':'OVER CAP') + '</span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+        [st.sp1, st.sp2].filter(Boolean).map(sp =>
+          '<div style="background:#060e1a;border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="color:#a78bfa;font-size:11px;font-weight:800;background:rgba(124,58,237,.15);padding:2px 8px;border-radius:4px">SP</span>' +
+            '<span style="color:#e8f0fa;font-size:13px;font-weight:600">' + escapeHtml(sp.name) + '</span>' +
+            '<span style="color:#22c55e;font-size:13px">$' + (sp.salary||0).toLocaleString() + '</span>' +
+            '<span style="color:#94a3b8;font-size:12px">' + (sp.adjScore||sp.score||50).toFixed(0) + '/99</span>' +
+          '</div>'
+        ).join('') +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">' +
+        (st.hitters||[]).map(p => {
+          const isStack = p.isStackTeam;
+          const isOpp = p.isOpp;
+          const bc = isStack?'rgba(255,208,0,.35)':isOpp?'rgba(59,130,246,.3)':'rgba(30,41,59,.5)';
+          return '<div style="background:#0b1623;border:1px solid ' + bc + ';border-radius:8px;padding:8px 10px">' +
+            '<div style="color:#64748b;font-size:10px;display:flex;justify-content:space-between">' +
+              '<span>' + escapeHtml(p.slot||p.pos) + '</span>' +
+              '<span style="color:' + (isStack?'#ffd000':isOpp?'#60a5fa':'#475569') + '">' + escapeHtml(p.team) + (isStack?' ★':isOpp?' ↺':'') + '</span>' +
+            '</div>' +
+            '<div style="color:#e8f0fa;font-size:12px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.name) + '</div>' +
+            '<div style="color:#64748b;font-size:11px;margin-top:2px">$' + (p.salary||0).toLocaleString() + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      '<div style="margin-top:12px;display:flex;gap:16px;color:#64748b;font-size:12px">' +
+        '<span>★ ' + (st.stackCount||0) + ' from ' + escapeHtml(st.stackTeam) + '</span>' +
+        '<span>↺ ' + (st.bringBackCount||0) + ' from ' + escapeHtml(st.stackOpp) + '</span>' +
+        '<span>Proj: <strong style="color:#a78bfa">' + (st.projPts||0).toFixed(0) + ' pts</strong></span>' +
+        '<span>Remaining: <strong style="color:' + ((st.remaining||0)>=0?'#22c55e':'#ef4444') + '">$' + (st.remaining||0).toLocaleString() + '</strong></span>' +
+      '</div>' +
+      '</div>';
+  }).join('') : '<div style="background:#0b1623;border:1px solid #1e293b;border-radius:14px;padding:32px;text-align:center;color:#475569">Load today's matchups and sync DK salaries to see smart stacks.</div>';
 
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-                                <label style="color:#94a3b8;font-size:13px;">Max Salary:</label>
-                                        <input type="range" min="2500" max="8000" step="100" value="${maxSal}"
-                                                  id="budgetSlider" style="width:180px;">
-                                                          <span id="budgetVal" style="color:#f59e0b;font-weight:700;">$${maxSal.toLocaleString()}</span>
-                                                                  <button onclick="syncDKSalaries()" style="margin-left:auto;background:#7c3aed;color:#fff;border:none;padding:7px 16px;border-radius:7px;cursor:pointer;font-size:13px;">
-                                                                            Sync DK Salaries
-                                                                                    </button>
-                                                                                          </div>
+  view.innerHTML =
+    '<div style="padding:24px;max-width:1400px;margin:0 auto">' +
+    
+    // Header
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">' +
+      '<div>' +
+        '<h2 style="font-family:Barlow Condensed,sans-serif;font-size:36px;font-weight:900;color:#e8f0fa;letter-spacing:1px;margin:0">🔥 BUDGET BEASTS</h2>' +
+        '<p style="color:#64748b;font-size:13px;margin:4px 0 0">A &amp; B grade value plays under $' + maxSal.toLocaleString() + ' · Smart $50K stacks with 2 SP</p>' +
+      '</div>' +
+      '<button onclick="syncDKSalaries().then(()=>render())" style="margin-left:auto;background:linear-gradient(135deg,#00ff9c,#00b87a);color:#060e1a;border:none;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:800">Sync DK Salaries</button>' +
+    '</div>' +
 
-                                                                                                <h3 style="color:#f59e0b;margin-bottom:14px;">Value Plays by Position</h3>
-                                                                                                      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:32px;">
-                                                                                                              ${byPos || '<p style="color:#64748b;">Load matchups to see value plays.</p>'}
-                                                                                                                    </div>
-                                                                                                                    
-                                                                                                                          <h3 style="color:#a78bfa;margin-bottom:14px;">Smart Stacks (2 SP + 8 Batters · $50K Cap)</h3>
-                                                                                                                                <div id="smartStacksContainer">
-                                                                                                                                        ${stacksHtml}
-                                                                                                                                              </div>
-                                                                                                                                                  </div>
-                                                                                                                                                    `;
+    // Filter bar
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap;background:#0b1623;border:1px solid #1e293b;border-radius:12px;padding:14px 18px">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<label style="color:#94a3b8;font-size:12px;font-weight:700">MAX SALARY</label>' +
+        '<input type="range" min="2500" max="4500" step="100" value="' + maxSal + '" id="budgetSlider" style="width:160px;accent-color:#00ff9c">' +
+        '<span id="budgetVal" style="color:#ffd000;font-weight:800;font-size:14px">$' + maxSal.toLocaleString() + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">' +
+        '<span style="padding:4px 12px;border-radius:999px;background:rgba(0,255,156,.12);color:#00ff9c;border:1px solid rgba(0,255,156,.3);font-size:12px;font-weight:700">' + beasts.filter(b=>b.letter==='A+'||b.letter==='A').length + ' A Grade</span>' +
+        '<span style="padding:4px 12px;border-radius:999px;background:rgba(255,208,0,.12);color:#ffd000;border:1px solid rgba(255,208,0,.3);font-size:12px;font-weight:700">' + beasts.filter(b=>b.letter==='B+'||b.letter==='B').length + ' B Grade</span>' +
+        '<span style="padding:4px 12px;border-radius:999px;background:rgba(148,163,184,.1);color:#94a3b8;border:1px solid rgba(148,163,184,.2);font-size:12px">' + beasts.length + ' total</span>' +
+      '</div>' +
+    '</div>' +
+
+    // Value plays grid
+    '<div style="margin-bottom:32px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">' +
+        '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:#e8f0fa;margin:0;text-transform:uppercase">Value Plays by Position</h3>' +
+        '<span style="font-size:12px;color:#64748b">A &amp; B grades only</span>' +
+      '</div>' +
+      (byPos || '<div style="color:#475569;text-align:center;padding:32px">Load matchups to see value plays.</div>') +
+    '</div>' +
+
+    // Smart stacks
+    '<div>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">' +
+        '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:#a78bfa;margin:0;text-transform:uppercase">Smart $50K Stacks (2 SP + 8 Batters)</h3>' +
+        '<span style="font-size:12px;color:#64748b">DraftKings Classic format</span>' +
+      '</div>' +
+      stacksHtml +
+    '</div>' +
+    '</div>';
 
   document.getElementById('budgetSlider')?.addEventListener('input', e => {
-        state.budgetSalaryMax = +e.target.value;
-        document.getElementById('budgetVal').textContent = '$' + (+e.target.value).toLocaleString();
-        renderBudgetBeasts();
+    state.budgetSalaryMax = +e.target.value;
+    document.getElementById('budgetVal').textContent = '$' + (+e.target.value).toLocaleString();
+    renderBudgetBeasts();
   });
 }
 
-// Patch render() to support budget tab
-const _origRender = render;
+// === ENHANCED AI PICKS WITH $50K OPTIMIZER ===
+function renderAIPicksOptimizer() {
+  const result = state.aiPicksLineup || optimizeDKLineup(state.optimizerStackTeam || '');
+  if(!result) return '<div class="card empty">Run the optimizer or load DK salaries to see AI picks lineup.</div>';
+
+  function gc(letter) {
+    return {'A+':'#00ff9c','A':'#00e88a','B+':'#ffd000','B':'#f59e0b','C+':'#ff9e57','C':'#ff5f6d'}[letter]||'#64748b';
+  }
+
+  const pitchers = result.lineup.filter(p=>p.isPitcher);
+  const hitters = result.lineup.filter(p=>!p.isPitcher);
+
+  return '<div style="background:linear-gradient(180deg,#0d1827,#0b1623);border:1px solid rgba(0,255,156,.25);border-radius:16px;padding:20px;margin-bottom:16px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">' +
+      '<h3 style="font-family:Barlow Condensed,sans-serif;font-size:26px;font-weight:900;color:#00ff9c;text-transform:uppercase;margin:0">⚡ AI PICKS — $50K Optimized Lineup</h3>' +
+      '<div style="display:flex;gap:12px">' +
+        '<div style="text-align:center"><div style="color:#22c55e;font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900">$' + (result.totalSalary||0).toLocaleString() + '</div><div style="color:#64748b;font-size:11px">Salary Used</div></div>' +
+        '<div style="text-align:center"><div style="color:' + ((result.remaining||0)>=0?'#22c55e':'#ef4444') + ';font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900">$' + (result.remaining||0).toLocaleString() + '</div><div style="color:#64748b;font-size:11px">Remaining</div></div>' +
+        '<div style="text-align:center"><div style="color:#a78bfa;font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900">' + (result.projScore||0) + '</div><div style="color:#64748b;font-size:11px">Proj Pts</div></div>' +
+        '<div style="text-align:center"><div style="font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:' + (result.valid?'#22c55e':'#ef4444') + '">' + (result.valid?'✓ VALID':'✗ INVALID') + '</div><div style="color:#64748b;font-size:11px">Status</div></div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">' +
+      pitchers.map(p => {
+        const[letter]=gradeBadge(p.score);
+        return '<div style="background:#060e1a;border:1px solid rgba(124,58,237,.4);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">' +
+          '<div style="background:rgba(124,58,237,.15);color:#a78bfa;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800">SP</div>' +
+          '<div style="flex:1"><div style="color:#e8f0fa;font-weight:700">' + escapeHtml(p.name) + '</div>' +
+            '<div style="color:#64748b;font-size:11px">' + escapeHtml(p.team) + ' · $' + (p.salary||0).toLocaleString() + '</div></div>' +
+          '<div style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:' + gc(letter) + '">' + letter + '</div>' +
+          '</div>';
+      }).join('') +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">' +
+      hitters.map(p => {
+        const[letter]=gradeBadge(p.score);
+        const lc = gc(letter);
+        return '<div style="background:#0b1623;border:1px solid ' + (letter==='A+'||letter==='A'?'rgba(0,255,156,.25)':'rgba(30,41,59,.8)') + ';border-radius:10px;padding:10px 12px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+            '<span style="color:#64748b;font-size:10px">' + escapeHtml(p.slotLabel||p.pos) + '</span>' +
+            '<span style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:900;color:' + lc + '">' + letter + '</span>' +
+          '</div>' +
+          '<div style="color:#e8f0fa;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.name) + '</div>' +
+          '<div style="color:#64748b;font-size:11px">' + escapeHtml(p.team) + '</div>' +
+          '<div style="display:flex;justify-content:space-between;margin-top:4px">' +
+            '<span style="color:#22c55e;font-size:12px;font-weight:700">$' + (p.salary||0).toLocaleString() + '</span>' +
+            '<span style="color:#94a3b8;font-size:11px">' + (p.score||0) + '/99</span>' +
+          '</div>' +
+          '</div>';
+      }).join('') +
+    '</div>' +
+    // Stack detection
+    ((() => {
+      const tc = {};
+      hitters.forEach(p => { tc[p.team]=(tc[p.team]||0)+1; });
+      const stks = Object.entries(tc).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]);
+      return stks.length ? '<div style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+        '<span style="color:#64748b;font-size:12px">Stacks:</span>' +
+        stks.map(([t,c])=>'<span style="background:rgba(255,208,0,.12);color:#ffd000;border:1px solid rgba(255,208,0,.3);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">' + t + ' x' + c + '</span>').join('') + '</div>' : '';
+    })()) +
+    '</div>';
+}
+
+// Patch the render() function to support enhanced budget and AI optimizer tabs
+const _origRenderBB = render;
 window.render = function() {
-    if (state.tab === 'budget') {
-          renderTabs();
-          renderBudgetBeasts();
-    } else {
-          _origRender();
-    }
-
-  // ─── Stripe Pricing Page (replaces old renderPricing) ────────────────────────
-  function renderPricing() {
-      const plans = [
-        {
-                id: 'starter', name: 'Starter', price: '$19.99', color: '#3b82f6', badge: '',
-                features: ['Daily MLB matchup grades','Basic player edges','Weather & odds data','Mobile friendly']
-        },
-        {
-                id: 'pro', name: 'Pro', price: '$49.99', color: '#7c3aed', badge: 'POPULAR',
-                features: ['Everything in Starter','DraftKings salary sync','DK Lineup Optimizer','Budget Beast value plays','Smart Stacks (3 lineups)','Multi-AI picks (Grok + ChatGPT + Claude)']
-        },
-        {
-                id: 'elite', name: 'Elite', price: '$99.99', color: '#f59e0b', badge: 'BEST VALUE',
-                features: ['Everything in Pro','Real-time lineup alerts','Advanced pitcher grades','Stack correlation tools','Priority support','Early access to new features']
-        }
-          ];
-      const userPlan = state.plan || '';
-      document.getElementById('app').innerHTML = `
-          <div style="padding:32px 20px;max-width:1000px;margin:0 auto;">
-                <div style="text-align:center;margin-bottom:36px;">
-                        <h2 style="color:#e2e8f0;font-size:28px;margin-bottom:8px;">Choose Your Plan</h2>
-                                <p style="color:#64748b;font-size:15px;">Unlock the full ALLDAY MLB EDGE suite</p>
-                                        <div style="background:#1e293b;display:inline-block;padding:6px 16px;border-radius:20px;margin-top:10px;">
-                                                  <span style="color:#22c55e;font-size:13px;">🔒 Secured by Stripe · Cancel anytime</span>
-                                                          </div>
-                                                                </div>
-                                                                      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-bottom:32px;">
-                                                                              ${plans.map(p => `
-                                                                                        <div style="background:#1a1a2e;border:2px solid ${p.id==='pro'?p.color:'#334'};border-radius:14px;padding:24px;position:relative;display:flex;flex-direction:column;">
-                                                                                                    ${p.badge ? `<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:${p.color};color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:20px;letter-spacing:1px;">${p.badge}</div>` : ''}
-                                                                                                                <div style="margin-bottom:16px;">
-                                                                                                                              <div style="color:${p.color};font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">${p.name}</div>
-                                                                                                                                            <div style="display:flex;align-items:baseline;gap:4px;">
-                                                                                                                                                            <span style="color:#e2e8f0;font-size:36px;font-weight:900;">${p.price}</span>
-                                                                                                                                                                            <span style="color:#64748b;font-size:14px;">/month</span>
-                                                                                                                                                                                          </div>
-                                                                                                                                                                                                      </div>
-                                                                                                                                                                                                                  <ul style="list-style:none;padding:0;margin:0 0 24px;flex:1;">
-                                                                                                                                                                                                                                ${p.features.map(f => `<li style="color:#cbd5e1;font-size:13px;padding:6px 0;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:8px;"><span style="color:${p.color};font-size:16px;">✓</span> ${f}</li>`).join('')}
-                                                                                                                                                                                                                                            </ul>
-                                                                                                                                                                                                                                                        ${userPlan === p.id
-                                                                                                                                                                                                                                                                        ? `<div style="background:#1e293b;color:#22c55e;text-align:center;padding:10px;border-radius:8px;font-weight:700;font-size:14px;">✓ Current Plan</div>`
-                                                                                                                                                                                                                                                                        : `<button id="checkoutBtn-${p.id}" onclick="startCheckout('${p.id}')" style="background:${p.color};color:#fff;border:none;padding:12px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;width:100%;">Subscribe — ${p.price}/mo</button>`
-                                                                                                                                                                                                                                                                      }
-                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                        `).join('')}
-                                                                                                                                                                                                                                                                                              </div>
-                                                                                                                                                                                                                                                                                                    <div style="text-align:center;color:#475569;font-size:13px;">
-                                                                                                                                                                                                                                                                                                            <p>All plans billed monthly. No contracts. Cancel anytime from your account portal.</p>
-                                                                                                                                                                                                                                                                                                                    <p style="margin-top:6px;">Questions? <a href="mailto:aldaye2015@gmail.com" style="color:#7c3aed;">aldaye2015@gmail.com</a></p>
-                                                                                                                                                                                                                                                                                                                            ${userPlan === 'elite' || userPlan === 'pro'
-                                                                                                                                                                                                                                                                                                                                        ? `<button onclick="openBillingPortal()" style="margin-top:12px;background:transparent;border:1px solid #334;color:#94a3b8;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;">Manage Billing / Cancel</button>`
-                                                                                                                                                                                                                                                                                                                                        : ''}
-                                                                                                                                                                                                                                                                                                                                              </div>
-                                                                                                                                                                                                                                                                                                                                                  </div>
-                                                                                                                                                                                                                                                                                                                                                    `;
+  if(state.tab === 'budget') {
+    renderTabs();
+    renderBudgetBeasts();
+  } else if(state.tab === 'ai') {
+    renderTabs();
+    const view = document.getElementById('view');
+    if(!view) return _origRenderBB();
+    const aiSection = renderAI();
+    const optimizerSection = renderAIPicksOptimizer();
+    view.innerHTML = aiSection + '<div style="margin-top:24px">' + optimizerSection + '</div>';
+  } else {
+    _origRenderBB ? _origRenderBB() : render();
   }
-
-  async function openBillingPortal() {
-      try {
-            const resp = await fetch(`${getBase()}/api/portal/session`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ customerId: state.stripeCustomerId, returnUrl: window.location.origin })
-            });
-            const data = await resp.json();
-            if (data.url) window.location.href = data.url;
-            else alert('Portal error: ' + (data.error || 'No customer ID on file'));
-      } catch (err) {
-            alert('Portal error: ' + err.message);
-      }
-  }
-
-  // Patch render() to also handle pricing tab via renderPricing override
-  const _origRender2 = window.render;
-  window.render = function() {
-      if (state.tab === 'pricing') {
-            renderTabs();
-            renderPricing();
-      } else if (state.tab === 'budget') {
-            renderTabs();
-            renderBudgetBeasts();
-      } else {
-            _origRender2 ? _origRender2() : render();
-      }
-  };
 };
