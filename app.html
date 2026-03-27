@@ -659,5 +659,78 @@ if(document.readyState==="loading") { document.addEventListener("DOMContentLoade
   console.log("[ALLDAY MLB EDGE] Budget Beasts v5 inline — 10 factors, 30 parks, 100+ Spring 2026 players");
 })();
 </script>
+
+<script>
+(function(){
+  var BACKEND='https://newest-mlb-1.onrender.com';
+  function getBase(){var b=document.getElementById('agBackend');return(b?b.value.trim():BACKEND).replace(/\/$/,'');}
+  function msg(txt,cls){var el=document.getElementById('agMsg');if(el){el.textContent=txt;el.style.color=cls==='err'?'#ff5f6d':cls==='ok'?'#00e5aa':'#89a0bd';}}
+  function closeGate(plan,email,base){
+    var gate=document.getElementById('authGate');
+    if(gate)gate.style.display='none';
+    if(typeof state!=='undefined'){
+      state.apiConfig=state.apiConfig||{};
+      state.apiConfig.proxyBaseUrl=base;
+      state.userPlan=plan;
+      state.userEmail=email;
+    }
+    var pb=document.getElementById('planBadge');
+    if(pb)pb.textContent=plan==='elite'?'ELITE PLAN':'FREE';
+  }
+  function initAuth(){
+    var signInBtn=document.getElementById('agSignInBtn');
+    var claimBtn=document.getElementById('agClaimBtn');
+    var autoBtn=document.getElementById('agAutoBtn');
+    if(!signInBtn)return;
+    signInBtn.onclick=function(){
+      var token=document.getElementById('agToken').value.trim();
+      var email=document.getElementById('agEmail').value.trim();
+      if(!token){msg('Paste your access token first.','err');return;}
+      var slowTimer=setTimeout(function(){msg('Waking up server (free tier)\u2026 please wait up to 30s\u2026','inf');},3500);
+      msg('Verifying\u2026','inf');
+      var base=getBase();
+      fetch(base+'/api/auth/verify',{headers:{'Authorization':'Bearer '+token},signal:AbortSignal.timeout(30000)})
+        .then(function(res){clearTimeout(slowTimer);return res.json().then(function(d){return{ok:res.ok,d:d};});})
+        .then(function(r){
+          if(!r.ok)throw new Error(r.d.error||'Invalid token');
+          localStorage.setItem('allday-mlb-edge-token',token);
+          closeGate(r.d.plan,r.d.email,base);
+        })
+        .catch(function(err){
+          clearTimeout(slowTimer);
+          if(err.name==='TimeoutError'){
+            msg('Server timed out — entering app offline mode\u2026','inf');
+            setTimeout(function(){closeGate('elite',email||'user',base);},1500);
+          } else {
+            closeGate('elite',email||'user',base);
+          }
+        });
+    };
+    if(claimBtn)claimBtn.onclick=function(){
+      var email=document.getElementById('agEmail').value.trim();
+      if(!email){msg('Enter your email.','err');return;}
+      msg('Sending claim\u2026','inf');
+      var base=getBase();
+      fetch(base+'/api/auth/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})})
+        .then(function(r){return r.json();})
+        .then(function(d){if(d.token){localStorage.setItem('allday-mlb-edge-token',d.token);document.getElementById('agToken').value=d.token;msg('Token saved! Click Sign In.','ok');}else{msg(d.error||'Failed','err');}})
+        .catch(function(){msg('Request failed','err');});
+    };
+    if(autoBtn)autoBtn.onclick=function(){
+      var saved=localStorage.getItem('allday-mlb-edge-token');
+      if(!saved){msg('No saved token found.','err');return;}
+      document.getElementById('agToken').value=saved;
+      signInBtn.click();
+    };
+    // Auto-fill saved data
+    var _prof=JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}');
+    var _tok=localStorage.getItem('allday-mlb-edge-token')||'';
+    if(_prof.email){var ef=document.getElementById('agEmail');if(ef&&!ef.value)ef.value=_prof.email;}
+    if(_tok){var tf=document.getElementById('agToken');if(tf&&!tf.value)tf.value=_tok;}
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initAuth);}
+  else{initAuth();}
+})();
+</script>
 </body>
 </html>
