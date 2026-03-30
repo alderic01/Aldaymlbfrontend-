@@ -337,7 +337,7 @@ def grade_full_slate(slate_data, game_contexts, team_k_rates=None):
     hitter_grades  = {}
     pitcher_grades = {}
     pitchers = slate_data.get("pitchers", {})
-    batters  = slate_data.get("batters", {})
+    batters  = slate_data.get("hitters", slate_data.get("batters", {}))
 
     log.info(f"Grading {len(pitchers)} pitchers...")
     for pid, pdata in pitchers.items():
