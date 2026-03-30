@@ -755,3 +755,4 @@ function buildSmartStacks(){
 function buildAIPicksLineup(){
   return optimizeDKLineup(state.optimizerStackTeam||'');
 }
+window.renderTabs = renderTabs;
