@@ -357,6 +357,8 @@ html,body{background:#060e1a!important;background-image:none!important}
   <div class="sidebar-section">More</div>
   <div class="sidebar-nav-item" onclick="sideSwitch(this,'launchpad')"><span class="sidebar-nav-icon">🚀</span>Launchpad</div>
   <div class="sidebar-nav-item" onclick="sideSwitch(this,'budget')"><span class="sidebar-nav-icon">🔥</span>Budget Beasts<span class="sidebar-badge bb">HOT</span></div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'pitchedge')"><span class="sidebar-nav-icon">⚡</span>Pitch Edge</div>
+  <div class="sidebar-nav-item" onclick="sideSwitch(this,'hredge')"><span class="sidebar-nav-icon">💣</span>HR Edge</div>
   <div class="sidebar-nav-item" onclick="sideSwitch(this,'notes')"><span class="sidebar-nav-icon">📝</span>Notes</div>
   <div class="sidebar-section">Account</div>
   <div class="sidebar-nav-item" onclick="sideSwitch(this,'pricing')"><span class="sidebar-nav-icon">🔐</span>Pricing</div>
@@ -730,6 +732,66 @@ if(document.readyState==="loading") { document.addEventListener("DOMContentLoade
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initAuth);}
   else{initAuth();}
+})();
+</script>
+<script>
+(function(){
+  var P=[{n:'Paul Skenes',t:'PIT',h:'RHP',s:9600,sc:94,g:'A+',e:2.40,w:0.95,k:12.8,b:2.0,i:175,tg:['Dominant ERA 2.40','Elite WHIP 0.95','Elite 12.8 K/9'],p:['4-Seam 99mph','Splinker','Slider','Curveball'],no:'Best pure stuff in MLB. Explosive fastball/splinker. Elite K rate.'},{n:'Tyler Glasnow',t:'LAD',h:'RHP',s:10000,sc:88,g:'A+',e:3.20,w:1.05,k:12.0,b:2.8,i:160,tg:['Strong ERA 3.20','Good WHIP 1.05','Elite 12.0 K/9','Pitcher-friendly park'],p:['4-Seam 97mph','Curveball','Slider'],no:'Power pitcher. Elite Ks when healthy.'},{n:'Tarik Skubal',t:'DET',h:'LHP',s:10400,sc:81,g:'A',e:2.75,w:1.00,k:11.5,b:1.8,i:192,tg:['Strong ERA 2.75','Elite WHIP 1.00','Good 11.5 K/9'],p:['4-Seam 95mph','Changeup','Slider','Curveball'],no:'Changeup is elite putout pitch. Low BB rate.'},{n:'Spencer Strider',t:'ATL',h:'RHP',s:10600,sc:80,g:'A',e:3.15,w:1.08,k:13.5,b:2.4,i:155,tg:['Strong ERA 3.15','Good WHIP 1.08','Elite 13.5 K/9'],p:['4-Seam 98mph','Slider'],no:'Elite strikeout rate. Fastball/slider misses barrels.'},{n:'Freddy Peralta',t:'MIL',h:'RHP',s:9200,sc:76,g:'A',e:3.40,w:1.10,k:11.2,b:2.9,i:148,tg:['Good ERA 3.40','Good WHIP 1.10','Elite 11.2 K/9'],p:['4-Seam 94mph','Curveball','Slider','Changeup'],no:'Deceptive arm slot. Curveball is elite.'},{n:'Corbin Burnes',t:'BAL',h:'RHP',s:9800,sc:73,g:'B+',e:3.55,w:1.09,k:10.1,b:1.9,i:200,tg:['Good ERA 3.55','Elite WHIP 1.09'],p:['Cutter','Sinker','Curveball','Changeup'],no:'Elite contact mgmt. Weak contact generator.'},{n:'Logan Webb',t:'SF',h:'RHP',s:9400,sc:70,g:'B+',e:3.25,w:1.18,k:8.5,b:2.1,i:216,tg:['Strong ERA 3.25','Pitcher-friendly park'],p:['Sinker','Changeup','Slider'],no:'Ground ball machine. Oracle suppresses HRs.'},{n:'Framber Valdez',t:'HOU',h:'LHP',s:9000,sc:65,g:'B',e:3.45,w:1.20,k:8.8,b:2.6,i:204,tg:['Good ERA 3.45'],p:['Sinker','Curveball','4-Seam'],no:'Elite GB rate. Curveball tunnels off sinker.'}];
+  var H=[{n:'Aaron Judge',t:'NYY',pos:'RF',opp:'vs BOS',park:'Fenway Park',f:1.18,sc:92,g:'A+',hr:0.62,iso:.320,fb:42,pull:48,la:19.2,no:'Elite pull power. Fenway boosts RHH significantly.'},{n:'Yordan Alvarez',t:'HOU',pos:'DH/OF',opp:'vs MIN',park:'Minute Maid',f:1.10,sc:87,g:'A+',hr:0.55,iso:.310,fb:40,pull:44,la:18.1,no:'Massive raw power. Minute Maid HR magnet for LHH.'},{n:'Elly De La Cruz',t:'CIN',pos:'SS',opp:'vs MIL',park:'Great American',f:1.22,sc:85,g:'A',hr:0.50,iso:.290,fb:37,pull:45,la:17.5,no:'Great American is top HR park. Lightning power.'},{n:'Kyle Tucker',t:'CHC',pos:'OF',opp:'vs LAA',park:'Wrigley Field',f:1.08,sc:82,g:'A',hr:0.48,iso:.270,fb:38,pull:46,la:17.8,no:'Wrigley wind out. LHH pull power elevated.'},{n:'Gunnar Henderson',t:'BAL',pos:'SS',opp:'vs TEX',park:'Camden Yards',f:1.12,sc:79,g:'A',hr:0.44,iso:.282,fb:36,pull:50,la:15.9,no:'LHH pull + Camden short RF. Elite HR upside.'},{n:'Shohei Ohtani',t:'LAD',pos:'1B/DH',opp:'vs SF',park:'Oracle Park',f:0.88,sc:68,g:'B+',hr:0.41,iso:.295,fb:41,pull:42,la:16.5,no:'Monster power but Oracle suppresses HRs.'},{n:'Juan Soto',t:'NYM',pos:'OF',opp:'vs PHI',park:'Citi Field',f:0.95,sc:65,g:'B+',hr:0.36,iso:.265,fb:34,pull:41,la:14.2,no:'Good power but Citi suppresses. Medium upside.'},{n:'Bobby Witt Jr.',t:'KC',pos:'SS',opp:'vs MIN',park:'Kauffman',f:1.00,sc:62,g:'B',hr:0.33,iso:.245,fb:33,pull:39,la:13.8,no:'Emerging power. Kauffman neutral. Solid floor.'}];
+  function gc(g){return g==='A+'||g==='A'?'#00d46a':g==='B+'?'#ffd54a':'#ff9e57';}
+  function rPE(){
+    var h='<div style="padding:24px 16px;max-width:1200px;margin:0 auto">';
+    h+='<div style="font-size:11px;color:#89a0bd;margin-bottom:20px;letter-spacing:1px">Pitcher vulnerability rankings — higher grade = better SP for DFS</div>';
+    P.forEach(function(p){
+      var fl=p.sc>=90?'🔥🔥🔥🔥':p.sc>=80?'🔥🔥🔥':p.sc>=70?'🔥🔥':'🔥';
+      h+='<div style="background:var(--card);border:1px solid #1e2938;border-radius:16px;padding:20px 24px;margin-bottom:14px">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div><span style="font-size:15px;font-weight:700;color:var(--text)">'+p.n+'</span><span style="font-size:11px;color:#89a0bd;margin-left:8px">'+p.t+' · '+p.h+'</span></div>';
+      h+='<div style="display:flex;align-items:center;gap:12px"><div style="background:'+gc(p.g)+';color:#000;font-weight:900;font-size:13px;padding:4px 12px;border-radius:20px">'+p.g+'</div><span>'+fl+'</span><span style="font-size:12px;color:#89a0bd">'+p.sc+'</span><span style="font-size:13px;font-weight:700;color:var(--teal)">
+</html>
++p.s.toLocaleString()+'</span></div></div>';
+      h+='<div style="display:flex;gap:24px;margin-bottom:14px">';
+      [['ERA',p.e],['WHIP',p.w],['K/9',p.k],['BB/9',p.b],['IP',p.i]].forEach(function(s){h+='<div><div style="font-size:9px;color:#89a0bd;letter-spacing:1px">'+s[0]+'</div><div style="font-size:14px;font-weight:700;color:var(--text)">'+s[1]+'</div></div>';});
+      h+='</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">';
+      p.tg.forEach(function(t){h+='<span style="background:#0d1d2e;border:1px solid #1e3a52;color:#59a9ff;font-size:10px;padding:3px 10px;border-radius:20px">+ '+t+'</span>';});
+      p.p.forEach(function(t){h+='<span style="background:#0d1d2e;border:1px solid #1e3a52;color:#89a0bd;font-size:10px;padding:3px 10px;border-radius:20px">'+t+'</span>';});
+      h+='</div><div style="font-size:11px;color:#3d5060;font-style:italic">'+p.no+'</div></div>';
+    });
+    h+='</div>';
+    document.getElementById('view').innerHTML=h;
+    if(typeof renderTabs==='function')renderTabs();
+  }
+  function rHR(){
+    var h='<div style="padding:24px 16px;max-width:1200px;margin:0 auto">';
+    h+='<div style="font-size:11px;color:#89a0bd;margin-bottom:20px;letter-spacing:1px">HR probability model — park factors · ISO · launch angle · matchup</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">';
+    H.forEach(function(d){
+      var pc=d.f>=1.15?'#00d46a':d.f>=1.05?'#ffd54a':d.f<0.95?'#ff5f6d':'#89a0bd';
+      h+='<div style="background:var(--card);border:1px solid #1e2938;border-radius:16px;padding:18px 20px">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-weight:700;font-size:14px;color:var(--text)">'+d.n+'</div><div style="font-size:11px;color:#89a0bd;margin-top:2px">'+d.t+' · '+d.pos+' · '+d.opp+'</div></div><div style="background:'+gc(d.g)+';color:#000;font-weight:900;font-size:12px;padding:3px 10px;border-radius:16px">'+d.g+'</div></div>';
+      h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">';
+      h+='<div style="background:#0a1520;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:#89a0bd">AVG HR/G</div><div style="font-size:15px;font-weight:700;color:var(--teal)">'+d.hr+'</div></div>';
+      h+='<div style="background:#0a1520;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:#89a0bd">ISO</div><div style="font-size:15px;font-weight:700;color:var(--text)">'+d.iso.toFixed(3)+'</div></div>';
+      h+='<div style="background:#0a1520;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:#89a0bd">LAUNCH°</div><div style="font-size:15px;font-weight:700;color:var(--text)">'+d.la+'°</div></div></div>';
+      h+='<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:10px;color:#89a0bd;margin-bottom:4px"><span>'+d.park+'</span><span style="color:'+pc+'">×'+d.f.toFixed(2)+'</span></div><div style="background:#0a1520;border-radius:4px;height:6px"><div style="background:'+pc+';height:6px;border-radius:4px;width:'+Math.min(100,Math.round(d.f*70))+'%"></div></div></div>';
+      h+='<div style="display:flex;gap:10px;margin-bottom:10px"><div style="flex:1;background:#0a1520;border-radius:8px;padding:7px 10px"><div style="font-size:9px;color:#89a0bd">FB%</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+d.fb+'%</div></div><div style="flex:1;background:#0a1520;border-radius:8px;padding:7px 10px"><div style="font-size:9px;color:#89a0bd">PULL%</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+d.pull+'%</div></div><div style="flex:1;background:#0a1520;border-radius:8px;padding:7px 10px;text-align:center"><div style="font-size:9px;color:#89a0bd">SCORE</div><div style="font-size:13px;font-weight:700;color:'+gc(d.g)+'">'+d.sc+'/99</div></div></div>';
+      h+='<div style="font-size:10px;color:#3d5060;font-style:italic">'+d.no+'</div></div>';
+    });
+    h+='</div></div>';
+    document.getElementById('view').innerHTML=h;
+    if(typeof renderTabs==='function')renderTabs();
+  }
+  function patch(){
+    if(typeof window.sideSwitch==='function'&&!window._peHrP){
+      var o=window.sideSwitch;
+      window.sideSwitch=function(el,tab){
+        if(tab==='pitchedge'){document.querySelectorAll('.sidebar-nav-item').forEach(function(x){x.classList.remove('active');});if(el)el.classList.add('active');rPE();return;}
+        if(tab==='hredge'){document.querySelectorAll('.sidebar-nav-item').forEach(function(x){x.classList.remove('active');});if(el)el.classList.add('active');rHR();return;}
+        o(el,tab);
+      };
+      window._peHrP=true;
+    }else if(!window._peHrP){setTimeout(patch,100);}
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){setTimeout(patch,300);});}else{setTimeout(patch,300);}
 })();
 </script>
 </body>
