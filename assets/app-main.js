@@ -236,7 +236,7 @@ function renderPricing(){ return`<section id="pricingSection"><div class="sectio
 function renderNotes(){ return`<section><div class="section-title"><h2>Notes</h2></div><div class="card notes"><textarea id="notesBox" placeholder="Attack CIN in GABP if wind out. Avoid low-total parks unless starter cracked.">${escapeHtml(state.notes)}</textarea><div class="hero-actions" style="margin-top:12px"><button id="saveNotes" class="button primary">Save Notes</button><button id="clearNotes" class="button">Clear</button></div></div></section>`; }
 
 function render(){
-  renderTabs();
+  if(typeof renderTabs==='function')renderTabs();
   if(state.loading){view.innerHTML=`<div class="card loading"><strong>Loading slate...</strong><br><br>Pulling schedule, probable pitchers, and active hitter pools.</div>`;return;}
   if(!state.games.length&&state.tab!=='pricing'&&state.tab!=='notes'&&state.tab!=='launch'&&state.tab!=='optimizer'){view.innerHTML=`<div class="card empty">No games loaded for ${escapeHtml(state.selectedDate)}.</div>`;return;}
   if(state.tab==='dashboard')view.innerHTML=renderDashboard();
@@ -251,7 +251,7 @@ function render(){
   if(state.tab==='launch')view.innerHTML=renderLaunchpad();
   if(state.tab==='pricing')view.innerHTML=renderPricing();
   if(state.tab==='notes')view.innerHTML=renderNotes();
- if(state.tab==='budget'){renderTabs();renderBudgetBeasts();return;}
+ if(state.tab==='budget'){if(typeof renderTabs==='function')renderTabs();renderBudgetBeasts();return;}
   document.querySelectorAll('[data-game]').forEach(el=>el.onclick=async()=>{state.tab='hitterlab';render();view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`;await loadSelectedGame(Number(el.dataset.game));});
   document.querySelectorAll('[data-gamepick]').forEach(el=>el.onclick=async()=>{state.tab='hitterlab';render();view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`;await loadSelectedGame(Number(el.dataset.gamepick));});
   document.querySelectorAll('[data-watch-team]').forEach(el=>el.onclick=e=>{e.stopPropagation();toggleWatch({type:'team',name:el.dataset.watchTeam,gamePk:Number(el.dataset.watchGame)});});
