@@ -1,0 +1,20 @@
+services:
+  - type: web
+      name: allday-mlb-edge-api
+          runtime: python
+              region: oregon
+                  plan: free
+                      rootDir: python-api
+                          buildCommand: pip install -r requirements.txt
+                              startCommand: gunicorn api:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --log-level info
+                                  envVars:
+                                        - key: FLASK_DEBUG
+                                                value: "false"
+                                                      - key: CACHE_DIR
+                                                              value: /tmp/cache
+                                                                    - key: DATA_DIR
+                                                                            value: /tmp/data
+                                                                                  - key: ADMIN_TOKEN
+                                                                                          generateValue: true
+                                                                                              healthCheckPath: /api/health
+                                                                                                  autoDeploy: true
