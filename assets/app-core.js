@@ -57,7 +57,7 @@ const state={
   watchlist:JSON.parse(localStorage.getItem('mlb-edge-watchlist')||'[]'),
   edgeFilter:'',autoRefresh:false,autoRefreshMs:120000,
   oddsWeather:JSON.parse(localStorage.getItem('mlb-edge-odds-weather')||'{}'),
-  apiConfig:JSON.parse(localStorage.getItem('mlb-edge-api-config')||'{"proxyBaseUrl":"https://newest-mlb-1.onrender.com","oddsRegion":"us","oddsBookmaker":"","autoSyncWeather":true,"autoSyncOdds":true}'),
+  apiConfig:JSON.parse(localStorage.getItem('mlb-edge-api-config')||'{"proxyBaseUrl":"https://newest-mlb-1.onrender.com","oddsRegion":"us","oddsBookmaker":"","autoSyncWeather":true,"autoSyncOdds":true,"savantApiUrl":"https://allday-mlb-edge-api.onrender.com"}'),
   liveSync:{weather:{status:'idle',updatedAt:null,error:''},odds:{status:'idle',updatedAt:null,error:''}},
   teamHittersCache:{},teamPitchingCache:{},recentGamesCache:{},gameContextCache:{},
   aiMode:'picks',aiLoading:false,aiResult:'',aiResultMode:'',aiResultDate:'',aiError:'',
@@ -548,8 +548,8 @@ async function loadSelectedGame(gamePk){
   const awayBullpen=projectBullpen(awayStaff,awayUsage,game.gameDate,game.awayPitcher);
   const homeBullpen=projectBullpen(homeStaff,homeUsage,game.gameDate,game.homePitcher);
   const grade=(h,oppPitcher,isHome,travel,oppBullpen)=>hitterGrade(h,oppPitcher,park,{isHome,travel,game,side:isHome?'home':'away',oppBullpen});
-  const awayGraded=awayHitters.slice(0,10).map(h=>({...h,grade:grade(h,game.homePitcher,false,awayTravel,homeBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
-  const homeGraded=homeHitters.slice(0,10).map(h=>({...h,grade:grade(h,game.awayPitcher,true,homeTravel,awayBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
+  const awayGraded=(typeof enrichHittersWithSavant==='function'?enrichHittersWithSavant(awayHitters):awayHitters).slice(0,10).map(h=>({...h,grade:grade(h,game.homePitcher,false,awayTravel,homeBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
+  const homeGraded=(typeof enrichHittersWithSavant==='function'?enrichHittersWithSavant(homeHitters):homeHitters).slice(0,10).map(h=>({...h,grade:grade(h,game.awayPitcher,true,homeTravel,awayBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
   state.selectedGameData={...game,park,awayHitters:awayGraded,homeHitters:homeGraded,awayTravel,homeTravel,awayBullpen,homeBullpen,awayStarterTendencies:pitcherTendencies(game.awayPitcher),homeStarterTendencies:pitcherTendencies(game.homePitcher),lineupsLive:!!(awayLineupIds&&homeLineupIds)};
   buildHero();render();
 }
@@ -570,6 +570,7 @@ function renderDashboard(){
   </section>`;
 }
 
+function if(typeof loadSavantData==='function')loadSavantData().catch(()=>{});
 function renderGames(){
   return`<section id="gamesSection">
     <div class="section-title"><h2>Games</h2><div class="meta">Pick a matchup to load team hitters</div></div>
