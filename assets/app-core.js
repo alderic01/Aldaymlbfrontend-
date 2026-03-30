@@ -3,7 +3,7 @@ const HYDRATE = 'team,probablePitcher,linescore,flags,venue(location,timeZone),d
 const TABS = [
   {id:'dashboard', label:'Dashboard'},
   {id:'games', label:'Games'},
-  {id:'edges', label:'Edge Board'},
+  {id:'edges', label:'Scouting},
   {id:'stacks', label:'Stack Lab'},
   {id:'hitterlab', label:'Hitter Lab'},
   {id:'signals', label:'Signals'},
