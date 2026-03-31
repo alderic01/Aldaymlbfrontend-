@@ -7,7 +7,7 @@ const TABS = [
   {id:'stacks', label:'Stack Lab'},
   {id:'hitterlab', label:'Hitter Lab'},
   {id:'signals', label:'Signals'},
-  {id:'ai', label:'⚡ AI Picks'},
+  {id:'ai', label:'⚡ AI Picks'},h
   {id:'market', label:'Odds + Weather'},
   {id:'optimizer', label:'🎯 DK Optimizer'},
   {id:'launch', label:'Launchpad'},
@@ -570,7 +570,7 @@ function renderDashboard(){
   </section>`;
 }
 
-function if(typeof loadSavantData==='function')loadSavantData().catch(()=>{});
+if(typeof loadSavantData==='function')loadSavantData().catch(()=>{});
 function renderGames(){
   return`<section id="gamesSection">
     <div class="section-title"><h2>Games</h2><div class="meta">Pick a matchup to load team hitters</div></div>
