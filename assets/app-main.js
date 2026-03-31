@@ -256,51 +256,51 @@ function render(){
   document.querySelectorAll('[data-gamepick]').forEach(el=>el.onclick=async()=>{state.tab='hitterlab';render();view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`;await loadSelectedGame(Number(el.dataset.gamepick));});
   document.querySelectorAll('[data-watch-team]').forEach(el=>el.onclick=e=>{e.stopPropagation();toggleWatch({type:'team',name:el.dataset.watchTeam,gamePk:Number(el.dataset.watchGame)});});
   document.querySelectorAll('[data-watch-hitter]').forEach(el=>el.onclick=e=>{e.stopPropagation();toggleWatch({type:'hitter',name:el.dataset.watchHitter});});
-  if($('#saveApiConfigBtn'))$('#saveApiConfigBtn').onclick=()=>{saveApiConfig({proxyBaseUrl:$('#proxyBaseUrl')?.value.trim()||'https://newest-mlb-1.onrender.com',oddsApiKey:$('#oddsApiKey')?.value.trim()||ODDS_API_KEY,oddsRegion:$('#oddsRegion')?.value||'us',oddsBookmaker:$('#oddsBookmaker')?.value.trim()||'',autoSyncWeather:!!$('#autoSyncWeather')?.checked,autoSyncOdds:!!$('#autoSyncOdds')?.checked});render();};
-  if($('#syncWeatherBtn'))$('#syncWeatherBtn').onclick=syncWeatherForSlate;
-  if($('#syncOddsBtn'))$('#syncOddsBtn').onclick=syncOddsForSlate;
-  if($('#syncAllBtn'))$('#syncAllBtn').onclick=syncLiveFeeds;
-  if($('#launchSyncAll'))$('#launchSyncAll').onclick=syncLiveFeeds;
-  if($('#launchToMarket'))$('#launchToMarket').onclick=()=>{state.tab='market';render();};
-  if($('#launchToOptimizer'))$('#launchToOptimizer').onclick=()=>{state.tab='optimizer';render();};
-  if($('#launchToNotes'))$('#launchToNotes').onclick=()=>{state.tab='notes';render();};
-  if($('#saveMarketBtn'))$('#saveMarketBtn').onclick=()=>{const patch={};document.querySelectorAll('.market-input').forEach(el=>patch[el.dataset.field]=el.value);saveMarket(state.selectedGamePk,patch);render();};
-  if($('#clearMarketBtn'))$('#clearMarketBtn').onclick=()=>{saveMarket(state.selectedGamePk,defaultMarket());render();};
-  if($('#copyMarketBtn'))$('#copyMarketBtn').onclick=async()=>{const g=state.selectedGameData||state.games.find(x=>x.gamePk===state.selectedGamePk);if(!g)return;const m=getMarket(g);const text=`${g.away.abbr} @ ${g.home.abbr} | ${g.venue.name} | O/U ${m.total||'-'} | ${g.away.abbr} ${m.awayMoneyline||'-'} | ${g.home.abbr} ${m.homeMoneyline||'-'} | ${m.temperature||'-'}° | ${m.wind||'-'} mph ${m.windDir||''} | ${totalLean(g,m)}${m.note?` | ${m.note}`:''}`;try{await navigator.clipboard.writeText(text);}catch(e){console.warn(e);}};
-  if($('#saveNotes'))$('#saveNotes').onclick=()=>{state.notes=$('#notesBox').value;localStorage.setItem('mlb-edge-notes',state.notes);};
-  if($('#clearNotes'))$('#clearNotes').onclick=()=>{state.notes='';localStorage.removeItem('mlb-edge-notes');render();};
-  if($('#accountBtn'))$('#accountBtn').onclick=()=>$('#accountModal').classList.add('open');
-  if($('#goProBtn'))$('#goProBtn').onclick=()=>$('#accountModal').classList.add('open');
-  if($('#closeAccountBtn'))$('#closeAccountBtn').onclick=()=>$('#accountModal').classList.remove('open');
-  if($('#saveAccountBtn'))$('#saveAccountBtn').onclick=()=>{const profile={email:$('#billingEmail')?.value.trim()||'',apiBase:$('#billingApiBase')?.value.trim()||''};setAccessProfile(profile);if(profile.apiBase){state.apiConfig.proxyBaseUrl=profile.apiBase;localStorage.setItem('mlb-edge-api-config',JSON.stringify(state.apiConfig));}alert('Saved.');$('#accountModal').classList.remove('open');};
-  if($('#startProCheckout'))$('#startProCheckout').onclick=()=>startStripeCheckout('pro');
-  if($('#openPortalBtn'))$('#openPortalBtn').onclick=()=>openBillingPortal();
+  if(document.getElementById('saveApiConfigBtn'))document.getElementById('saveApiConfigBtn').onclick=()=>{saveApiConfig({proxyBaseUrl:document.getElementById('proxyBaseUrl')?.value.trim()||'https://newest-mlb-1.onrender.com',oddsApiKey:document.getElementById('oddsApiKey')?.value.trim()||ODDS_API_KEY,oddsRegion:document.getElementById('oddsRegion')?.value||'us',oddsBookmaker:document.getElementById('oddsBookmaker')?.value.trim()||'',autoSyncWeather:!!document.getElementById('autoSyncWeather')?.checked,autoSyncOdds:!!document.getElementById('autoSyncOdds')?.checked});render();};
+  if(document.getElementById('syncWeatherBtn'))document.getElementById('syncWeatherBtn').onclick=syncWeatherForSlate;
+  if(document.getElementById('syncOddsBtn'))document.getElementById('syncOddsBtn').onclick=syncOddsForSlate;
+  if(document.getElementById('syncAllBtn'))document.getElementById('syncAllBtn').onclick=syncLiveFeeds;
+  if(document.getElementById('launchSyncAll'))document.getElementById('launchSyncAll').onclick=syncLiveFeeds;
+  if(document.getElementById('launchToMarket'))document.getElementById('launchToMarket').onclick=()=>{state.tab='market';render();};
+  if(document.getElementById('launchToOptimizer'))document.getElementById('launchToOptimizer').onclick=()=>{state.tab='optimizer';render();};
+  if(document.getElementById('launchToNotes'))document.getElementById('launchToNotes').onclick=()=>{state.tab='notes';render();};
+  if(document.getElementById('saveMarketBtn'))document.getElementById('saveMarketBtn').onclick=()=>{const patch={};document.querySelectorAll('.market-input').forEach(el=>patch[el.dataset.field]=el.value);saveMarket(state.selectedGamePk,patch);render();};
+  if(document.getElementById('clearMarketBtn'))document.getElementById('clearMarketBtn').onclick=()=>{saveMarket(state.selectedGamePk,defaultMarket());render();};
+  if(document.getElementById('copyMarketBtn'))document.getElementById('copyMarketBtn').onclick=async()=>{const g=state.selectedGameData||state.games.find(x=>x.gamePk===state.selectedGamePk);if(!g)return;const m=getMarket(g);const text=`${g.away.abbr} @ ${g.home.abbr} | ${g.venue.name} | O/U ${m.total||'-'} | ${g.away.abbr} ${m.awayMoneyline||'-'} | ${g.home.abbr} ${m.homeMoneyline||'-'} | ${m.temperature||'-'}° | ${m.wind||'-'} mph ${m.windDir||''} | ${totalLean(g,m)}${m.note?` | ${m.note}`:''}`;try{await navigator.clipboard.writeText(text);}catch(e){console.warn(e);}};
+  if(document.getElementById('saveNotes'))document.getElementById('saveNotes').onclick=()=>{state.notes=document.getElementById('notesBox').value;localStorage.setItem('mlb-edge-notes',state.notes);};
+  if(document.getElementById('clearNotes'))document.getElementById('clearNotes').onclick=()=>{state.notes='';localStorage.removeItem('mlb-edge-notes');render();};
+  if(document.getElementById('accountBtn'))document.getElementById('accountBtn').onclick=()=>document.getElementById('accountModal').classList.add('open');
+  if(document.getElementById('goProBtn'))document.getElementById('goProBtn').onclick=()=>document.getElementById('accountModal').classList.add('open');
+  if(document.getElementById('closeAccountBtn'))document.getElementById('closeAccountBtn').onclick=()=>document.getElementById('accountModal').classList.remove('open');
+  if(document.getElementById('saveAccountBtn'))document.getElementById('saveAccountBtn').onclick=()=>{const profile={email:document.getElementById('billingEmail')?.value.trim()||'',apiBase:document.getElementById('billingApiBase')?.value.trim()||''};setAccessProfile(profile);if(profile.apiBase){state.apiConfig.proxyBaseUrl=profile.apiBase;localStorage.setItem('mlb-edge-api-config',JSON.stringify(state.apiConfig));}alert('Saved.');document.getElementById('accountModal').classList.remove('open');};
+  if(document.getElementById('startProCheckout'))document.getElementById('startProCheckout').onclick=()=>startStripeCheckout('pro');
+  if(document.getElementById('openPortalBtn'))document.getElementById('openPortalBtn').onclick=()=>openBillingPortal();
   document.addEventListener('click',e=>{const btn=e.target.closest('[data-plan-checkout]');if(btn)startStripeCheckout(btn.dataset.planCheckout||'pro');});
-  if($('#jumpGames'))$('#jumpGames').onclick=()=>{state.tab='games';render();document.getElementById('gamesSection')?.scrollIntoView({behavior:'smooth'});};
-  if($('#jumpStacks'))$('#jumpStacks').onclick=()=>{state.tab='stacks';render();document.getElementById('stacksSection')?.scrollIntoView({behavior:'smooth'});};
-  if($('#jumpPricing'))$('#jumpPricing').onclick=()=>{state.tab='pricing';render();document.getElementById('pricingSection')?.scrollIntoView({behavior:'smooth'});};
-  if($('#jumpLaunch'))$('#jumpLaunch').onclick=()=>{state.tab='launch';render();document.getElementById('launchSection')?.scrollIntoView({behavior:'smooth'});};
+  if(document.getElementById('jumpGames'))document.getElementById('jumpGames').onclick=()=>{state.tab='games';render();document.getElementById('gamesSection')?.scrollIntoView({behavior:'smooth'});};
+  if(document.getElementById('jumpStacks'))document.getElementById('jumpStacks').onclick=()=>{state.tab='stacks';render();document.getElementById('stacksSection')?.scrollIntoView({behavior:'smooth'});};
+  if(document.getElementById('jumpPricing'))document.getElementById('jumpPricing').onclick=()=>{state.tab='pricing';render();document.getElementById('pricingSection')?.scrollIntoView({behavior:'smooth'});};
+  if(document.getElementById('jumpLaunch'))document.getElementById('jumpLaunch').onclick=()=>{state.tab='launch';render();document.getElementById('launchSection')?.scrollIntoView({behavior:'smooth'});};
   // Optimizer bindings
-  if($('#optimSyncDK'))$('#optimSyncDK').onclick=async()=>{await syncDKSalaries();render();};
-  if($('#optimClearDK'))$('#optimClearDK').onclick=()=>{state.dkSalaries={};state.dkSalaryDate='';state.optimizerResult=null;localStorage.removeItem('mlb-edge-dk-salaries');localStorage.removeItem('mlb-edge-dk-salary-date');render();};
-  if($('#optimRunBtn'))$('#optimRunBtn').onclick=()=>{const team=$('#optimStackTeam')?.value||'';state.optimizerStackTeam=team;state.optimizerResult=optimizeDKLineup(team);render();};
-  if($('#optimClearResult'))$('#optimClearResult').onclick=()=>{state.optimizerResult=null;render();};
-  if($('#optimExportBtn'))$('#optimExportBtn').onclick=async()=>{if(!state.optimizerResult)return;const lines=state.optimizerResult.lineup.map(p=>`${p.slotLabel}\t${p.name}\t${p.team}\t$${p.salary.toLocaleString()}\t${p.score}/99`);const text=`DK Optimizer — ${state.selectedDate}\n\n${lines.join('\n')}\n\nTotal: $${state.optimizerResult.totalSalary.toLocaleString()} · Proj: ${state.optimizerResult.projScore}`;try{await navigator.clipboard.writeText(text);}catch(e){console.warn(e);}};
+  if(document.getElementById('optimSyncDK'))document.getElementById('optimSyncDK').onclick=async()=>{await syncDKSalaries();render();};
+  if(document.getElementById('optimClearDK'))document.getElementById('optimClearDK').onclick=()=>{state.dkSalaries={};state.dkSalaryDate='';state.optimizerResult=null;localStorage.removeItem('mlb-edge-dk-salaries');localStorage.removeItem('mlb-edge-dk-salary-date');render();};
+  if(document.getElementById('optimRunBtn'))document.getElementById('optimRunBtn').onclick=()=>{const team=document.getElementById('optimStackTeam')?.value||'';state.optimizerStackTeam=team;state.optimizerResult=optimizeDKLineup(team);render();};
+  if(document.getElementById('optimClearResult'))document.getElementById('optimClearResult').onclick=()=>{state.optimizerResult=null;render();};
+  if(document.getElementById('optimExportBtn'))document.getElementById('optimExportBtn').onclick=async()=>{if(!state.optimizerResult)return;const lines=state.optimizerResult.lineup.map(p=>`${p.slotLabel}\t${p.name}\t${p.team}\t$${p.salary.toLocaleString()}\t${p.score}/99`);const text=`DK Optimizer — ${state.selectedDate}\n\n${lines.join('\n')}\n\nTotal: $${state.optimizerResult.totalSalary.toLocaleString()} · Proj: ${state.optimizerResult.projScore}`;try{await navigator.clipboard.writeText(text);}catch(e){console.warn(e);}};
   // DK CSV upload
   const dkInput=document.getElementById('dkCsvInput');
   if(dkInput&&!dkInput._bound){dkInput._bound=true;dkInput.onchange=function(){const file=this.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{state.dkSalaries=parseDKCsv(e.target.result);state.dkSalaryDate=file.name.replace('.csv','');localStorage.setItem('mlb-edge-dk-salaries',JSON.stringify(state.dkSalaries));localStorage.setItem('mlb-edge-dk-salary-date',state.dkSalaryDate);const _dkBase=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');fetch(_dkBase+'/api/dk/salaries/upload',{method:'POST',headers:{'Content-Type':'text/csv'},body:e.target.result}).catch(()=>{});render();};reader.readAsText(file);};}
 }
 
 function exportCsv(){const rows=[['Rank','Team','Side','Opponent','Score','Level','Opp Pitcher','Venue','Date']].concat(filteredStackRows().map((r,i)=>[i+1,r.team,r.side,r.opponent,r.score,r.level,r.oppPitcher,r.venue,state.selectedDate]));const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`mlb-edge-board-${state.selectedDate}.csv`;a.click();URL.revokeObjectURL(a.href);}
-function tickClock(){$('#clockPill').textContent=new Date().toLocaleTimeString();}
+function tickClock(){document.getElementById('clockPill').textContent=new Date().toLocaleTimeString();}
 setInterval(tickClock,1000);tickClock();
-$('#dateInput').value=state.selectedDate;
-$('#dateInput').addEventListener('change',e=>{state.selectedDate=e.target.value;});
-$('#refreshBtn').onclick=loadSlate;
-$('#exportBtn').onclick=exportCsv;
-$('#edgeSearch').addEventListener('input',e=>{state.edgeFilter=e.target.value;if(state.tab==='edges')render();});
+document.getElementById('dateInput').value=state.selectedDate;
+document.getElementById('dateInput').addEventListener('change',e=>{state.selectedDate=e.target.value;});
+document.getElementById('refreshBtn').onclick=loadSlate;
+document.getElementById('exportBtn').onclick=exportCsv;
+document.getElementById('edgeSearch').addEventListener('input',e=>{state.edgeFilter=e.target.value;if(state.tab==='edges')render();});
 let autoTimer=null;
-$('#autoBtn').onclick=()=>{state.autoRefresh=!state.autoRefresh;$('#autoBtn').textContent=`Auto Refresh: ${state.autoRefresh?'On':'Off'}`;if(autoTimer)clearInterval(autoTimer);if(state.autoRefresh)autoTimer=setInterval(loadSlate,state.autoRefreshMs);};
+document.getElementById('autoBtn').onclick=()=>{state.autoRefresh=!state.autoRefresh;document.getElementById('autoBtn').textContent=`Auto Refresh: ${state.autoRefresh?'On':'Off'}`;if(autoTimer)clearInterval(autoTimer);if(state.autoRefresh)autoTimer=setInterval(loadSlate,state.autoRefreshMs);};
 
 async function generateAIPicks(){
   if(state.aiLoading)return;
@@ -320,7 +320,7 @@ async function generateAIPicks(){
 }
 
 buildHero();
-$('#edgeSearch').value=state.edgeFilter;
+document.getElementById('edgeSearch').value=state.edgeFilter;
 render();
 
 (function(){
