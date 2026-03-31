@@ -376,6 +376,16 @@ function hitterGrade10Factor(h, oppPitcher, park, context) {
     );
   }
 
+// SAVANT STATCAST DELTA (v5.1)
+    var _sd=window._savantData&&window._savantData[(h.name||'').toLowerCase()]||null;
+    if(_sd){
+          var _xw=Number(_sd.xwoba||0),_bp=Number(_sd.barrel_pct||0),_hh=Number(_sd.hard_hit_pct||0);
+          var _xwF=Math.max(-8,Math.min(8,(_xw-0.315)*80));
+          var _bpF=Math.max(-6,Math.min(6,(_bp-7.0)*0.8));
+          var _hhF=Math.max(-4,Math.min(4,(_hh-38.0)*0.2));
+          var _sd_delta=Math.max(-14,Math.min(14,_xwF+_bpF+_hhF));
+          score+=_sd_delta;
+    }
   score=Math.max(25,Math.min(99,Math.round(score)));
 
   // Grade letter
