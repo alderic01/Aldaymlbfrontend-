@@ -285,6 +285,46 @@ html,body{background:#060e1a!important;background-image:none!important}
   background: linear-gradient(135deg, rgba(0,255,156,.05), transparent);
   border-bottom: 1px solid rgba(0,255,156,.2);
 }
+/* ─── Sportradar Lineups & Rosters ───────────────────────────── */
+.sr-game-grid{display:flex;flex-wrap:wrap;gap:8px}
+.sr-game-chip{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--text);cursor:pointer;transition:.18s transform,.18s border-color;font-size:13px}
+.sr-game-chip:hover{transform:translateY(-1px);border-color:#315889}
+.sr-game-chip.active{border-color:var(--teal);background:rgba(0,229,170,.08);box-shadow:0 0 12px rgba(0,229,170,.15)}
+.sr-game-teams{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.5px}
+.sr-game-status{font-size:11px;color:var(--muted);text-transform:capitalize}
+
+.sr-pitcher-banner{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px;border-radius:10px;background:linear-gradient(135deg,rgba(0,229,170,.08),rgba(50,199,255,.06));border:1px solid rgba(0,229,170,.15)}
+.sr-pitcher-pos{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;color:var(--teal);min-width:36px;text-align:center}
+.sr-pitcher-name{font-weight:700;font-size:15px}
+.sr-pitcher-info .mini{margin-top:2px}
+
+.sr-lineup-table{display:flex;flex-direction:column;gap:0}
+.sr-lineup-header{display:grid;grid-template-columns:36px 52px 1fr 48px;padding:8px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--line)}
+.sr-lineup-row{display:grid;grid-template-columns:36px 52px 1fr 48px;padding:10px;font-size:14px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .12s}
+.sr-lineup-row:hover{background:rgba(255,255,255,.03)}
+.sr-col-order{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--muted)}
+.sr-col-name{font-weight:600}
+.sr-col-jersey{font-family:'JetBrains Mono',monospace;color:var(--muted);text-align:right}
+.sr-pos-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:rgba(89,169,255,.12);color:var(--blue);letter-spacing:.5px}
+
+.sr-roster-group{margin-bottom:14px}
+.sr-roster-group-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal);padding:6px 10px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.sr-roster-row{display:grid;grid-template-columns:42px 1fr 60px;padding:7px 10px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.03)}
+.sr-roster-row:hover{background:rgba(255,255,255,.03)}
+.sr-roster-jersey{font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:12px}
+.sr-roster-name{font-weight:500}
+.sr-roster-pos{font-family:'Barlow Condensed',sans-serif;font-weight:600;color:var(--blue);text-align:right}
+
+.sr-changes-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.sr-change-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.02);font-size:13px}
+.sr-change-inning{font-family:'JetBrains Mono',monospace;font-weight:600;min-width:60px;color:var(--muted)}
+.sr-change-team{font-family:'Barlow Condensed',sans-serif;font-weight:700;min-width:40px}
+.sr-change-type{font-size:11px}
+.sr-change-desc{flex:1;color:var(--muted)}
+.tag.red{background:rgba(255,95,109,.12);color:var(--red)}
+.tag.gold{background:rgba(255,213,74,.12);color:var(--gold)}
+.tag.blue{background:rgba(89,169,255,.12);color:var(--blue)}
+.tag.teal{background:rgba(0,229,170,.12);color:var(--teal)}
 </style>
 </head>
 <body>
@@ -407,6 +447,7 @@ html,body{background:#060e1a!important;background-image:none!important}
 <script src="./assets/savant-bridge.js?v=432"></script>
 <script src="./assets/app-core.js?v=431"></script>
 <script src="./assets/mlb-advanced-grading.js?v=431"></script>
+<script src="./assets/sportradar-lineups.js?v=431"></script>
 <script src="./assets/app-main.js?v=431"></script>
 <script src="./assets/player-modal.js?v=427"></script>
 <script>(function(){function sideSwitch(el,tab){var keyMap={dash:'dashboard',hitters:'hitterlab',launchpad:'launch'};var stateKey=keyMap[tab]||tab;document.querySelectorAll(".sidebar-nav-item").forEach(function(x){x.classList.remove("active")});el.classList.add("active");if(typeof state!=="undefined")state.tab=stateKey;if(typeof render==="function")render();document.querySelectorAll("#tabs .tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tab")===stateKey)})}window.sideSwitch=sideSwitch;var obs=new MutationObserver(function(){document.querySelectorAll(".grade:not([data-grade])").forEach(function(el){el.setAttribute("data-grade",el.innerText.trim())})});document.addEventListener("DOMContentLoaded",function(){obs.observe(document.body,{childList:true,subtree:true})})})();</script>

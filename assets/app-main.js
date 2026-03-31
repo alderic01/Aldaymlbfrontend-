@@ -238,7 +238,7 @@ function renderNotes(){ return`<section><div class="section-title"><h2>Notes</h2
 function render(){
   if(typeof renderTabs==='function')renderTabs();
   if(state.loading){view.innerHTML=`<div class="card loading"><strong>Loading slate...</strong><br><br>Pulling schedule, probable pitchers, and active hitter pools.</div>`;return;}
-  if(!state.games.length&&state.tab!=='pricing'&&state.tab!=='notes'&&state.tab!=='launch'&&state.tab!=='optimizer'){view.innerHTML=`<div class="card empty">No games loaded for ${escapeHtml(state.selectedDate)}.</div>`;return;}
+  if(!state.games.length&&state.tab!=='pricing'&&state.tab!=='notes'&&state.tab!=='launch'&&state.tab!=='optimizer'&&state.tab!=='lineups'){view.innerHTML=`<div class="card empty">No games loaded for ${escapeHtml(state.selectedDate)}.</div>`;return;}
   if(state.tab==='dashboard')view.innerHTML=renderDashboard();
   if(state.tab==='games')view.innerHTML=renderGames();
   if(state.tab==='edges')view.innerHTML=renderEdges();
@@ -252,6 +252,7 @@ function render(){
   if(state.tab==='pricing')view.innerHTML=renderPricing();
   if(state.tab==='notes')view.innerHTML=renderNotes();
  if(state.tab==='budget'){if(typeof renderTabs==='function')renderTabs();renderBudgetBeasts();return;}
+  if(state.tab==='lineups'&&typeof renderLineupsRosters==='function')view.innerHTML=renderLineupsRosters();
   document.querySelectorAll('[data-game]').forEach(el=>el.onclick=async()=>{state.tab='hitterlab';render();view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`;await loadSelectedGame(Number(el.dataset.game));});
   document.querySelectorAll('[data-gamepick]').forEach(el=>el.onclick=async()=>{state.tab='hitterlab';render();view.innerHTML=`<div class="card loading"><strong>Loading matchup lab...</strong></div>`;await loadSelectedGame(Number(el.dataset.gamepick));});
   document.querySelectorAll('[data-watch-team]').forEach(el=>el.onclick=e=>{e.stopPropagation();toggleWatch({type:'team',name:el.dataset.watchTeam,gamePk:Number(el.dataset.watchGame)});});
@@ -286,6 +287,11 @@ function render(){
   if(document.getElementById('optimRunBtn'))document.getElementById('optimRunBtn').onclick=()=>{const team=document.getElementById('optimStackTeam')?.value||'';state.optimizerStackTeam=team;state.optimizerResult=optimizeDKLineup(team);render();};
   if(document.getElementById('optimClearResult'))document.getElementById('optimClearResult').onclick=()=>{state.optimizerResult=null;render();};
   if(document.getElementById('optimExportBtn'))document.getElementById('optimExportBtn').onclick=async()=>{if(!state.optimizerResult)return;const lines=state.optimizerResult.lineup.map(p=>`${p.slotLabel}\t${p.name}\t${p.team}\t$${p.salary.toLocaleString()}\t${p.score}/99`);const text=`DK Optimizer — ${state.selectedDate}\n\n${lines.join('\n')}\n\nTotal: $${state.optimizerResult.totalSalary.toLocaleString()} · Proj: ${state.optimizerResult.projScore}`;try{await navigator.clipboard.writeText(text);}catch(e){console.warn(e);}};
+  // Sportradar Lineups bindings
+  if(document.getElementById('srSaveConfig'))document.getElementById('srSaveConfig').onclick=()=>{saveSportradarConfig({apiKey:document.getElementById('srApiKey')?.value.trim()||'',accessLevel:document.getElementById('srAccessLevel')?.value||'trial'});state.sportradar.useExtendedSummary=document.getElementById('srSummaryType')?.value==='extended';render();};
+  if(document.getElementById('srLoadSlate'))document.getElementById('srLoadSlate').onclick=()=>loadSportradarSlate(state.selectedDate);
+  if(document.getElementById('srRefreshGame'))document.getElementById('srRefreshGame').onclick=()=>refreshSportradarGame();
+  document.querySelectorAll('[data-sr-game]').forEach(el=>el.onclick=()=>selectSportradarGame(el.dataset.srGame));
   // DK CSV upload
   const dkInput=document.getElementById('dkCsvInput');
   if(dkInput&&!dkInput._bound){dkInput._bound=true;dkInput.onchange=function(){const file=this.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{state.dkSalaries=parseDKCsv(e.target.result);state.dkSalaryDate=file.name.replace('.csv','');localStorage.setItem('mlb-edge-dk-salaries',JSON.stringify(state.dkSalaries));localStorage.setItem('mlb-edge-dk-salary-date',state.dkSalaryDate);const _dkBase=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');fetch(_dkBase+'/api/dk/salaries/upload',{method:'POST',headers:{'Content-Type':'text/csv'},body:e.target.result}).catch(()=>{});render();};reader.readAsText(file);};}

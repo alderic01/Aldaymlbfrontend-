@@ -13,7 +13,8 @@ const TABS = [
   {id:'launch', label:'Launchpad'},
   {id:'pricing', label:'Pricing'},
   {id:'notes', label:'Notes'},
-  {id:'budget', label:'💰 Budget Beasts'}
+  {id:'budget', label:'💰 Budget Beasts'},
+  {id:'lineups', label:'Lineups'}
 ];
 const PARKS = {
   'Coors Field':{hr:1.42,run:1.32,short:'COL'},'Great American Ball Park':{hr:1.28,run:1.18,short:'CIN'},
