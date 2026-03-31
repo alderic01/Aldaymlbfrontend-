@@ -362,7 +362,7 @@ def grade_full_slate(slate_data, game_contexts, team_k_rates=None):
 
     sorted_pitchers = sorted(pitcher_grades.values(), key=lambda x: x.get("matchup_score", 0), reverse=True)
     for rank, p in enumerate(sorted_pitchers, 1):
-        pitcher_grades[str(p["player_id"])]["dvp_rank"] = rank
+        if str(p["player_id"]) in pitcher_grades:            pitcher_grades[str(p["player_id"])]["dvp_rank"] = rank
 
     return {
         "hitters":   hitter_grades,
