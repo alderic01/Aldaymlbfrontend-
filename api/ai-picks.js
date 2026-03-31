@@ -1,7 +1,11 @@
-export default async (req, context) => {
-  const KEY = Netlify.env.get("ANTHROPIC_API_KEY");
-  if (!KEY) return Response.json({ error: "No API key" }, { status: 500 });
-  let body; try { body = await req.json(); } catch { body = {}; }
+module.exports = async (req, res) => {
+  const KEY = process.env.ANTHROPIC_API_KEY;
+  if (!KEY) return res.status(500).json({ error: "No API key" });
+
+  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+
+  let body;
+  try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {}; } catch { body = {}; }
   const { games = [], date = "", mode = "picks", dkSalaries = [] } = body;
 
   // Build slate string
@@ -35,13 +39,16 @@ export default async (req, context) => {
     edges: `Sharp MLB edge finder. Slate (${date}):\n${slate}${dkContext}\n\nOne total edge, one ML value, one DFS leverage play (include DK salary and value context). 2-3 sentences each.`
   };
 
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 1024, messages: [{ role: "user", content: prompts[mode] || prompts.picks }] })
-  });
-  if (!r.ok) return Response.json({ error: `Anthropic ${r.status}` }, { status: 502 });
-  const d = await r.json();
-  return Response.json({ ok: true, mode, date, analysis: d.content?.[0]?.text || "" });
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": KEY, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 1024, messages: [{ role: "user", content: prompts[mode] || prompts.picks }] })
+    });
+    if (!r.ok) return res.status(502).json({ error: `Anthropic ${r.status}` });
+    const d = await r.json();
+    return res.status(200).json({ ok: true, mode, date, analysis: d.content?.[0]?.text || "" });
+  } catch (e) {
+    return res.status(502).json({ error: e.message });
+  }
 };
-export const config = { path: "/api/ai-picks" };

@@ -1,0 +1,28 @@
+{
+  "rewrites": [
+    { "source": "/api/ai-picks", "destination": "/api/ai-picks" },
+    { "source": "/api/activate", "destination": "/api/activate" },
+    { "source": "/api/claim", "destination": "/api/claim" },
+    { "source": "/api/signin", "destination": "/api/signin" },
+    { "source": "/api/slate", "destination": "https://newest-mlb-1.onrender.com/api/slate" },
+    { "source": "/api/hitters", "destination": "https://newest-mlb-1.onrender.com/api/hitters" },
+    { "source": "/api/pitchers", "destination": "https://newest-mlb-1.onrender.com/api/pitchers" },
+    { "source": "/api/stack", "destination": "https://newest-mlb-1.onrender.com/api/stack" },
+    { "source": "/api/player/:id", "destination": "https://newest-mlb-1.onrender.com/api/player/:id" },
+    { "source": "/api/health", "destination": "https://newest-mlb-1.onrender.com/api/health" },
+    { "source": "/api/dk/sync", "destination": "https://newest-mlb-1.onrender.com/api/dk/sync" },
+    { "source": "/api/checkout/session", "destination": "https://newest-mlb-1.onrender.com/api/checkout/session" },
+    { "source": "/api/portal/session", "destination": "https://newest-mlb-1.onrender.com/api/portal/session" },
+    { "source": "/api/auth/:path*", "destination": "https://newest-mlb-1.onrender.com/api/auth/:path*" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type,Authorization" }
+      ]
+    }
+  ]
+}
