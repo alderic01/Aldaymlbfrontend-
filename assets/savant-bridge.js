@@ -16,7 +16,7 @@ window._savantLoading = window._savantLoading || false;
 // Get the Python API base URL - falls back to local if not configured
 function getSavantBase() {
   const cfg = (typeof state !== 'undefined' && state.apiConfig) ? state.apiConfig : {};
-    return cfg.savantApiUrl || window._savantApiUrl || 'https://allday-mlb-edge-api.onrender.com';
+    return cfg.savantApiUrl || window._savantApiUrl || 'https://newest-mlb-1.onrender.com';
     }
 
     // Load cached savant data from localStorage
