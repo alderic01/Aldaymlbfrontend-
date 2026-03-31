@@ -1,3 +1,4 @@
+# python-api/grading_engine.py - v2: H2H, arsenal BAA, splits, ST 2026
 import logging
 from datetime import datetime
 from config import (
