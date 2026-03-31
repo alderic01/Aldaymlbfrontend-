@@ -7,7 +7,7 @@ const TABS = [
   {id:'stacks', label:'Stack Lab'},
   {id:'hitterlab', label:'Hitter Lab'},
   {id:'signals', label:'Signals'},
-  {id:'ai', label:'⚡ AI Picks'},h
+  {id:'ai', label:'⚡ AI Picks'},
   {id:'market', label:'Odds + Weather'},
   {id:'optimizer', label:'🎯 DK Optimizer'},
   {id:'launch', label:'Launchpad'},
