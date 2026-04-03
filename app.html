@@ -12,13 +12,50 @@
 </head>
 <body>
 
+<!-- AUTH FUNCTIONS — must be defined BEFORE the auth gate buttons -->
+<script>
+function _getProfile(){return JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{"email":"","apiBase":""}');}
+function _setProfile(p){localStorage.setItem('allday-mlb-edge-access',JSON.stringify(p));}
+function _hideGate(){
+  var g=document.getElementById('authGate');
+  if(g)g.style.display='none';
+  if(typeof loadSlate==='function')loadSlate();
+}
+function enterFreeMode(){
+  _setProfile({email:'free@allday.edge',apiBase:'https://newest-mlb-1.onrender.com',plan:'free'});
+  _hideGate();
+}
+function loginWithToken(){
+  var email=document.getElementById('agEmail');
+  var token=document.getElementById('agToken');
+  var emailVal=(email&&email.value)?email.value.trim():'user@allday.edge';
+  var tokenVal=(token&&token.value)?token.value.trim():'';
+  _setProfile({email:emailVal,apiBase:'https://newest-mlb-1.onrender.com',plan:tokenVal?'elite':'free'});
+  if(tokenVal)localStorage.setItem('allday-mlb-edge-token',tokenVal);
+  _hideGate();
+}
+function claimAccess(){
+  var email=document.getElementById('agEmail');
+  var msg=document.getElementById('agMsg');
+  if(!email||!email.value){if(msg){msg.style.display='block';msg.style.color='#ff3b3b';msg.textContent='Enter your email.';}return;}
+  if(msg){msg.style.display='block';msg.style.color='#ffd000';msg.textContent='Claiming access...';}
+  fetch('https://newest-mlb-1.onrender.com/api/auth/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.value.trim()})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.token){localStorage.setItem('allday-mlb-edge-token',d.token);_setProfile({email:email.value.trim(),apiBase:'https://newest-mlb-1.onrender.com',plan:d.plan||'free'});if(msg){msg.style.color='#00ff9c';msg.textContent='Access granted!';}setTimeout(_hideGate,600);}
+      else{if(msg){msg.style.color='#ff3b3b';msg.textContent=d.error||'Could not claim.';}}
+    }).catch(function(e){if(msg){msg.style.color='#ff3b3b';msg.textContent='Connection failed. Try Quick Launch.';}});
+}
+// Auto-login if already authenticated
+(function(){var p=_getProfile();var t=localStorage.getItem('allday-mlb-edge-token');if(p.email||t)_hideGate();})();
+</script>
+
 <!-- AUTH GATE -->
 <div id="authGate">
   <div class="ag-box">
     <div class="ag-brand">&#9889; ALLDAY EDGE</div>
     <h2>Access Your Dashboard</h2>
     <p>Enter your email to get started. Subscribers enter your access token for full features.</p>
-    <input id="agBackend" type="hidden" value="https://newest-mlb-1.onrender.com" />
     <label class="ag-label" for="agEmail">Email</label>
     <input id="agEmail" class="ag-input" type="email" placeholder="you@example.com" autocomplete="email" />
     <label class="ag-label" for="agToken">Access Token <span style="color:#334155;font-weight:400">(subscribers only)</span></label>
@@ -48,8 +85,8 @@
       <span id="planBadge"></span>
       <span id="dateDisplay" class="date-display"></span>
       <span id="statusDot" class="status-dot"></span>
-      <button class="button" onclick="refreshSlate()" id="refreshBtn">&#8635; Refresh</button>
-      <select id="autoRefreshSelect" class="field small-field" onchange="setAutoRefresh(this.value)">
+      <button class="button" onclick="if(typeof refreshSlate==='function')refreshSlate()" id="refreshBtn">&#8635; Refresh</button>
+      <select id="autoRefreshSelect" class="field small-field" onchange="if(typeof setAutoRefresh==='function')setAutoRefresh(this.value)">
         <option value="0">Manual</option>
         <option value="180000">3 min</option>
         <option value="300000" selected>5 min</option>
@@ -64,39 +101,39 @@
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sidebar-section">ANALYTICS</div>
-    <div class="sidebar-nav-item active" data-tab="games" onclick="switchTab('games')">
+    <div class="sidebar-nav-item active" data-tab="games" onclick="if(typeof switchTab==='function')switchTab('games')">
       <span class="sidebar-nav-icon">&#127918;</span> Games
     </div>
-    <div class="sidebar-nav-item" data-tab="pitching" onclick="switchTab('pitching')">
+    <div class="sidebar-nav-item" data-tab="pitching" onclick="if(typeof switchTab==='function')switchTab('pitching')">
       <span class="sidebar-nav-icon">&#9918;</span> Pitching Edge
     </div>
-    <div class="sidebar-nav-item" data-tab="scouting" onclick="switchTab('scouting')">
+    <div class="sidebar-nav-item" data-tab="scouting" onclick="if(typeof switchTab==='function')switchTab('scouting')">
       <span class="sidebar-nav-icon">&#128202;</span> Scouting
     </div>
 
     <div class="sidebar-section">DFS TOOLS</div>
-    <div class="sidebar-nav-item" data-tab="stacks" onclick="switchTab('stacks')">
+    <div class="sidebar-nav-item" data-tab="stacks" onclick="if(typeof switchTab==='function')switchTab('stacks')">
       <span class="sidebar-nav-icon">&#128293;</span> Stack Recs
     </div>
-    <div class="sidebar-nav-item" data-tab="aistack" onclick="switchTab('aistack')">
+    <div class="sidebar-nav-item" data-tab="aistack" onclick="if(typeof switchTab==='function')switchTab('aistack')">
       <span class="sidebar-nav-icon">&#129302;</span> AI Stack
       <span class="sidebar-badge g">AI</span>
     </div>
-    <div class="sidebar-nav-item" data-tab="optimizer" onclick="switchTab('optimizer')">
+    <div class="sidebar-nav-item" data-tab="optimizer" onclick="if(typeof switchTab==='function')switchTab('optimizer')">
       <span class="sidebar-nav-icon">&#128736;</span> Optimizer
     </div>
 
     <div class="sidebar-section">LIVE</div>
-    <div class="sidebar-nav-item" data-tab="alerts" onclick="switchTab('alerts')">
+    <div class="sidebar-nav-item" data-tab="alerts" onclick="if(typeof switchTab==='function')switchTab('alerts')">
       <span class="sidebar-nav-icon">&#128276;</span> Alerts
       <span class="sidebar-badge" id="alertBadge">0</span>
     </div>
 
     <div class="sidebar-section">ACCOUNT</div>
-    <div class="sidebar-nav-item" data-tab="pricing" onclick="switchTab('pricing')">
+    <div class="sidebar-nav-item" data-tab="pricing" onclick="if(typeof switchTab==='function')switchTab('pricing')">
       <span class="sidebar-nav-icon">&#128176;</span> Pricing
     </div>
-    <div class="sidebar-nav-item" data-tab="settings" onclick="switchTab('settings')">
+    <div class="sidebar-nav-item" data-tab="settings" onclick="if(typeof switchTab==='function')switchTab('settings')">
       <span class="sidebar-nav-icon">&#9881;</span> Settings
     </div>
 
