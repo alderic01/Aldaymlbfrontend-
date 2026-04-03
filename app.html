@@ -17,21 +17,20 @@
   <div class="ag-box">
     <div class="ag-brand">&#9889; ALLDAY EDGE</div>
     <h2>Access Your Dashboard</h2>
-    <p>Enter your email and access token. New? <a href="./index.html#pricing" style="color:#00ff9c">Get access here.</a></p>
-    <label class="ag-label" for="agBackend">Backend URL</label>
-    <input id="agBackend" class="ag-input" type="url" placeholder="https://newest-mlb-1.onrender.com" />
+    <p>Enter your email to get started. Subscribers enter your access token for full features.</p>
+    <input id="agBackend" type="hidden" value="https://newest-mlb-1.onrender.com" />
     <label class="ag-label" for="agEmail">Email</label>
     <input id="agEmail" class="ag-input" type="email" placeholder="you@example.com" autocomplete="email" />
-    <label class="ag-label" for="agToken">Access Token</label>
-    <input id="agToken" class="ag-input" type="password" placeholder="Your access token" />
+    <label class="ag-label" for="agToken">Access Token <span style="color:#334155;font-weight:400">(subscribers only)</span></label>
+    <input id="agToken" class="ag-input" type="password" placeholder="Leave blank for free access" />
+    <button class="ag-btn primary" style="width:100%;margin-bottom:10px" onclick="loginWithToken()">&#9889; ENTER ALLDAY EDGE</button>
+    <div class="ag-divider">or</div>
     <div class="ag-row">
-      <button class="ag-btn primary" onclick="loginWithToken()">&#128274; Login</button>
+      <button class="ag-btn secondary" onclick="enterFreeMode()">&#9654; Quick Launch (Free)</button>
       <button class="ag-btn secondary" onclick="claimAccess()">&#128231; Claim via Email</button>
     </div>
-    <div class="ag-divider">or</div>
-    <button class="ag-btn full" onclick="enterFreeMode()">&#9654; Continue Free (Limited)</button>
     <div id="agMsg"></div>
-    <div class="ag-note">Secured by Stripe &middot; Cancel anytime</div>
+    <div class="ag-note">Secured by Stripe &middot; Cancel anytime &middot; <a href="./index.html#pricing" style="color:#00ff9c">View plans</a></div>
   </div>
 </div>
 

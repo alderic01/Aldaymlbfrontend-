@@ -491,11 +491,12 @@ function loginWithToken() {
   const email = document.getElementById('agEmail');
   const token = document.getElementById('agToken');
   if (backend && backend.value) state.apiConfig.proxyBaseUrl = backend.value.trim();
-  if (email && email.value) {
-    setAccessProfile({ email: email.value.trim(), apiBase: state.apiConfig.proxyBaseUrl });
-  }
-  if (token && token.value) {
-    localStorage.setItem('allday-mlb-edge-token', token.value.trim());
+  const emailVal = (email && email.value) ? email.value.trim() : 'user@allday.edge';
+  const tokenVal = (token && token.value) ? token.value.trim() : '';
+  // If no token provided, just log in with email (free mode with email)
+  setAccessProfile({ email: emailVal, apiBase: state.apiConfig.proxyBaseUrl, plan: tokenVal ? 'elite' : 'free' });
+  if (tokenVal) {
+    localStorage.setItem('allday-mlb-edge-token', tokenVal);
   }
   localStorage.setItem('mlb-edge-api-config', JSON.stringify(state.apiConfig));
   hideAuthGate();
