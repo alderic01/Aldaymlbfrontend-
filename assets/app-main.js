@@ -438,7 +438,7 @@ async function generateAIPicks() {
     const dkSals = Object.values(state.dkSalaries || {}).slice(0, 100).map(p => ({
       name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts
     }));
-    const resp = await fetch('/.netlify/functions/ai-picks', {
+    const resp = await fetch('/api/ai-picks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ games, date: state.selectedDate, mode: state.aiMode, dkSalaries: dkSals })

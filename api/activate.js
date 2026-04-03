@@ -1,4 +1,4 @@
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     const r = await fetch("https://newest-mlb-1.onrender.com/api/auth/admin/users", {
       method: "POST",
@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
     });
     const d = await r.json();
     res.status(200).json({ ok: r.ok, result: d });
-  } catch(e) {
+  } catch (e) {
     res.status(500).json({ error: e.message });
   }
-};
+}

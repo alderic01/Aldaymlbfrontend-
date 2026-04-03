@@ -1,6 +1,6 @@
-module.exports = async (req, res) => {
+export default function handler(req, res) {
   const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMGZiOWYwNy1iNzA5LTQ0YmMtODMzMS02MjJkNjYzNzE4ZWYiLCJlbWFpbCI6ImFsZGF5ZTIwMTVAZ21haWwuY29tIiwicGxhbiI6ImVsaXRlIiwiaWF0IjoxNzc0NDA0NzkyLCJleHAiOjE3NzY5OTY3OTJ9.MDvd50b2l17oJE3-oAADv1DpgrjHXQX1v80t82B5xj8";
-  
+
   res.setHeader('Content-Type', 'text/html');
   res.send(`<!DOCTYPE html>
 <html>
@@ -21,4 +21,4 @@ module.exports = async (req, res) => {
 <p>Signing you in...</p>
 </body>
 </html>`);
-};
+}
