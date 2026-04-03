@@ -156,13 +156,29 @@ function renderPitching() {
           '<div class="pitcher-stat"><div class="label">WHIP</div><div class="value" style="color:' + whipColor + '">' + fmtNum(whip, 2) + '</div></div>' +
           '<div class="pitcher-stat"><div class="label">HR/9</div><div class="value" style="color:' + hr9Color + '">' + fmtNum(hr9, 2) + '</div></div>' +
         '</div>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
-          '<span class="tag ' + (weak >= 70 ? 'smash' : weak >= 55 ? 'strong' : weak >= 45 ? 'watch' : 'fade') + '">Weakness: ' + weak + '</span>' +
-          '<span class="tag ' + (x.tend.profile === 'Miss-bats starter' ? 'fade' : 'strong') + '">' + escapeHtml(x.tend.profile) + '</span>' +
-          '<span class="game-chip park">Exp ' + fmtNum(x.tend.expIP, 1) + ' IP</span>' +
-          '<span class="game-chip">Attack: ' + x.tend.attack + '</span>' +
+        // Matchup analysis section
+        '<div style="margin-top:12px;padding:12px;border-radius:12px;background:rgba(6,14,26,.4);border:1px solid rgba(30,41,59,.4)">' +
+          '<div style="font-size:10px;color:var(--muted);font-weight:800;letter-spacing:1px;margin-bottom:8px">MATCHUP ANALYSIS vs ' + x.opp + '</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">' +
+            '<div><span style="color:var(--muted)">Vulnerability:</span> <strong style="color:' + (weak >= 70 ? '#00ff9c' : weak >= 55 ? '#ffd000' : '#ff3b3b') + '">' + weak + '/100</strong></div>' +
+            '<div><span style="color:var(--muted)">Profile:</span> <strong>' + escapeHtml(x.tend.profile) + '</strong></div>' +
+            '<div><span style="color:var(--muted)">Exp IP:</span> <strong>' + fmtNum(x.tend.expIP, 1) + '</strong></div>' +
+            '<div><span style="color:var(--muted)">Attack Score:</span> <strong style="color:' + (x.tend.attack >= 65 ? '#00ff9c' : x.tend.attack >= 50 ? '#ffd000' : '#ff3b3b') + '">' + x.tend.attack + '/90</strong></div>' +
+            '<div><span style="color:var(--muted)">Hand:</span> <strong>' + (p.pitchHand || 'R') + 'HP</strong></div>' +
+            '<div><span style="color:var(--muted)">Park:</span> <strong>' + fmtNum(park.run, 2) + 'x run</strong></div>' +
+          '</div>' +
         '</div>' +
-        (x.tend.notes.length ? '<div style="font-size:12px;color:var(--muted);margin-top:8px">' + x.tend.notes.map(n => escapeHtml(n)).join(' \u00B7 ') + '</div>' : '') +
+        // Platoon matchup
+        '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
+          '<span class="tag ' + (weak >= 70 ? 'smash' : weak >= 55 ? 'strong' : weak >= 45 ? 'watch' : 'fade') + '">' + (weak >= 70 ? '\u{1F525} SMASH SPOT' : weak >= 55 ? 'ATTACKABLE' : weak >= 45 ? 'HOLD' : '\u{1F6E1} ACE') + '</span>' +
+          (p.pitchHand === 'L' ? '<span class="tag strong">LHP \u2014 Stack RHB</span>' : '<span class="tag watch">RHP \u2014 Stack LHB</span>') +
+          (park.hr >= 1.15 ? '<span class="tag smash">\u{1F525} HR PARK</span>' : '') +
+          (park.run <= 0.92 ? '<span class="tag fade">\u2744 PITCHER PARK</span>' : '') +
+          (x.tend.expIP <= 5.0 ? '<span class="tag strong">SHORT OUTING \u2014 Bullpen game</span>' : '') +
+          (hr9 >= 1.3 ? '<span class="tag smash">HR PRONE</span>' : '') +
+          (k9 >= 10 ? '<span class="tag fade">\u26A0 HIGH STRIKEOUT</span>' : (k9 <= 6.5 ? '<span class="tag smash">LOW K \u2014 Contact friendly</span>' : '')) +
+        '</div>' +
+        (x.tend.notes.length ? '<div style="font-size:12px;color:var(--muted);margin-top:8px">' + x.tend.notes.map(function(n) { return escapeHtml(n); }).join(' \u00B7 ') + '</div>' : '') +
       '</div>';
     }).join('') +
     '</section>';
@@ -201,27 +217,53 @@ function renderScouting() {
       const park = parkFor(h.venue || '');
       const m = state.selectedGameData ? getMarket(state.selectedGameData) : {};
 
-      // 10-factor breakdown
-      const factors = [
-        { label: 'Batter Quality', value: fmtPct(h.avg) + ' AVG \u00B7 ' + fmtPct(h.ops) + ' OPS', color: h.ops >= .850 ? '#00ff9c' : h.ops >= .750 ? '#ffd000' : '#ff3b3b' },
-        { label: 'Power Matchup', value: h.hr + ' HR \u00B7 ' + fmtPct(h.slg) + ' SLG', color: h.hr >= 20 ? '#00ff9c' : '#ffd000' },
-        { label: 'Pitcher Weakness', value: 'vs ' + escapeHtml(h.oppP ? h.oppP.name : 'TBD') + ' (' + pitcherWeakness(h.oppP || {}) + ')', color: pitcherWeakness(h.oppP || {}) >= 65 ? '#00ff9c' : '#ffd000' },
-        { label: 'Park Factor', value: escapeHtml(h.venue) + ' \u00B7 HR ' + fmtNum(park.hr, 2) + ' \u00B7 Run ' + fmtNum(park.run, 2), color: park.run >= 1.1 ? '#00ff9c' : '#94a3b8' },
-        { label: 'Head to Head', value: g.splits ? g.splits.lrLabel + ' ' + fmtPct(g.splits.lrAvg) + ' AVG' : 'No H2H data', color: '#59a9ff' },
-        { label: 'Pitch Arsenal', value: h.oppP ? (h.oppP.pitchHand || 'R') + 'HP \u00B7 K/9 ' + fmtNum(h.oppP.k9 || 8.6, 1) : '-', color: '#a78bfa' },
-        { label: 'Platoon Split', value: (h.batSide || 'R') + ' bat \u00B7 ' + (g.splits ? g.splits.venueLabel : (h.side === 'home' ? 'Home' : 'Away')), color: '#59a9ff' },
-        { label: 'Weather', value: m.temperature ? m.temperature + '\u00B0F \u00B7 ' + (m.wind || '0') + ' mph ' + (m.windDir || '') : 'No data', color: weatherScore(m) >= 60 ? '#00ff9c' : '#94a3b8' },
-        { label: 'Lineup', value: h.lineupOrder ? '#' + h.lineupOrder + ' in order' : 'TBD', color: h.lineupOrder <= 4 ? '#00ff9c' : '#94a3b8' },
-        { label: 'Vegas Odds', value: m.total ? 'O/U ' + m.total : 'No line', color: Number(m.total || 0) >= 9 ? '#00ff9c' : '#94a3b8' }
+      // Compute detailed matchup data
+      var oppP = h.oppP || {};
+      var pWeak = pitcherWeakness(oppP);
+      var splits = g.splits || projectedSplitMetrics(h, oppP, h.side === 'home', {});
+      var handEdge = handednessEdge(h.batSide || 'R', oppP.pitchHand || 'R');
+      var platoonAdv = handEdge > 0 ? 'PLATOON ADV' : (handEdge < 0 ? 'SAME HAND' : 'NEUTRAL');
+      var platoonColor = handEdge > 0 ? '#00ff9c' : (handEdge < 0 ? '#ff3b3b' : '#94a3b8');
+      var isHome = h.side === 'home';
+      var hrRate = h.pa > 0 ? (h.hr / h.pa * 100).toFixed(1) : '0.0';
+      var oppEra = Number(oppP.era || 4.3);
+      var oppWhip = Number(oppP.whip || 1.3);
+      var oppK9 = Number(oppP.k9 || 8.6);
+      var oppHr9 = Number(oppP.hr9 || 1.15);
+      var vuln = oppEra >= 4.5 && oppWhip >= 1.3 ? 'HIGH' : (oppEra >= 3.8 ? 'MODERATE' : 'LOW');
+      var vulnColor = vuln === 'HIGH' ? '#00ff9c' : (vuln === 'MODERATE' ? '#ffd000' : '#ff3b3b');
+
+      // 10-factor breakdown — refined with real matchup data
+      var factors = [
+        { label: 'Batter Quality', value: fmtPct(h.avg) + ' AVG \u00B7 ' + fmtPct(h.ops) + ' OPS \u00B7 ' + fmtPct(h.obp || 0) + ' OBP', color: h.ops >= .850 ? '#00ff9c' : h.ops >= .750 ? '#ffd000' : '#ff3b3b' },
+        { label: 'Power Matchup', value: h.hr + ' HR \u00B7 ' + hrRate + '% HR Rate \u00B7 ' + fmtPct(h.slg) + ' SLG vs ' + fmtNum(oppHr9, 2) + ' HR/9 allowed', color: (Number(hrRate) >= 4 && oppHr9 >= 1.2) ? '#00ff9c' : (Number(hrRate) >= 2.5 ? '#ffd000' : '#94a3b8') },
+        { label: 'Pitcher Weakness', value: escapeHtml(oppP.name || 'TBD') + ' \u00B7 ' + fmtNum(oppEra, 2) + ' ERA \u00B7 ' + fmtNum(oppWhip, 2) + ' WHIP \u00B7 ' + vuln + ' vulnerability', color: vulnColor },
+        { label: 'Park Factor', value: escapeHtml(h.venue) + ' \u00B7 HR ' + fmtNum(park.hr, 2) + 'x \u00B7 Run ' + fmtNum(park.run, 2) + 'x' + (park.run >= 1.15 ? ' \u{1F525} HITTER PARK' : (park.run <= 0.92 ? ' \u2744 PITCHER PARK' : '')), color: park.run >= 1.1 ? '#00ff9c' : park.run <= 0.92 ? '#ff3b3b' : '#94a3b8' },
+        { label: 'Head to Head', value: splits.lrLabel + 'HP \u00B7 Proj ' + fmtPct(splits.lrAvg) + ' AVG \u00B7 ' + fmtPct(splits.lrOps) + ' OPS vs this arm', color: splits.lrOps >= .800 ? '#00ff9c' : splits.lrOps >= .700 ? '#ffd000' : '#ff3b3b' },
+        { label: 'Pitch Arsenal', value: (oppP.pitchHand || 'R') + 'HP \u00B7 K/9 ' + fmtNum(oppK9, 1) + (oppK9 >= 10 ? ' \u26A0 HIGH K' : '') + ' \u00B7 HR/9 ' + fmtNum(oppHr9, 2) + (oppHr9 >= 1.3 ? ' \u{1F525} HR PRONE' : ''), color: oppK9 >= 10 ? '#ff3b3b' : (oppHr9 >= 1.3 ? '#00ff9c' : '#a78bfa') },
+        { label: 'Platoon Split', value: (h.batSide || 'R') + ' bat vs ' + (oppP.pitchHand || 'R') + 'HP \u00B7 ' + platoonAdv + ' \u00B7 ' + (isHome ? 'HOME' : 'AWAY') + ' \u00B7 ' + (splits.venueLabel || '') + ' ' + fmtPct(splits.venueOps || 0) + ' OPS', color: platoonColor },
+        { label: 'Weather', value: m.temperature ? m.temperature + '\u00B0F \u00B7 ' + (m.wind || '0') + ' mph ' + (m.windDir || '') + (m.windDir === 'Out' ? ' \u{1F525} OUT' : (m.windDir === 'In' ? ' \u2744 IN' : '')) + (String(m.roof || '').toLowerCase() === 'closed' ? ' \u00B7 DOME' : '') : 'No weather data', color: weatherScore(m) >= 60 ? '#00ff9c' : weatherScore(m) <= 40 ? '#ff3b3b' : '#94a3b8' },
+        { label: 'Lineup Position', value: h.lineupOrder ? '#' + h.lineupOrder + ' in order' + (h.lineupOrder <= 2 ? ' \u{1F525} TOP OF ORDER' : (h.lineupOrder <= 5 ? ' \u00B7 HEART OF ORDER' : ' \u00B7 BOTTOM')) : 'Lineup TBD', color: h.lineupOrder ? (h.lineupOrder <= 4 ? '#00ff9c' : (h.lineupOrder <= 6 ? '#ffd000' : '#94a3b8')) : '#94a3b8' },
+        { label: 'Vegas Odds', value: m.total ? 'O/U ' + m.total + (Number(m.total) >= 9.5 ? ' \u{1F525} HIGH' : (Number(m.total) <= 7 ? ' \u2744 LOW' : '')) + (m.homeMoneyline || m.awayMoneyline ? ' \u00B7 ML ' + (isHome ? (m.homeMoneyline || '-') : (m.awayMoneyline || '-')) : '') : 'No Vegas line', color: Number(m.total || 0) >= 9 ? '#00ff9c' : Number(m.total || 0) >= 8 ? '#ffd000' : '#94a3b8' }
       ];
 
-      // Synopsis
-      const synParts = [];
-      if (g.score >= 88) synParts.push(escapeHtml(h.name) + ' is an elite play today.');
-      else if (g.score >= 78) synParts.push(escapeHtml(h.name) + ' grades as a strong play.');
-      else if (g.score >= 66) synParts.push(escapeHtml(h.name) + ' is a solid option.');
-      else synParts.push(escapeHtml(h.name) + ' is a risky play today.');
-      if (g.reasons && g.reasons.length) synParts.push(g.reasons.slice(0, 4).map(r => escapeHtml(r)).join('. ') + '.');
+      // Enhanced synopsis with matchup reasoning
+      var synParts = [];
+      if (g.score >= 88) synParts.push(escapeHtml(h.name) + ' is an ELITE play today.');
+      else if (g.score >= 78) synParts.push(escapeHtml(h.name) + ' grades as a STRONG play.');
+      else if (g.score >= 66) synParts.push(escapeHtml(h.name) + ' is a SOLID option.');
+      else if (g.score >= 50) synParts.push(escapeHtml(h.name) + ' is a MODERATE play — look for better options.');
+      else synParts.push(escapeHtml(h.name) + ' is a FADE candidate today.');
+
+      // Matchup reasoning
+      if (handEdge > 0) synParts.push('Has platoon advantage (' + (h.batSide || 'R') + ' bat vs ' + (oppP.pitchHand || 'R') + 'HP).');
+      else if (handEdge < 0) synParts.push('Same-hand disadvantage (' + (h.batSide || 'R') + ' bat vs ' + (oppP.pitchHand || 'R') + 'HP) — tougher matchup.');
+      if (pWeak >= 70) synParts.push('Facing a highly vulnerable pitcher (' + escapeHtml(oppP.name || 'TBD') + ', weakness ' + pWeak + ').');
+      else if (pWeak <= 35) synParts.push('Tough pitching matchup — ' + escapeHtml(oppP.name || 'TBD') + ' is dominant (weakness only ' + pWeak + ').');
+      if (park.run >= 1.15) synParts.push('Elite run environment at ' + escapeHtml(h.venue) + '.');
+      if (isHome) synParts.push('Home field advantage.');
+      else synParts.push('On the road.');
+      if (g.reasons && g.reasons.length > 4) synParts.push(g.reasons.slice(4, 6).map(function(r) { return escapeHtml(r); }).join('. ') + '.');
 
       return '<div class="player-card ' + gradeCardClass(letter) + '">' +
         '<div class="player-avatar">\u{26BE}<span class="jersey">' + (h.lineupOrder || '-') + '</span></div>' +
