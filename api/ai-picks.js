@@ -60,7 +60,8 @@ export default async function handler(req, res) {
 
     if (!r.ok) {
       const errBody = await r.text().catch(() => 'no body');
-      return res.status(502).json({ error: `Anthropic API returned ${r.status}`, detail: errBody });
+      console.error('Anthropic error:', r.status, errBody);
+      return res.status(200).json({ error: `Anthropic ${r.status}: ${errBody}` });
     }
 
     const d = await r.json();
