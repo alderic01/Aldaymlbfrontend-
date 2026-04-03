@@ -3,7 +3,7 @@
 // 7 Tabs: Games, Pitching Edge, Scouting, Stack Recs, AI Stack, Optimizer, Alerts
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const view = document.getElementById('view');
+// view element is declared in app-core.js as: const view = document.querySelector('#view');
 
 // ─── Grade helpers ─────────────────────────────────────────────────────────────
 function gradeClass(letter) {
