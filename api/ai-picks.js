@@ -52,14 +52,15 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-5-20241022',
         max_tokens: 1024,
         messages: [{ role: 'user', content: prompts[mode] || prompts.picks }]
       })
     });
 
     if (!r.ok) {
-      return res.status(502).json({ error: `Anthropic API returned ${r.status}` });
+      const errBody = await r.text().catch(() => 'no body');
+      return res.status(502).json({ error: `Anthropic API returned ${r.status}`, detail: errBody });
     }
 
     const d = await r.json();
