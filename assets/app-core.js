@@ -129,7 +129,7 @@ function weatherScore(m){const temp=Number(m.temperature||0),wind=Number(m.wind|
 function weatherLabel(score){if(score>=62)return['Boost','good'];if(score<=42)return['Risk','bad'];return['Neutral',''];}
 function totalLean(game,m){const total=Number(m.total||0),park=parkFor(game.venue.name);const base=Math.round(((park.run-1)*12)+((weatherScore(m)-50)*.18)+50);const lean=total?(base+(total-8.5)*3):base;if(lean>=58)return'Over environment';if(lean<=44)return'Under environment';return'Balanced total';}
 
-function toggleWatch(item){const key=`${item.type}:${item.name}`;const idx=state.watchlist.findIndex(x=>x.key===key);if(idx>=0)state.watchlist.splice(idx,1);else state.watchlist.unshift({...item,key,addedAt:new Date().toISOString()});localStorage.setItem('mlb-edge-watchlist',JSON.stringify(state.watchlist.slice(0,40)));render();}
+function toggleWatch(item){const key=`${item.type}:${item.name}`;const idx=state.watchlist.findIndex(x=>x.key===key);if(idx>=0)state.watchlist.splice(idx,1);else state.watchlist.unshift({...item,key,addedAt:new Date().toISOString()});localStorage.setItem('mlb-edge-watchlist',JSON.stringify(state.watchlist.slice(0,40)));if(typeof render==='function')render();}
 function isWatched(type,name){return state.watchlist.some(x=>x.key===`${type}:${name}`);}
 function getTopAttackablePitchers(){return state.games.flatMap(g=>[{name:g.awayPitcher.name,weak:pitcherWeakness(g.awayPitcher),opp:g.home.abbr,venue:g.venue.name,gamePk:g.gamePk},{name:g.homePitcher.name,weak:pitcherWeakness(g.homePitcher),opp:g.away.abbr,venue:g.venue.name,gamePk:g.gamePk}]).sort((a,b)=>b.weak-a.weak).slice(0,5);}
 function getTopOneOffs(){const g=state.selectedGameData;if(!g)return[];return[...(g.awayHitters||[]),...(g.homeHitters||[])].sort((a,b)=>b.grade.score-a.grade.score).slice(0,6);}
@@ -349,7 +349,7 @@ function findMatchingOddsEvent(game,events=[]){const away=normTeamName(game.away
 
 async function syncWeatherForSlate(){
   if(!state.games.length)return;
-  state.liveSync.weather={status:'loading',updatedAt:null,error:''};render();
+  state.liveSync.weather={status:'loading',updatedAt:null,error:''};if(typeof render==='function')render();
   try{
     for(const game of state.games){
       const venue=venueMeta(game.venue.name);if(!venue)continue;
@@ -369,7 +369,7 @@ async function syncWeatherForSlate(){
 
 async function syncOddsForSlate(){
   if(!state.games.length)return;
-  state.liveSync.odds={status:'loading',updatedAt:null,error:''};render();
+  state.liveSync.odds={status:'loading',updatedAt:null,error:''};if(typeof render==='function')render();
   try{
     const apiKey=state.apiConfig.oddsApiKey||ODDS_API_KEY;
     const region=state.apiConfig.oddsRegion||'us';
@@ -665,7 +665,7 @@ function setAutoRefresh(ms) {
 }
 
 async function loadSlate(){
-  state.loading=true;render();
+  state.loading=true;if(typeof render==='function')render();
   try{
     state.season=Number(state.selectedDate.slice(0,4));
     const data=await fetchJson(`${API}/schedule?sportId=1&date=${state.selectedDate}&hydrate=${encodeURIComponent(HYDRATE)}`);
@@ -687,7 +687,7 @@ async function loadSlate(){
     if(state.apiConfig.autoSyncWeather||state.apiConfig.autoSyncOdds)try{await syncLiveFeeds();}catch(e){console.warn(e);}
     try{if(typeof autoPullDKSalaries==='function')await autoPullDKSalaries();else await syncDKSalaries();}catch(e){console.warn('DK sync:',e);}
   }catch(err){console.error(err);state.games=[];state.stackRows=[];state.teamEdges=[];state.selectedGameData=null;}
-  finally{state.loading=false;buildHero();render();}
+  finally{state.loading=false;buildHero();if(typeof render==='function')render();}
 }
 
 async function loadSelectedGame(gamePk){
@@ -714,7 +714,7 @@ async function loadSelectedGame(gamePk){
   const awayGraded=(typeof enrichHittersWithSavant==='function'?enrichHittersWithSavant(awayHitters):awayHitters).slice(0,10).map(h=>({...h,grade:grade(h,game.homePitcher,false,awayTravel,homeBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
   const homeGraded=(typeof enrichHittersWithSavant==='function'?enrichHittersWithSavant(homeHitters):homeHitters).slice(0,10).map(h=>({...h,grade:grade(h,game.awayPitcher,true,homeTravel,awayBullpen)})).sort((a,b)=>b.grade.score-a.grade.score);
   state.selectedGameData={...game,park,awayHitters:awayGraded,homeHitters:homeGraded,awayTravel,homeTravel,awayBullpen,homeBullpen,awayStarterTendencies:pitcherTendencies(game.awayPitcher),homeStarterTendencies:pitcherTendencies(game.homePitcher),lineupsLive:!!(awayLineupIds&&homeLineupIds)};
-  buildHero();render();
+  buildHero();if(typeof render==='function')render();
 }
 
 // Old renderDashboard/renderGames removed — now defined in app-main.js
