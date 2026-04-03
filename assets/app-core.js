@@ -636,7 +636,12 @@ function generateSlateAlerts() {
   }
 }
 
-function buildHero(){const best=state.stackRows[0];const stats=[{k:'Games on slate',v:String(state.hero.games),s:`${state.hero.live} live right now`},{k:'Top stack',v:best?best.team:'-',s:best?`${best.score}/99 ${best.level}`:'Load a slate'},{k:'Avg stack score',v:String(state.hero.avg||'-'),s:'Slate-level hitting environment'},{k:'Selected game',v:state.selectedGameData?`${state.selectedGameData.away.abbr} @ ${state.selectedGameData.home.abbr}`:'-',s:state.selectedGameData?`${state.selectedGameData.venue.name}`:'Choose a matchup'}];$('#heroStats').innerHTML=stats.map(s=>`<div class="stat"><div class="k">${s.k}</div><div class="v">${escapeHtml(s.v)}</div><div class="s">${escapeHtml(s.s)}</div></div>`).join('');}
+function buildHero(){
+  const best=state.stackRows[0];
+  state.hero.best=best?best.team:'-';
+  state.hero.avg=state.stackRows.length?Math.round(state.stackRows.reduce((a,b)=>a+b.score,0)/state.stackRows.length):0;
+  // heroStats element removed in v2 — stats now rendered inline by tabs
+}
 function switchTab(tabId) {
   state.tab = tabId;
   document.querySelectorAll('.sidebar-nav-item').forEach(el => {
@@ -712,29 +717,8 @@ async function loadSelectedGame(gamePk){
   buildHero();render();
 }
 
-function renderDashboard(){
-  const top=state.stackRows.slice(0,6);
-  const topPlayers=getTopOneOffs();
-  return`<section>
-    <div class="section-title"><h2>Slate Command Center</h2><div class="meta">Quick-hitting board for where the offense should come from</div></div>
-    <div class="grid-3">
-      <div class="card callout"><h3>Best stack right now</h3><p>${top[0]?`${top[0].team} rates as the top offense on this slate — ${top[0].score}/99 against ${escapeHtml(top[0].oppPitcher)} in ${escapeHtml(top[0].venue)}.`:'Load a slate to rank offenses.'}</p></div>
-      <div class="card callout"><h3>Most attackable pitcher</h3><p>${state.games.length?(()=>{const all=state.games.flatMap(g=>[{name:g.awayPitcher.name,weak:pitcherWeakness(g.awayPitcher),opp:g.home.abbr},{name:g.homePitcher.name,weak:pitcherWeakness(g.homePitcher),opp:g.away.abbr}]).sort((a,b)=>b.weak-a.weak);return`${escapeHtml(all[0].name)} is the softest target. Offense boost points to ${all[0].opp}.`;})():'No pitchers loaded yet.'}</p></div>
-      <div class="card callout"><h3>Selected matchup</h3><p>${state.selectedGameData?`${state.selectedGameData.away.abbr} at ${state.selectedGameData.home.abbr} in ${escapeHtml(state.selectedGameData.venue.name)}. Park run ${fmtNum(state.selectedGameData.park.run,2)} HR ${fmtNum(state.selectedGameData.park.hr,2)}.`:'Pick a game to open the hitter lab.'}</p></div>
-    </div>
-    <div class="section-title"><h2>Top stack targets</h2></div>
-    <div class="games">${top.map((r,i)=>`<div class="card game" data-gamepick="${r.gamePk}"><div class="row"><div class="mini">#${i+1}</div><span class="tag ${r.style}">${r.level}</span></div><div class="abbr" style="margin-top:10px">${r.team}</div><div class="mini">vs ${r.opponent} · ${escapeHtml(r.oppPitcher)}</div><div class="row" style="margin-top:16px"><div class="score">${r.score}/99</div><div class="mini">${escapeHtml(r.venue)}</div></div></div>`).join('')||'<div class="card empty">No games found.</div>'}</div>
-    ${topPlayers.length?`<div class="section-title" style="margin-top:24px"><h2>Top Player Grades</h2><div class="meta">${state.selectedGameData?.lineupsLive?'Official lineup':'Active roster'} · ${state.selectedGameData?.away?.abbr||''} @ ${state.selectedGameData?.home?.abbr||''}</div></div><div class="games">${topPlayers.map(p=>`<div class="card game" data-gamepick="${state.selectedGamePk}"><div class="row"><span class="grade" style="font-size:22px;line-height:1">${escapeHtml(p.grade.letter)}</span><span class="tag ${p.grade.style}" style="margin-left:8px">${p.grade.score}/99</span></div><div class="player-name" style="margin-top:8px">${escapeHtml(p.name)}</div><div class="mini">${escapeHtml(p.pos)} · ${fmtPct(p.avg)} AVG · ${fmtPct(p.ops)} OPS · ${p.hr} HR</div><div class="mini" style="margin-top:4px">${escapeHtml(p.grade.collab?.market?.label||'')} · ${escapeHtml(p.grade.collab?.pattern?.label||'')}</div></div>`).join('')}</div>`:''}
-  </section>`;
-}
-
+// Old renderDashboard/renderGames removed — now defined in app-main.js
 if(typeof loadSavantData==='function')loadSavantData().catch(()=>{});
-function renderGames(){
-  return`<section id="gamesSection">
-    <div class="section-title"><h2>Games</h2><div class="meta">Pick a matchup to load team hitters</div></div>
-    <div class="games">${state.games.map(g=>{const park=parkFor(g.venue.name),homeEdge=teamEdgeScore(g,'home'),awayEdge=teamEdgeScore(g,'away');const m=getMarket(g);const mParts=[];if(m.total)mParts.push(`O/U ${m.total}`);if(m.temperature)mParts.push(`${m.temperature}°`);if(m.wind)mParts.push(`${m.wind} mph ${m.windDir}`);const dk=getDKSalary(g.awayPitcher.name)||getDKSalary(g.homePitcher.name);return`<div class="card game ${g.gamePk===state.selectedGamePk?'active':''}" data-game="${g.gamePk}"><div class="row"><span class="pill ${gameBadge(g.status)}">${escapeHtml(g.status)}</span><span class="mini mono">${fmtTime(g.gameDate)}</span></div><div class="teams"><div class="teamrow"><div><div class="abbr">${g.away.abbr}</div><div class="name">${escapeHtml(g.away.name)}</div></div><div class="score">${g.away.score}</div></div><div class="teamrow"><div><div class="abbr">${g.home.abbr}</div><div class="name">${escapeHtml(g.home.name)}</div></div><div class="score">${g.home.score}</div></div></div><div class="mini">${escapeHtml(g.awayPitcher.name)} vs ${escapeHtml(g.homePitcher.name)}</div><div class="mini" style="margin-top:6px">${escapeHtml(g.venue.name)} · run ${fmtNum(park.run,2)} · HR ${fmtNum(park.hr,2)}</div>${mParts.length?`<div class="mini" style="margin-top:4px">${mParts.join(' · ')}</div>`:''}<div class="lift" style="margin-top:14px"><div class="stat"><div class="k">${g.away.abbr}</div><div class="v">${awayEdge}</div></div><div class="stat"><div class="k">${g.home.abbr}</div><div class="v">${homeEdge}</div></div><div class="stat"><div class="k">Best</div><div class="v">${Math.max(awayEdge,homeEdge)}</div></div></div></div>`;}).join('')||'<div class="card empty">No MLB games found.</div>'}</div>
-  </section>`;
-}
 
 
 // ─── Stripe Checkout ─────────────────────────────────────────────────────────
