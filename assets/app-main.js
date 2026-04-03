@@ -265,22 +265,47 @@ function renderScouting() {
       else synParts.push('On the road.');
       if (g.reasons && g.reasons.length > 4) synParts.push(g.reasons.slice(4, 6).map(function(r) { return escapeHtml(r); }).join('. ') + '.');
 
-      return '<div class="player-card ' + gradeCardClass(letter) + '">' +
-        '<div class="player-avatar">\u{26BE}<span class="jersey">' + (h.lineupOrder || '-') + '</span></div>' +
-        '<div>' +
-          '<div class="player-name">' + escapeHtml(h.name) + '</div>' +
-          '<div class="player-meta">' + escapeHtml(h.pos || '-') + ' \u00B7 ' + escapeHtml(h.team) + ' \u00B7 ' + (h.batSide || 'R') + ' bat \u00B7 vs ' + escapeHtml(h.opp) +
-            (dk ? ' \u00B7 <strong style="color:#ffd000">$' + dk.salary.toLocaleString() + '</strong>' : '') + '</div>' +
-          '<div class="factor-grid">' + factors.map(f =>
-            '<div class="factor-chip"><div class="f-label">' + f.label + '</div><div class="f-value" style="color:' + f.color + '">' + f.value + '</div></div>'
-          ).join('') + '</div>' +
+      // Grade color for card accent
+      var gradeColor = g.score >= 88 ? '#00ff9c' : g.score >= 78 ? '#00e88a' : g.score >= 66 ? '#ffd000' : g.score >= 50 ? '#ff9f43' : '#ff3b3b';
+      var gradeColorDim = g.score >= 88 ? 'rgba(0,255,156,.12)' : g.score >= 78 ? 'rgba(0,232,138,.1)' : g.score >= 66 ? 'rgba(255,208,0,.1)' : g.score >= 50 ? 'rgba(255,159,67,.1)' : 'rgba(255,59,59,.1)';
+
+      return '<div class="pcard-v2 ' + gradeCardClass(letter) + '" style="--accent:' + gradeColor + ';--accent-dim:' + gradeColorDim + '">' +
+        // Top section: player info + grade
+        '<div class="pcard-top">' +
+          '<div class="pcard-avatar">' +
+            '<div class="pcard-silhouette">\u{26BE}</div>' +
+            '<div class="pcard-lineup-badge">' + (h.lineupOrder || '-') + '</div>' +
+          '</div>' +
+          '<div class="pcard-info">' +
+            '<div class="pcard-team-badge">' + escapeHtml(h.team) + '</div>' +
+            '<div class="pcard-name">' + escapeHtml(h.name) + '</div>' +
+            '<div class="pcard-pos">' + escapeHtml(h.pos || '-') + ' \u00B7 ' + (h.batSide || 'R') + ' bat \u00B7 vs ' + escapeHtml(h.opp) + '</div>' +
+            (dk ? '<div class="pcard-salary">$' + dk.salary.toLocaleString() + '</div>' : '') +
+            '<div class="pcard-matchup">' + platoonAdv + ' \u00B7 vs ' + (oppP.pitchHand || 'R') + 'HP \u00B7 ' + vuln + ' vuln</div>' +
+          '</div>' +
+          '<div class="pcard-grade-box">' +
+            '<div class="pcard-grade ' + gradeClass(letter) + (letter === 'A+' ? ' grade-aplus-glow' : '') + '">' + letter + '</div>' +
+            '<div class="pcard-score">' + g.score + '</div>' +
+            '<div class="pcard-score-label">SCORE</div>' +
+            '<div class="pcard-fires">' + fires + '</div>' +
+          '</div>' +
+        '</div>' +
+        // Stat boxes row (like the Premier League card bottom)
+        '<div class="pcard-stats">' +
+          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (h.avg >= .300 ? '#00ff9c' : h.avg >= .260 ? '#ffd000' : '#94a3b8') + '">' + fmtPct(h.avg) + '</div><div class="pcard-stat-lbl">AVG</div></div>' +
+          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (h.ops >= .850 ? '#00ff9c' : h.ops >= .750 ? '#ffd000' : '#94a3b8') + '">' + fmtPct(h.ops) + '</div><div class="pcard-stat-lbl">OPS</div></div>' +
+          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (h.hr >= 20 ? '#00ff9c' : h.hr >= 10 ? '#ffd000' : '#94a3b8') + '">' + h.hr + '</div><div class="pcard-stat-lbl">HR</div></div>' +
+          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (pWeak >= 65 ? '#00ff9c' : pWeak >= 50 ? '#ffd000' : '#ff3b3b') + '">' + pWeak + '</div><div class="pcard-stat-lbl">P.WEAK</div></div>' +
+          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (park.run >= 1.1 ? '#00ff9c' : '#94a3b8') + '">' + fmtNum(park.run, 2) + '</div><div class="pcard-stat-lbl">PARK</div></div>' +
+        '</div>' +
+        // Expandable factors
+        '<details class="pcard-details">' +
+          '<summary class="pcard-expand">View 10-Factor Breakdown</summary>' +
+          '<div class="factor-grid">' + factors.map(function(f) {
+            return '<div class="factor-chip"><div class="f-label">' + f.label + '</div><div class="f-value" style="color:' + f.color + '">' + f.value + '</div></div>';
+          }).join('') + '</div>' +
           '<div class="synopsis">' + synParts.join(' ') + '</div>' +
-        '</div>' +
-        '<div class="player-grade">' +
-          '<div class="grade ' + gradeClass(letter) + (letter === 'A+' ? ' grade-aplus-glow' : '') + '">' + letter + '</div>' +
-          '<div class="score">' + g.score + '/99</div>' +
-          '<div class="fires">' + fires + '</div>' +
-        '</div>' +
+        '</details>' +
       '</div>';
     }).join('') +
     '</section>';
