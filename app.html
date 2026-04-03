@@ -19,7 +19,13 @@ function _setProfile(p){localStorage.setItem('allday-mlb-edge-access',JSON.strin
 function _hideGate(){
   var g=document.getElementById('authGate');
   if(g)g.style.display='none';
-  if(typeof loadSlate==='function')loadSlate();
+  // loadSlate may not be defined yet (scripts load after this inline block)
+  // Poll until it's available, then call it
+  function _tryLoad(){
+    if(typeof loadSlate==='function'){loadSlate();}
+    else{setTimeout(_tryLoad,100);}
+  }
+  _tryLoad();
 }
 function enterFreeMode(){
   _setProfile({email:'free@allday.edge',apiBase:'https://newest-mlb-1.onrender.com',plan:'free'});
