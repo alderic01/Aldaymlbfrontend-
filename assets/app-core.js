@@ -685,7 +685,7 @@ async function loadSlate(){
     if(!state.selectedGamePk||!state.games.find(g=>g.gamePk===state.selectedGamePk))state.selectedGamePk=state.games[0]?.gamePk||null;
     if(state.selectedGamePk)await loadSelectedGame(state.selectedGamePk);
     if(state.apiConfig.autoSyncWeather||state.apiConfig.autoSyncOdds)try{await syncLiveFeeds();}catch(e){console.warn(e);}
-    try{await syncDKSalaries();}catch(e){console.warn('DK sync:',e);}
+    try{if(typeof autoPullDKSalaries==='function')await autoPullDKSalaries();else await syncDKSalaries();}catch(e){console.warn('DK sync:',e);}
   }catch(err){console.error(err);state.games=[];state.stackRows=[];state.teamEdges=[];state.selectedGameData=null;}
   finally{state.loading=false;buildHero();render();}
 }
