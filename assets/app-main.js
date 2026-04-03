@@ -60,6 +60,7 @@ function render() {
   if (badge) badge.textContent = (state.alerts || []).filter(a => !a.read).length;
 
   switch (state.tab) {
+    case 'dashboard': view.innerHTML = renderDashboard(); break;
     case 'games': view.innerHTML = renderGames(); break;
     case 'pitching': view.innerHTML = renderPitching(); break;
     case 'scouting': view.innerHTML = renderScouting(); break;
@@ -69,9 +70,145 @@ function render() {
     case 'alerts': view.innerHTML = renderAlerts(); break;
     case 'pricing': view.innerHTML = renderPricing(); break;
     case 'settings': view.innerHTML = renderSettings(); break;
-    default: view.innerHTML = renderGames();
+    default: view.innerHTML = renderDashboard();
   }
   attachEventListeners();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  if (!state.games.length) return '<div class="empty">Loading slate data...</div>';
+
+  // Live + upcoming games ticker
+  var liveGames = state.games.filter(function(g) { return g.status === 'Live'; });
+  var upcomingGames = state.games.filter(function(g) { return g.status !== 'Live' && g.status !== 'Final'; });
+  var finalGames = state.games.filter(function(g) { return g.status === 'Final'; });
+  var allSorted = liveGames.concat(upcomingGames).concat(finalGames);
+
+  // Top stack targets
+  var topStacks = state.stackRows.slice(0, 5);
+
+  // Top attackable pitchers
+  var topPitchers = getTopAttackablePitchers();
+
+  // Top graded hitters (from selected game)
+  var topHitters = [];
+  if (state.selectedGameData) {
+    topHitters = [].concat(state.selectedGameData.awayHitters || []).concat(state.selectedGameData.homeHitters || []).sort(function(a,b) { return b.grade.score - a.grade.score; }).slice(0, 4);
+  }
+
+  // DK salary count
+  var dkCount = Object.keys(state.dkSalaries || {}).length;
+
+  return '<div class="dash">' +
+
+    // Row 1: Live Games Ticker
+    '<div class="dash-section">' +
+      '<div class="dash-header"><span class="dash-dot live"></span> LIVE & UPCOMING <span class="dash-count">' + state.games.length + ' games</span></div>' +
+      '<div class="dash-ticker">' +
+        allSorted.slice(0, 8).map(function(g) {
+          var isLive = g.status === 'Live';
+          var isFinal = g.status === 'Final';
+          return '<div class="dash-game ' + (isLive ? 'live' : (isFinal ? 'final' : '')) + '" data-game="' + g.gamePk + '">' +
+            '<div class="dash-game-status">' + (isLive ? '<span class="dash-live-dot"></span> LIVE' : (isFinal ? 'FINAL' : fmtTime(g.gameDate))) + '</div>' +
+            '<div class="dash-game-teams">' +
+              '<div class="dash-game-row"><span class="dash-team">' + g.away.abbr + '</span><span class="dash-score">' + g.away.score + '</span></div>' +
+              '<div class="dash-game-row"><span class="dash-team">' + g.home.abbr + '</span><span class="dash-score">' + g.home.score + '</span></div>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+
+    // Row 2: Two columns — Top Players + Attack Momentum
+    '<div class="dash-grid-2">' +
+
+      // Top Players
+      '<div class="dash-card">' +
+        '<div class="dash-card-title">TOP PLAYERS</div>' +
+        '<div class="dash-players">' +
+          (topHitters.length ? topHitters.map(function(h) {
+            var letter = h.grade.letter || letterGrade(h.grade.score);
+            var gradeColor = h.grade.score >= 88 ? '#00ff9c' : h.grade.score >= 78 ? '#00e88a' : h.grade.score >= 66 ? '#ffd000' : '#ff9f43';
+            return '<div class="dash-player">' +
+              '<div class="dash-player-avatar" style="border-color:' + gradeColor + '">\u{26BE}</div>' +
+              '<div class="dash-player-info">' +
+                '<div class="dash-player-name">' + escapeHtml(h.name) + '</div>' +
+                '<div class="dash-player-pos">' + escapeHtml(h.pos || '-') + '</div>' +
+              '</div>' +
+              '<div class="dash-player-grade" style="color:' + gradeColor + '">' + letter + '</div>' +
+              '<div class="dash-player-score">' + h.grade.score + '</div>' +
+            '</div>';
+          }).join('') : '<div style="color:var(--muted);font-size:13px;padding:12px">Select a game to see top players</div>') +
+        '</div>' +
+      '</div>' +
+
+      // Stack Momentum / Best Targets
+      '<div class="dash-card">' +
+        '<div class="dash-card-title">ATTACK TARGETS</div>' +
+        '<div class="dash-targets">' +
+          topPitchers.map(function(p) {
+            var pct = Math.min(100, Math.round(p.weak * 1.1));
+            var color = p.weak >= 70 ? '#00ff9c' : p.weak >= 55 ? '#ffd000' : '#ff3b3b';
+            return '<div class="dash-target">' +
+              '<div class="dash-target-info">' +
+                '<span class="dash-target-name">' + escapeHtml(p.name) + '</span>' +
+                '<span class="dash-target-opp">Stack ' + p.opp + '</span>' +
+              '</div>' +
+              '<div class="dash-target-bar"><div class="dash-target-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+              '<div class="dash-target-val" style="color:' + color + '">' + p.weak + '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+
+    '</div>' +
+
+    // Row 3: Stats Table + Quick Info
+    '<div class="dash-grid-2">' +
+
+      // Stack Rankings Table
+      '<div class="dash-card">' +
+        '<div class="dash-card-title">STACK RANKINGS <span style="color:var(--muted);font-weight:400;font-size:11px">\u2192</span></div>' +
+        '<table class="dash-table">' +
+          '<thead><tr><th>Team</th><th>Side</th><th>Opp</th><th>Score</th><th>Level</th></tr></thead>' +
+          '<tbody>' +
+            topStacks.map(function(r) {
+              return '<tr>' +
+                '<td><strong>' + r.team + '</strong></td>' +
+                '<td>' + r.side + '</td>' +
+                '<td>' + r.opponent + '</td>' +
+                '<td class="mono" style="color:' + (r.score >= 80 ? '#00ff9c' : r.score >= 65 ? '#ffd000' : '#94a3b8') + '">' + r.score + '</td>' +
+                '<td><span class="tag ' + r.style + '" style="font-size:10px;padding:3px 8px">' + r.level + '</span></td>' +
+              '</tr>';
+            }).join('') +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
+
+      // Quick Stats / Status
+      '<div class="dash-card">' +
+        '<div class="dash-card-title">SLATE STATUS</div>' +
+        '<div class="dash-status-grid">' +
+          '<div class="dash-status-item"><div class="dash-status-val" style="color:#00ff9c">' + state.games.length + '</div><div class="dash-status-lbl">Games</div></div>' +
+          '<div class="dash-status-item"><div class="dash-status-val" style="color:#ff3b3b">' + liveGames.length + '</div><div class="dash-status-lbl">Live Now</div></div>' +
+          '<div class="dash-status-item"><div class="dash-status-val" style="color:#ffd000">' + dkCount + '</div><div class="dash-status-lbl">DK Players</div></div>' +
+          '<div class="dash-status-item"><div class="dash-status-val">' + (topStacks[0] ? topStacks[0].team : '-') + '</div><div class="dash-status-lbl">Top Stack</div></div>' +
+          '<div class="dash-status-item"><div class="dash-status-val">' + (topStacks[0] ? topStacks[0].score : '-') + '</div><div class="dash-status-lbl">Best Score</div></div>' +
+          '<div class="dash-status-item"><div class="dash-status-val">' + state.hero.avg + '</div><div class="dash-status-lbl">Avg Score</div></div>' +
+        '</div>' +
+        // Quick nav buttons
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">' +
+          '<button class="button primary" onclick="switchTab(\'games\')" style="font-size:12px">\u{1F3AE} Games</button>' +
+          '<button class="button" onclick="switchTab(\'scouting\')" style="font-size:12px">\u{1F4CA} Scouting</button>' +
+          '<button class="button" onclick="switchTab(\'aistack\')" style="font-size:12px">\u{1F916} AI Stack</button>' +
+          '<button class="button" onclick="switchTab(\'alerts\')" style="font-size:12px">\u{1F514} Alerts</button>' +
+        '</div>' +
+      '</div>' +
+
+    '</div>' +
+
+  '</div>';
 }
 
 // ─── TAB 1: GAMES ──────────────────────────────────────────────────────────────

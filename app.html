@@ -104,8 +104,13 @@ function claimAccess(){
 <div class="app-body">
   <!-- SIDEBAR -->
   <div class="sidebar">
+    <div class="sidebar-section">HOME</div>
+    <div class="sidebar-nav-item active" data-tab="dashboard" onclick="if(typeof switchTab==='function')switchTab('dashboard')">
+      <span class="sidebar-nav-icon">&#127968;</span> Dashboard
+    </div>
+
     <div class="sidebar-section">ANALYTICS</div>
-    <div class="sidebar-nav-item active" data-tab="games" onclick="if(typeof switchTab==='function')switchTab('games')">
+    <div class="sidebar-nav-item" data-tab="games" onclick="if(typeof switchTab==='function')switchTab('games')">
       <span class="sidebar-nav-icon">&#127918;</span> Games
     </div>
     <div class="sidebar-nav-item" data-tab="pitching" onclick="if(typeof switchTab==='function')switchTab('pitching')">

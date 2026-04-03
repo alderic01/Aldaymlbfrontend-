@@ -44,7 +44,7 @@ const TEAM_NAME_ALIASES={
 };
 const ODDS_API_KEY='30b9f498731b8fa9f78a6aefd7764f3a';
 const state={
-  tab:'games',selectedDate:new Date().toISOString().slice(0,10),season:new Date().getFullYear(),
+  tab:'dashboard',selectedDate:new Date().toISOString().slice(0,10),season:new Date().getFullYear(),
   loading:false,games:[],selectedGamePk:null,selectedGameData:null,stackRows:[],teamEdges:[],
   hero:{games:0,live:0,best:'-',avg:0},
   notes:localStorage.getItem('mlb-edge-notes')||'',
