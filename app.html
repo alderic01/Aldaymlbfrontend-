@@ -161,8 +161,21 @@ function claimAccess(){
   &#9888; DISCLAIMER: ALLDAY EDGE is for entertainment and informational purposes only. Not financial or gambling advice. Past performance does not guarantee future results. Please gamble responsibly. <a href="./index.html#disclaimer">Full disclaimer</a>
 </div>
 
-<script src="./assets/app-core.js"></script>
-<script src="./assets/app-main.js"></script>
+<script>document.getElementById('view').innerHTML='<div class="loading"><strong>Scripts loading...</strong></div>';</script>
+<script src="./assets/app-core.js" onerror="document.getElementById('view').innerHTML='<div style=padding:40px;color:red>FAILED to load app-core.js</div>'"></script>
+<script>document.getElementById('view').innerHTML='<div class="loading"><strong>app-core.js loaded. Loading app-main.js...</strong></div>';</script>
+<script src="./assets/app-main.js" onerror="document.getElementById('view').innerHTML='<div style=padding:40px;color:red>FAILED to load app-main.js</div>'"></script>
+<script>
+try {
+  document.getElementById('view').innerHTML='<div class="loading"><strong>All scripts loaded. Checking functions...</strong><br>'
+    + 'render: ' + (typeof render) + '<br>'
+    + 'loadSlate: ' + (typeof loadSlate) + '<br>'
+    + 'state: ' + (typeof state) + '<br>'
+    + 'switchTab: ' + (typeof switchTab) + '</div>';
+} catch(e) {
+  document.getElementById('view').innerHTML='<div style="padding:40px;color:red">Script error: ' + e.message + '</div>';
+}
+</script>
 <script src="./assets/dk-salaries-inject.js"></script>
 <script src="./assets/savant-bridge.js"></script>
 <script src="./assets/mlb-advanced-grading.js"></script>
