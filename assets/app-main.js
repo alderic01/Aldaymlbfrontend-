@@ -130,8 +130,12 @@ function renderDashboard() {
           (topHitters.length ? topHitters.map(function(h) {
             var letter = h.grade.letter || letterGrade(h.grade.score);
             var gradeColor = h.grade.score >= 88 ? '#00ff9c' : h.grade.score >= 78 ? '#00e88a' : h.grade.score >= 66 ? '#ffd000' : '#ff9f43';
+            var tc = {NYY:'#003087',BOS:'#BD3039',LAD:'#005A9C',ATL:'#CE1141',HOU:'#EB6E1F',NYM:'#002D72',PHI:'#E81828',SD:'#2F241D',SF:'#FD5A1E',CHC:'#0E3386',STL:'#C41E3A',MIL:'#FFC52F',CIN:'#C6011F',PIT:'#FDB827',ARI:'#A71930',COL:'#33006F',MIA:'#00A3E0',WSH:'#AB0003',TB:'#092C5C',BAL:'#DF4601',CLE:'#00385D',DET:'#0C2340',KC:'#004687',MIN:'#002B5C',CWS:'#27251F',TEX:'#003278',LAA:'#BA0021',SEA:'#0C2C56',OAK:'#003831',TOR:'#134A8E',ATH:'#003831'};
+            var teamC = tc[h.team || ''] || '#1e293b';
             return '<div class="dash-player">' +
-              '<div class="dash-player-avatar" style="border-color:' + gradeColor + '">\u{26BE}</div>' +
+              '<div class="dash-player-avatar" style="border-color:' + teamC + ';background:linear-gradient(135deg,' + teamC + '33,rgba(6,14,26,.8))">' +
+                '<svg viewBox="0 0 64 80" width="28" height="35" fill="none"><circle cx="32" cy="16" r="12" fill="' + teamC + '" opacity=".9"/><path d="M20 36c0-6.6 5.4-12 12-12s12 5.4 12 12v20c0 2.2-1.8 4-4 4H24c-2.2 0-4-1.8-4-4V36z" fill="' + teamC + '" opacity=".8"/><rect x="42" y="24" width="4" height="32" rx="2" transform="rotate(30 42 24)" fill="' + teamC + '" opacity=".6"/></svg>' +
+              '</div>' +
               '<div class="dash-player-info">' +
                 '<div class="dash-player-name">' + escapeHtml(h.name) + '</div>' +
                 '<div class="dash-player-pos">' + escapeHtml(h.pos || '-') + '</div>' +
@@ -406,11 +410,31 @@ function renderScouting() {
       var gradeColor = g.score >= 88 ? '#00ff9c' : g.score >= 78 ? '#00e88a' : g.score >= 66 ? '#ffd000' : g.score >= 50 ? '#ff9f43' : '#ff3b3b';
       var gradeColorDim = g.score >= 88 ? 'rgba(0,255,156,.12)' : g.score >= 78 ? 'rgba(0,232,138,.1)' : g.score >= 66 ? 'rgba(255,208,0,.1)' : g.score >= 50 ? 'rgba(255,159,67,.1)' : 'rgba(255,59,59,.1)';
 
-      return '<div class="pcard-v2 ' + gradeCardClass(letter) + '" style="--accent:' + gradeColor + ';--accent-dim:' + gradeColorDim + '">' +
+      // Team color map for avatar accents
+      var teamColors = {
+        'NYY':'#003087','BOS':'#BD3039','LAD':'#005A9C','ATL':'#CE1141','HOU':'#EB6E1F',
+        'NYM':'#002D72','PHI':'#E81828','SD':'#2F241D','SF':'#FD5A1E','CHC':'#0E3386',
+        'STL':'#C41E3A','MIL':'#FFC52F','CIN':'#C6011F','PIT':'#FDB827','ARI':'#A71930',
+        'COL':'#33006F','MIA':'#00A3E0','WSH':'#AB0003','TB':'#092C5C','BAL':'#DF4601',
+        'CLE':'#00385D','DET':'#0C2340','KC':'#004687','MIN':'#002B5C','CWS':'#27251F',
+        'TEX':'#003278','LAA':'#BA0021','SEA':'#0C2C56','OAK':'#003831','TOR':'#134A8E',
+        'ATH':'#003831'
+      };
+      var tColor = teamColors[h.team] || '#1e293b';
+      var tColor2 = tColor + '88'; // semi-transparent
+
+      return '<div class="pcard-v2 ' + gradeCardClass(letter) + '" style="--accent:' + gradeColor + ';--accent-dim:' + gradeColorDim + ';--team-color:' + tColor + ';--team-color-dim:' + tColor2 + '">' +
         // Top section: player info + grade
         '<div class="pcard-top">' +
           '<div class="pcard-avatar">' +
-            '<div class="pcard-silhouette">\u{26BE}</div>' +
+            '<div class="pcard-silhouette">' +
+              '<svg viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" class="pcard-batter-svg">' +
+                '<circle cx="32" cy="16" r="12" fill="' + tColor + '" opacity=".9"/>' +
+                '<path d="M20 36c0-6.6 5.4-12 12-12s12 5.4 12 12v20c0 2.2-1.8 4-4 4H24c-2.2 0-4-1.8-4-4V36z" fill="' + tColor + '" opacity=".8"/>' +
+                '<rect x="42" y="24" width="4" height="32" rx="2" transform="rotate(30 42 24)" fill="' + tColor + '" opacity=".6"/>' +
+                '<text x="32" y="50" text-anchor="middle" font-size="14" font-weight="900" fill="rgba(255,255,255,.9)" font-family="Barlow Condensed">' + (h.lineupOrder || '') + '</text>' +
+              '</svg>' +
+            '</div>' +
             '<div class="pcard-lineup-badge">' + (h.lineupOrder || '-') + '</div>' +
           '</div>' +
           '<div class="pcard-info">' +
