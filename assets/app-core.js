@@ -1,19 +1,13 @@
 const API = 'https://statsapi.mlb.com/api/v1';
 const HYDRATE = 'team,probablePitcher,linescore,flags,venue(location,timeZone),decisions,lineups';
 const TABS = [
-  {id:'dashboard', label:'Dashboard'},
-  {id:'games', label:'Games'},
-  {id:'edges', label:'Scouting'},
-  {id:'stacks', label:'Stack Lab'},
-  {id:'hitterlab', label:'Hitter Lab'},
-  {id:'signals', label:'Signals'},
-  {id:'ai', label:'⚡ AI Picks'},
-  {id:'market', label:'Odds + Weather'},
-  {id:'optimizer', label:'🎯 DK Optimizer'},
-  {id:'launch', label:'Launchpad'},
-  {id:'pricing', label:'Pricing'},
-  {id:'notes', label:'Notes'},
-  {id:'budget', label:'💰 Budget Beasts'}
+  {id:'games', label:'Games', icon:'🎮'},
+  {id:'pitching', label:'Pitching Edge', icon:'⚾'},
+  {id:'scouting', label:'Scouting', icon:'📊'},
+  {id:'stacks', label:'Stack Recs', icon:'🔥'},
+  {id:'aistack', label:'AI Stack', icon:'🤖'},
+  {id:'optimizer', label:'Optimizer', icon:'🔧'},
+  {id:'alerts', label:'Alerts', icon:'🔔'}
 ];
 const PARKS = {
   'Coors Field':{hr:1.42,run:1.32,short:'COL'},'Great American Ball Park':{hr:1.28,run:1.18,short:'CIN'},
@@ -50,7 +44,7 @@ const TEAM_NAME_ALIASES={
 };
 const ODDS_API_KEY='30b9f498731b8fa9f78a6aefd7764f3a';
 const state={
-  tab:'dashboard',selectedDate:new Date().toISOString().slice(0,10),season:new Date().getFullYear(),
+  tab:'games',selectedDate:new Date().toISOString().slice(0,10),season:new Date().getFullYear(),
   loading:false,games:[],selectedGamePk:null,selectedGameData:null,stackRows:[],teamEdges:[],
   hero:{games:0,live:0,best:'-',avg:0},
   notes:localStorage.getItem('mlb-edge-notes')||'',
@@ -498,8 +492,172 @@ async function fetchLineupStats(playerIds,season){
   return rows;
 }
 
+// ─── Run Projection Score (0-100) for Games Tab ──────────────────────────────
+function gameRunProjection(game) {
+  const park = parkFor(game.venue.name);
+  const m = getMarket(game);
+  const awayP = game.awayPitcher, homeP = game.homePitcher;
+  const awayWeak = pitcherWeakness(awayP), homeWeak = pitcherWeakness(homeP);
+  let score = 0;
+  // Pitcher vulnerability (both sides, higher = more runs expected)
+  score += (awayWeak - 40) * 0.35;
+  score += (homeWeak - 40) * 0.35;
+  // Park factor boost
+  score += ((park.run || 1) - 0.85) * 60;
+  score += ((park.hr || 1) - 0.85) * 40;
+  // Weather boost
+  const wScore = weatherScore(m);
+  score += (wScore - 45) * 0.45;
+  // Vegas total
+  const total = Number(m.total || 0);
+  if (total) score += (total - 7.5) * 4.5;
+  // Temperature boost
+  const temp = Number(m.temperature || 72);
+  if (temp >= 85) score += 6;
+  else if (temp >= 75) score += 3;
+  else if (temp < 55) score -= 5;
+  // Wind boost
+  if (m.windDir === 'Out') score += Math.min(8, Number(m.wind || 0) * 0.8);
+  else if (m.windDir === 'In') score -= Math.min(8, Number(m.wind || 0) * 0.6);
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function gameRunDescription(game, score) {
+  const park = parkFor(game.venue.name);
+  const m = getMarket(game);
+  const awayP = game.awayPitcher, homeP = game.homePitcher;
+  const parts = [];
+  const awayWeak = pitcherWeakness(awayP), homeWeak = pitcherWeakness(homeP);
+  if (awayWeak >= 65 && homeWeak >= 65) parts.push('Both pitchers are vulnerable — high-scoring environment expected.');
+  else if (awayWeak >= 70) parts.push(escapeHtml(awayP.name) + ' is highly attackable (weakness ' + awayWeak + ').');
+  else if (homeWeak >= 70) parts.push(escapeHtml(homeP.name) + ' is highly attackable (weakness ' + homeWeak + ').');
+  else if (awayWeak <= 40 && homeWeak <= 40) parts.push('Strong pitching matchup on both sides — lower scoring projected.');
+  else parts.push('Mixed pitching quality — moderate run environment.');
+  if (park.run >= 1.15) parts.push(escapeHtml(game.venue.name) + ' is a hitter-friendly park (run factor ' + fmtNum(park.run, 2) + ').');
+  else if (park.run <= 0.90) parts.push(escapeHtml(game.venue.name) + ' suppresses runs (factor ' + fmtNum(park.run, 2) + ').');
+  const total = Number(m.total || 0);
+  if (total >= 9.5) parts.push('Vegas total is high at ' + total + ' — books expect runs.');
+  else if (total && total <= 7) parts.push('Vegas total is low at ' + total + ' — books expect a pitching duel.');
+  const temp = Number(m.temperature || 0);
+  if (temp >= 85) parts.push('Hot weather (' + temp + '°F) boosts ball carry.');
+  else if (temp && temp < 55) parts.push('Cold weather (' + temp + '°F) suppresses offense.');
+  if (m.windDir === 'Out' && Number(m.wind || 0) >= 8) parts.push('Wind blowing out at ' + m.wind + ' mph favors home runs.');
+  return parts.join(' ');
+}
+
+// ─── Pitcher ranking for Pitching Edge tab ────────────────────────────────────
+function pitcherEdgeRank(pitcher, game, side) {
+  const era = Number(pitcher.era || 4.30), k9 = Number(pitcher.k9 || 8.6);
+  const whip = Number(pitcher.whip || 1.30), hr9 = Number(pitcher.hr9 || 1.15);
+  const park = parkFor(game.venue.name);
+  let score = 50;
+  score += Math.max(-20, Math.min(25, (4.5 - era) * 8));
+  score += Math.max(-10, Math.min(20, (k9 - 7.5) * 4));
+  score += Math.max(-10, Math.min(12, (1.35 - whip) * 20));
+  score += Math.max(-8, Math.min(10, (1.2 - hr9) * 16));
+  score += Math.round((1.0 - (park.run || 1)) * 15);
+  if (side === 'home') score += 2;
+  return Math.max(10, Math.min(99, Math.round(score)));
+}
+
+// ─── Stack Rec builder (10 positions) ──────────────────────────────────────────
+function buildStackRecommendation() {
+  const pool = buildDKPlayerPool();
+  if (pool.length < 5) return null;
+  const positions = ['SP', 'SP', 'C', '1B', '2B', '3B', 'SS', 'OF', 'OF', 'OF'];
+  const labels = ['Pitcher 1', 'Pitcher 2', 'Catcher', '1st Base', '2nd Base', '3rd Base', 'Shortstop', 'Outfield 1', 'Outfield 2', 'Outfield 3'];
+  const used = new Set();
+  const picks = [];
+  for (let i = 0; i < positions.length; i++) {
+    const slot = positions[i];
+    const isPitcherSlot = slot === 'SP';
+    const candidate = pool.find(p => {
+      if (used.has(p.name)) return false;
+      if (isPitcherSlot) return p.isPitcher;
+      const pos = (p.pos || '').toUpperCase();
+      if (slot === 'OF') return pos.includes('OF');
+      if (slot === 'C') return pos.includes('C') && !pos.includes('CF');
+      return pos.includes(slot);
+    });
+    if (candidate) {
+      used.add(candidate.name);
+      const gameCtx = state.games.find(g =>
+        (g.away.abbr || '').toUpperCase() === (candidate.team || '').toUpperCase() ||
+        (g.home.abbr || '').toUpperCase() === (candidate.team || '').toUpperCase()
+      );
+      const oppPitcher = gameCtx ? (
+        (gameCtx.away.abbr || '').toUpperCase() === (candidate.team || '').toUpperCase()
+          ? gameCtx.homePitcher : gameCtx.awayPitcher
+      ) : null;
+      picks.push({
+        ...candidate,
+        posLabel: labels[i],
+        posSlot: slot,
+        oppPitcherName: oppPitcher ? oppPitcher.name : 'TBD',
+        venue: gameCtx ? gameCtx.venue.name : '-'
+      });
+    }
+  }
+  const totalSalary = picks.reduce((s, p) => s + (p.salary || 0), 0);
+  return { picks, totalSalary, remaining: 50000 - totalSalary, valid: picks.length === 10 && totalSalary <= 50000 };
+}
+
+// ─── Alerts system ─────────────────────────────────────────────────────────────
+state.alerts = JSON.parse(localStorage.getItem('mlb-edge-alerts') || '[]');
+state.alertsLastCheck = localStorage.getItem('mlb-edge-alerts-last') || '';
+
+function addAlert(type, title, body) {
+  const alert = { id: Date.now(), type, title, body, time: new Date().toISOString(), read: false };
+  state.alerts.unshift(alert);
+  if (state.alerts.length > 50) state.alerts = state.alerts.slice(0, 50);
+  localStorage.setItem('mlb-edge-alerts', JSON.stringify(state.alerts));
+  const badge = document.getElementById('alertBadge');
+  if (badge) badge.textContent = state.alerts.filter(a => !a.read).length;
+}
+
+function markAlertsRead() {
+  state.alerts.forEach(a => a.read = true);
+  localStorage.setItem('mlb-edge-alerts', JSON.stringify(state.alerts));
+  const badge = document.getElementById('alertBadge');
+  if (badge) badge.textContent = '0';
+}
+
+function generateSlateAlerts() {
+  // Weather alerts
+  for (const g of state.games) {
+    const m = getMarket(g);
+    const ws = weatherScore(m);
+    if (ws >= 68) addAlert('weather', 'Weather Boost: ' + g.away.abbr + ' @ ' + g.home.abbr, 'High run environment — temp ' + (m.temperature || '?') + '°F, wind ' + (m.wind || '?') + ' mph ' + (m.windDir || '') + ' at ' + escapeHtml(g.venue.name));
+    if (ws <= 35) addAlert('weather', 'Weather Risk: ' + g.away.abbr + ' @ ' + g.home.abbr, 'Poor conditions detected at ' + escapeHtml(g.venue.name) + '. Consider fading.');
+    // Pitcher vulnerability alerts
+    const aw = pitcherWeakness(g.awayPitcher), hw = pitcherWeakness(g.homePitcher);
+    if (aw >= 75) addAlert('news', 'Attackable Pitcher: ' + escapeHtml(g.awayPitcher.name), g.awayPitcher.name + ' rates ' + aw + ' weakness — stack ' + g.home.abbr + ' hitters.');
+    if (hw >= 75) addAlert('news', 'Attackable Pitcher: ' + escapeHtml(g.homePitcher.name), g.homePitcher.name + ' rates ' + hw + ' weakness — stack ' + g.away.abbr + ' hitters.');
+  }
+}
+
 function buildHero(){const best=state.stackRows[0];const stats=[{k:'Games on slate',v:String(state.hero.games),s:`${state.hero.live} live right now`},{k:'Top stack',v:best?best.team:'-',s:best?`${best.score}/99 ${best.level}`:'Load a slate'},{k:'Avg stack score',v:String(state.hero.avg||'-'),s:'Slate-level hitting environment'},{k:'Selected game',v:state.selectedGameData?`${state.selectedGameData.away.abbr} @ ${state.selectedGameData.home.abbr}`:'-',s:state.selectedGameData?`${state.selectedGameData.venue.name}`:'Choose a matchup'}];$('#heroStats').innerHTML=stats.map(s=>`<div class="stat"><div class="k">${s.k}</div><div class="v">${escapeHtml(s.v)}</div><div class="s">${escapeHtml(s.s)}</div></div>`).join('');}
-function renderTabs(){tabsEl.innerHTML=TABS.map(t=>`<button class="tab ${state.tab===t.id?'active':''}" data-tab="${t.id}">${t.label}</button>`).join('');tabsEl.querySelectorAll('[data-tab]').forEach(btn=>btn.onclick=()=>{state.tab=btn.dataset.tab;render();});}
+function switchTab(tabId) {
+  state.tab = tabId;
+  document.querySelectorAll('.sidebar-nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tabId);
+  });
+  if (tabId === 'alerts') markAlertsRead();
+  render();
+}
+
+function refreshSlate() {
+  loadSlate();
+}
+
+function setAutoRefresh(ms) {
+  ms = Number(ms);
+  if (state._autoRefreshTimer) clearInterval(state._autoRefreshTimer);
+  if (ms > 0) {
+    state._autoRefreshTimer = setInterval(() => loadSlate(), ms);
+    state.autoRefreshMs = ms;
+  }
+}
 
 async function loadSlate(){
   state.loading=true;render();
@@ -755,4 +913,14 @@ function buildSmartStacks(){
 function buildAIPicksLineup(){
   return optimizeDKLineup(state.optimizerStackTeam||'');
 }
-window.state = state;window.renderTabs = renderTabs;
+window.state = state;
+window.switchTab = switchTab;
+window.refreshSlate = refreshSlate;
+window.setAutoRefresh = setAutoRefresh;
+window.gameRunProjection = gameRunProjection;
+window.gameRunDescription = gameRunDescription;
+window.pitcherEdgeRank = pitcherEdgeRank;
+window.buildStackRecommendation = buildStackRecommendation;
+window.addAlert = addAlert;
+window.markAlertsRead = markAlertsRead;
+window.generateSlateAlerts = generateSlateAlerts;

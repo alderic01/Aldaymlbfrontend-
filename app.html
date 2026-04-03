@@ -3,882 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ALLDAY MLB EDGE</title>
-  <meta name="theme-color" content="#08111f" />
+  <title>ALLDAY EDGE - MLB DFS Analytics</title>
+  <meta name="theme-color" content="#060e1a" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>h
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-
-    :root{--bg:#08111f;--bg2:#0d1727;--bg3:#122238;--card:#0d1828;--line:#1b3150;--text:#e8f0fa;--muted:#8h9a0bd;--teal:#00e5aa;--gold:#ffd54a;--red:#ff5f6d;--blue:#59a9ff;--orange:#ff9e57;--green:#00d46a;--purple:#a88dff;--shadow:0 12px 30px rgba(0,0,0,.32);}
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:linear-gradient(180deg,#07101c 0%,#091322 100%);color:var(--text);font-family:Inter,system-ui,sans-serif}
-    button,input,select{font:inherit}
-    .app{max-width:1500px;margin:0 auto;padding:18px}
-    .topbar{position:sticky;top:0;z-index:50;background:rgba(8,17,31,.9);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.05)}
-    .topbar-inner{max-width:1500px;margin:0 auto;padding:14px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-    .brand{display:flex;align-items:center;gap:14px;min-width:270px}
-    .logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--teal),#0d6efd);display:grid;place-items:center;font-size:24px;box-shadow:var(--shadow)}
-    .title{font-family:"Barlow Condensed",sans-serif;font-weight:800;letter-spacing:1.5px;font-size:28px;line-height:.9}
-    .subtitle{font-size:11px;letter-spacing:2.5px;color:var(--teal);font-weight:800;text-transform:uppercase;margin-top:4px}
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-left:auto}
-    .field,.button,.pill,.tab{border:1px solid var(--line);background:var(--bg2);color:var(--text);border-radius:12px}
-    .field{padding:10px 12px;min-height:42px}
-    .button{padding:10px 14px;font-weight:700;cursor:pointer;transition:.18s transform,.18s border-color}
-    .button:hover{transform:translateY(-1px);border-color:#315889}
-    .button.primary{background:linear-gradient(135deg,var(--teal),#32c7ff);color:#07101c;border:none}
-    .button.warn{background:linear-gradient(135deg,var(--gold),#ff9f43);color:#07101c;border:none}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;padding:14px 0 6px}
-    .tab{padding:10px 14px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-size:18px;letter-spacing:1px;text-transform:uppercase}
-    .tab.active{background:linear-gradient(135deg,#0f2137,#173454);border-color:#2f5d8c;color:var(--gold)}
-    .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin:18px 0}
-    .card{background:linear-gradient(180deg,rgba(18,34,56,.95),rgba(11,22,37,.98));border:1px solid rgba(63,101,147,.35);border-radius:18px;box-shadow:var(--shadow)}
-    .hero-main{padding:22px}
-    .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:2.2px;color:var(--teal);font-weight:800}
-    .hero-title{font-family:"Barlow Condensed",sans-serif;font-size:52px;line-height:.9;letter-spacing:1px;margin:10px 0 14px}
-    .hero-copy{color:#bfd0e4;max-width:62ch;line-height:1.55}
-    .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
-    .hero-side{padding:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-content:start}
-    .stat{background:rgba(6,14,26,.55);border:1px solid rgba(72,114,167,.25);border-radius:16px;padding:16px}
-    .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:1.8px;color:var(--muted);font-weight:800}
-    .stat .v{font-family:"Barlow Condensed",sans-serif;font-size:34px;line-height:1;margin-top:8px}
-    .stat .s{color:#b9cbdf;font-size:12px;margin-top:8px;line-height:1.45}
-    .section-title{display:flex;justify-content:space-between;align-items:end;gap:10px;margin:20px 0 10px}
-    .section-title h2{margin:0;font-family:"Barlow Condensed",sans-serif;font-size:30px;letter-spacing:1px;text-transform:uppercase}
-    .section-title .meta{color:var(--muted);font-size:13px}
-    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-    .games{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
-    .game{padding:16px;cursor:pointer;transition:.18s transform,.18s border-color;background:linear-gradient(180deg,rgba(8,17,31,.55),rgba(7,14,24,.15));border-radius:18px;border:1px solid rgba(74,114,166,.24)}
-    .game:hover{transform:translateY(-2px);border-color:#376291}
-    .game.active{outline:2px solid rgba(0,229,170,.45);border-color:rgba(0,229,170,.55)}
-    .row{display:flex;align-items:center;gap:10px;justify-content:space-between}
-    .teams{display:grid;gap:10px;margin:14px 0}
-    .teamrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
-    .abbr{font-family:"Barlow Condensed",sans-serif;font-size:30px;letter-spacing:1px}
-    .name{font-size:13px;color:#bfd0e4}
-    .score{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:22px}
-    .pill{padding:7px 10px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:8px}
-    .pill.live{color:#07101c;background:linear-gradient(135deg,var(--red),#ff8f70);border:none}
-    .pill.preview{color:#07101c;background:linear-gradient(135deg,var(--gold),#ffb74d);border:none}
-    .pill.final{color:#07101c;background:linear-gradient(135deg,#9ad0ff,#7fffd4);border:none}
-    .pill.ok{color:var(--teal)}.pill.bad{color:#ff9ea7}
-    .mini{font-size:12px;color:var(--muted)}
-    .mono{font-family:"JetBrains Mono",monospace}
-    .table-wrap{overflow:auto;border-radius:16px}
-    table{width:100%;border-collapse:collapse;min-width:720px}
-    th,td{padding:12px 14px;border-bottom:1px solid rgba(103,136,175,.18);text-align:left}
-    th{font-size:11px;text-transform:uppercase;letter-spacing:1.8px;color:#9db4d0;background:rgba(4,9,18,.28)}
-    td{font-size:14px}
-    .tag{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}
-    .tag.smash{background:rgba(0,212,106,.13);color:#73ffbb}
-    .tag.strong{background:rgba(255,213,74,.13);color:#ffe280}
-    .tag.watch{background:rgba(89,169,255,.13);color:#8fc6ff}
-    .tag.fade{background:rgba(255,95,109,.13);color:#ff98a2}
-    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .team-panel{padding:16px}
-    .panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-    .panel-title h3{margin:0;font-family:"Barlow Condensed",sans-serif;font-size:24px;letter-spacing:1px;text-transform:uppercase}
-    .player-card{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px;border-radius:14px;border:1px solid rgba(88,124,171,.23);background:rgba(7,14,24,.28);margin-bottom:10px}
-    .player-name{font-weight:800;font-size:16px}
-    .player-meta{font-size:12px;color:var(--muted);margin-top:4px}
-    .grade{font-family:"Barlow Condensed",sans-serif;font-size:34px;line-height:.9;text-align:right}
-    .grade-sub{font-size:12px;color:var(--muted);font-family:"JetBrains Mono",monospace}
-    .reasons{margin-top:8px;font-size:12px;color:#c5d4e5;line-height:1.5}
-    .lift{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .callout{padding:16px}
-    .callout h3{margin:0 0 8px;font-family:"Barlow Condensed",sans-serif;font-size:24px;letter-spacing:1px;text-transform:uppercase}
-    .callout p{margin:0;color:#c2d2e2;line-height:1.6;font-size:14px}
-    .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    .price-card{padding:18px;border:1px solid rgba(88,124,171,.23);border-radius:16px;background:rgba(7,14,24,.28)}
-    .price-card.featured{outline:2px solid rgba(0,229,170,.38);background:linear-gradient(180deg,rgba(0,229,170,.08),rgba(7,14,24,.26))}
-    .price-card h3{margin:0;font-family:"Barlow Condensed",sans-serif;font-size:28px;letter-spacing:1px;text-transform:uppercase}
-    .price{font-family:"Barlow Condensed",sans-serif;font-size:48px;line-height:1;margin:12px 0}
-    ul.clean{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px;color:#c9d8e7;font-size:14px}
-    .notes{padding:16px}
-    textarea{width:100%;min-height:160px;background:#091321;color:var(--text);border:1px solid var(--line);border-radius:14px;padding:14px;resize:vertical}
-    .empty,.loading{padding:30px;text-align:center;color:#a7bdd8}
-    .loading strong{color:var(--text)}
-    .footer{padding:30px 0 12px;color:#8ea5c1;font-size:12px;text-align:center}
-    .toolbar-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .watch-btn{min-width:88px}
-    .watch-btn.active{background:linear-gradient(135deg,var(--gold),#ff9f43);color:#07101c;border:none}
-    .signal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-    .signal-card{padding:16px}
-    .signal-card h3{margin:0 0 8px;font-family:"Barlow Condensed",sans-serif;font-size:24px;letter-spacing:1px;text-transform:uppercase}
-    .small-field{padding:9px 12px;min-height:38px;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-radius:12px}
-    .shell-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
-    .shell-form{padding:16px}
-    .shell-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
-    .shell-form-grid .full{grid-column:1/-1}
-    .label{display:grid;gap:6px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.4px}
-    .weather-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(89,169,255,.12);color:#9fd0ff;border:1px solid rgba(89,169,255,.22)}
-    .weather-chip.good{background:rgba(0,212,106,.12);color:#7effbe;border-color:rgba(0,212,106,.25)}
-    .weather-chip.bad{background:rgba(255,95,109,.12);color:#ff9aa5;border-color:rgba(255,95,109,.25)}
-    .tiny{font-size:11px;color:var(--muted);line-height:1.45}
-    .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
-    .insight{padding:12px;border-radius:14px;background:rgba(7,14,24,.34);border:1px solid rgba(88,124,171,.2)}
-    .insight .k{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:800}
-    .insight .v{font-family:"Barlow Condensed",sans-serif;font-size:28px;line-height:1;margin-top:8px}
-    .insight .s{font-size:12px;color:#c6d5e5;margin-top:8px;line-height:1.45}
-    .mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
-    .mini-chip{padding:8px 10px;border-radius:12px;background:rgba(89,169,255,.08);border:1px solid rgba(89,169,255,.18);font-size:12px;color:#c8d8e7}
-    .trend-list{display:grid;gap:8px;margin-top:10px}
-    .trend-item{padding:10px 12px;border-radius:12px;background:rgba(7,14,24,.28);border:1px solid rgba(88,124,171,.2);font-size:13px;color:#d7e5f2}
-    .odds-metric{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;place-items:center;z-index:120}
-    .modal-backdrop.open{display:grid}
-    .modal{width:min(560px,calc(100vw - 24px));padding:22px;border-radius:20px;background:linear-gradient(180deg,#102038,#091321);border:1px solid rgba(94,134,184,.35);box-shadow:var(--shadow)}
-    .modal h3{margin:0 0 10px;font-family:"Barlow Condensed",sans-serif;font-size:34px;letter-spacing:1px;text-transform:uppercase}
-    .modal p{margin:0 0 12px;color:#c8d8e7;line-height:1.55}
-    .modal-grid{display:grid;gap:12px}
-    .account-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    #authGate{position:fixed;inset:0;z-index:10000;background:rgba(5,11,20,.97);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
-    #authGate.hidden{display:none}
-    .ag-box{background:linear-gradient(180deg,#0f2038,#091525);border:1px solid rgba(0,229,170,.25);border-radius:22px;padding:36px 32px 28px;max-width:480px;width:100%;box-shadow:0 32px 80px rgba(0,0,0,.6)}
-    .ag-box h2{margin:0 0 6px;font-family:"Barlow Condensed",sans-serif;font-size:34px;letter-spacing:1px;text-transform:uppercase;color:#e8f0fa}
-    .ag-box p{color:#9ab0c9;font-size:14px;line-height:1.5;margin:0 0 20px}
-    .ag-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:#6d8fac;font-weight:800;margin-bottom:5px}
-    .ag-input{width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(55,98,145,.5);background:#060f1c;color:#e8f0fa;font-size:14px;margin-bottom:13px;box-sizing:border-box}
-    .ag-input:focus{outline:none;border-color:rgba(0,229,170,.5)}
-    .ag-row{display:flex;gap:10px;flex-wrap:wrap}
-    .ag-btn{flex:1;padding:13px 16px;border-radius:12px;border:none;font-weight:800;font-size:14px;cursor:pointer}
-    .ag-btn.primary{background:linear-gradient(135deg,#00e5aa,#32c7ff);color:#06101c}
-    .ag-btn.secondary{background:rgba(255,255,255,.07);color:#e8f0fa;border:1px solid rgba(255,255,255,.12)}
-    .ag-btn.full{width:100%;margin-top:10px;background:rgba(255,255,255,.05);color:#c8d8ea;border:1px solid rgba(255,255,255,.1)}
-    .ag-divider{text-align:center;color:#3a5570;font-size:12px;margin:14px 0 12px}
-    #agMsg{margin-top:12px;font-size:13px;padding:8px 12px;border-radius:8px;display:none}
-    .ag-note{margin-top:12px;font-size:11px;color:#3a5570;text-align:center}
-    #planBadge{display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;background:rgba(0,229,170,.1);color:#00e5aa;border:1px solid rgba(0,229,170,.2);cursor:pointer;margin-right:4px}
-    #planBadge.visible{display:inline-flex}
-    @media(max-width:1100px){.hero,.grid-3,.grid-2,.split,.pricing,.lift,.signal-grid{grid-template-columns:1fr}.hero-side{grid-template-columns:1fr 1fr}}
-    @media(max-width:720px){.hero-title{font-size:40px}.topbar-inner{padding:12px}.app{padding:14px}.hero-side{grid-template-columns:1fr}.toolbar{margin-left:0}}
-  
-
-/* === ALLDAY EDGE NEON ENHANCEMENTS === */
-:root{--bg:#060e1a;--bg2:#0b1623;--card:#0b1623;--line:#1e293b;--green:#00ff9c;--red:#ff3b3b;--yellow:#ffd000;--text:#e8f0fa;--muted:#64748b;--teal:#00ff9c;--gold:#ffd000}
-html,body{background:#060e1a!important;background-image:none!important}
-.topbar{background:rgba(6,14,26,.95)!important;border-bottom:1px solid #1e293b!important;backdrop-filter:blur(16px)!important}
-.topbar-inner{height:56px!important;max-width:100%!important}
-.brand .title{color:#00ff9c!important;font-weight:900!important;text-shadow:0 0 20px rgba(0,255,156,.4)!important}
-.logo{background:linear-gradient(135deg,#00ff9c,#00b87a)!important;border-radius:8px!important}
-.app{max-width:100%!important;padding:0!important}
-.sidebar{width:210px;flex-shrink:0;background:#0b1623;border-right:1px solid #1e293b;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;display:flex;flex-direction:column}
-.sidebar-section{padding:14px 14px 6px;color:#334155;font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
-.sidebar-nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-radius:8px;margin:2px 8px;transition:all .2s;color:#64748b;font-size:13px;font-weight:600}
-.sidebar-nav-item:hover{background:rgba(0,255,156,.06);color:#e8f0fa}
-.sidebar-nav-item.active{background:rgba(0,255,156,.1);color:#00ff9c;font-weight:700}
-.sidebar-nav-icon{font-size:14px;width:18px;text-align:center}
-.sidebar-badge{background:#ff3b3b;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:10px;margin-left:auto}
-.sidebar-badge.g{background:#00ff9c;color:#060e1a}
-.sidebar-badge.y{background:#ffd000;color:#060e1a}
-.app-body{display:flex;flex:1;min-height:calc(100vh - 56px)}
-.app-sidebar-content{flex:1;overflow-x:hidden;padding:20px;display:flex;flex-direction:column;gap:16px}
-.toolbar{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:12px!important;padding:12px 18px!important}
-#tabs .tab{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:8px!important;padding:7px 14px!important;color:#64748b!important;font-size:12px!important;font-weight:700!important;transition:all .2s!important;margin:0 2px 4px!important}
-#tabs .tab:hover{color:#e8f0fa!important;border-color:#334155!important}
-#tabs .tab.active{background:rgba(0,255,156,.1)!important;border-color:rgba(0,255,156,.4)!important;color:#00ff9c!important}
-.player-card{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:16px!important;padding:18px!important;margin-bottom:12px!important;transition:transform .2s,box-shadow .2s!important;cursor:pointer!important}
-.player-card:hover{transform:translateY(-2px)!important;box-shadow:0 8px 24px rgba(0,0,0,.3)!important}
-.player-name{font-size:15px!important;font-weight:900!important;color:#e8f0fa!important}
-.player-meta{font-size:12px!important;color:#64748b!important}
-.grade{font-size:36px!important;font-weight:900!important;line-height:1!important}
-.section-title{font-size:18px!important;font-weight:900!important;margin-bottom:16px!important}
-.card{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:14px!important;box-shadow:none!important}
-.card.smash{border-color:rgba(0,255,156,.4)!important;box-shadow:0 0 20px rgba(0,255,156,.1)!important}
-.card.priority{border-color:rgba(255,208,0,.35)!important}
-.game{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:14px!important;padding:16px!important}
-.pill.live{background:rgba(255,59,59,.15)!important;border:1px solid rgba(255,59,59,.4)!important;color:#ff6b6b!important;font-weight:800!important}
-.pill.preview{background:rgba(100,116,139,.1)!important;border:1px solid rgba(100,116,139,.3)!important;color:#94a3b8!important}
-.pill.final{background:rgba(0,255,156,.08)!important;border:1px solid rgba(0,255,156,.2)!important;color:#00ff9c!important}
-.tag.smash{background:rgba(0,255,156,.12)!important;color:#00ff9c!important;border:1px solid rgba(0,255,156,.3)!important}
-.tag.strong{background:rgba(255,208,0,.12)!important;color:#ffd000!important;border:1px solid rgba(255,208,0,.3)!important}
-.tag.watch{background:rgba(56,189,248,.1)!important;color:#38bdf8!important;border:1px solid rgba(56,189,248,.2)!important}
-.tag.fade{background:rgba(255,59,59,.1)!important;color:#ff6b6b!important;border:1px solid rgba(255,59,59,.2)!important}
-.price-card{background:#0b1623!important;border:1px solid #1e293b!important;border-radius:16px!important;padding:28px!important}
-.price-card.featured{border-color:rgba(0,255,156,.45)!important;box-shadow:0 0 30px rgba(0,255,156,.12)!important}
-.footer{background:#0b1623!important;border-top:1px solid #1e293b!important;color:#334155!important;font-size:11px!important;text-align:center!important;padding:14px!important;letter-spacing:.5px!important}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#060e1a}::-webkit-scrollbar-thumb{background:rgba(0,255,156,.25);border-radius:3px}
-@media(max-width:900px){.sidebar{display:none!important}.app-body{flex-direction:column}}
-
-/* === ENHANCED GRADE SYSTEM STYLES === */
-.grade-badge-aplus { color: #00ff9c !important; text-shadow: 0 0 20px rgba(0,255,156,.5); }
-.grade-badge-a { color: #00e88a !important; text-shadow: 0 0 15px rgba(0,232,138,.4); }
-.grade-badge-bplus { color: #ffd000 !important; text-shadow: 0 0 15px rgba(255,208,0,.4); }
-.grade-badge-b { color: #f59e0b !important; }
-.grade-badge-cplus { color: #ff9e57 !important; }
-.grade-badge-c { color: #ff5f6d !important; }
-
-/* Budget Beast cards */
-.beast-card-a { border-color: rgba(0,255,156,.35) !important; box-shadow: 0 0 20px rgba(0,255,156,.08) !important; }
-.beast-card-b { border-color: rgba(255,208,0,.25) !important; }
-.beast-card-c { border-color: rgba(30,41,59,.8) !important; }
-
-/* Grade pulse animation for A+ picks */
-@keyframes gradeGlow {
-  0% { text-shadow: 0 0 10px rgba(0,255,156,.4); }
-  50% { text-shadow: 0 0 30px rgba(0,255,156,.8), 0 0 60px rgba(0,255,156,.3); }
-  100% { text-shadow: 0 0 10px rgba(0,255,156,.4); }
-}
-.grade-aplus-glow { animation: gradeGlow 2s ease-in-out infinite; }
-
-/* Stack badge animations */
-@keyframes stackPulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
-}
-.stack-live { animation: stackPulse 1.5s ease-in-out infinite; }
-
-/* Pitch arsenal display */
-.pitch-tag { 
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;
-  background: rgba(89,169,255,.1); color: #59a9ff; border: 1px solid rgba(89,169,255,.2);
-  margin: 2px;
-}
-.pitch-tag.fb { background: rgba(255,59,59,.1); color: #ff6b6b; border-color: rgba(255,59,59,.2); }
-.pitch-tag.sl { background: rgba(255,208,0,.1); color: #ffd000; border-color: rgba(255,208,0,.2); }
-.pitch-tag.cu { background: rgba(124,58,237,.1); color: #a78bfa; border-color: rgba(124,58,237,.2); }
-.pitch-tag.ch { background: rgba(0,212,106,.1); color: #22c55e; border-color: rgba(0,212,106,.2); }
-
-/* Budget Beasts sidebar badge */
-.sidebar-badge.bb { background: linear-gradient(135deg,#ff6b6b,#ff9f43); color: #fff; }
-
-/* Value score indicator */
-.value-score-high { color: #00ff9c; font-weight: 800; }
-.value-score-mid { color: #ffd000; font-weight: 700; }
-.value-score-low { color: #64748b; }
-
-/* Velocity indicator */
-.velo-high { color: #ff6b6b; }
-.velo-mid { color: #ffd000; }
-.velo-low { color: #22c55e; }
-
-/* Spring training status badge */
-.spring-hot { background: rgba(255,159,67,.15); color: #ff9f43; border: 1px solid rgba(255,159,67,.3); padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; }
-.spring-cold { background: rgba(89,169,255,.1); color: #59a9ff; border: 1px solid rgba(89,169,255,.2); padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; }
-
-/* Matchup grade card hover effects */
-.player-card:hover .grade { transform: scale(1.05); transition: transform .2s; }
-
-/* AI Picks $50K optimizer layout */
-.ai-lineup-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-@media(max-width:900px) { .ai-lineup-grid { grid-template-columns: repeat(2, 1fr); } }
-
-/* Enhanced hitter lab grade display */
-.grade[data-grade="A+"] { color: #00ff9c !important; }
-.grade[data-grade="A"] { color: #00e88a !important; }
-.grade[data-grade="B+"] { color: #ffd000 !important; }
-.grade[data-grade="B"] { color: #f59e0b !important; }
-.grade[data-grade="C+"] { color: #ff9e57 !important; }
-.grade[data-grade="C"] { color: #ff5f6d !important; }
-
-/* Neon border for top picks */
-.card.elite-pick { 
-  border: 1px solid rgba(0,255,156,.5) !important;
-  box-shadow: 0 0 30px rgba(0,255,156,.12), inset 0 0 30px rgba(0,255,156,.02) !important;
-}
-
-/* Budget beasts header glow */
-.budget-beasts-header {
-  background: linear-gradient(135deg, rgba(0,255,156,.05), transparent);
-  border-bottom: 1px solid rgba(0,255,156,.2);
-}
-</style>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/site.css" />
 </head>
 <body>
+
+<!-- AUTH GATE -->
 <div id="authGate">
   <div class="ag-box">
-    <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#00e5aa;font-weight:800;margin-bottom:8px">ALLDAY MLB EDGE</div>
-    <h2>Access your account</h2>
-    <p>Enter your email and access token. New? <a href="./index.html#pricing" style="color:#59a9ff">Get access here.</a></p>
+    <div class="ag-brand">&#9889; ALLDAY EDGE</div>
+    <h2>Access Your Dashboard</h2>
+    <p>Enter your email and access token. New? <a href="./index.html#pricing" style="color:#00ff9c">Get access here.</a></p>
     <label class="ag-label" for="agBackend">Backend URL</label>
     <input id="agBackend" class="ag-input" type="url" placeholder="https://newest-mlb-1.onrender.com" />
     <label class="ag-label" for="agEmail">Email</label>
     <input id="agEmail" class="ag-input" type="email" placeholder="you@example.com" autocomplete="email" />
     <label class="ag-label" for="agToken">Access Token</label>
-    <input id="agToken" class="ag-input" type="password" placeholder="Paste token — or use Claim Token below" />
+    <input id="agToken" class="ag-input" type="password" placeholder="Your access token" />
     <div class="ag-row">
-      <button class="ag-btn primary" id="agSignInBtn">Sign In</button>
-      <button class="ag-btn secondary" id="agClaimBtn">Just Paid? Claim Token</button>
+      <button class="ag-btn primary" onclick="loginWithToken()">&#128274; Login</button>
+      <button class="ag-btn secondary" onclick="claimAccess()">&#128231; Claim via Email</button>
     </div>
-    <div class="ag-divider">— have a token saved? —</div>
-    <button class="ag-btn full" id="agAutoBtn">Load Saved Token</button>
+    <div class="ag-divider">or</div>
+    <button class="ag-btn full" onclick="enterFreeMode()">&#9654; Continue Free (Limited)</button>
     <div id="agMsg"></div>
-    <div class="ag-note">Token stored locally. No re-entry needed on future visits.</div>
+    <div class="ag-note">Secured by Stripe &middot; Cancel anytime</div>
   </div>
 </div>
 
-<div style="position:sticky;top:0;z-index:9999;background:#08111f;border-bottom:1px solid rgba(255,255,255,.08);padding:10px 16px;font-family:Inter,system-ui,sans-serif;display:flex;gap:10px;justify-content:space-between;align-items:center">
-  <div style="font-weight:800;color:#e8f0fa">ALLDAY MLB EDGE</div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-    <span id="planBadge" title="Sign out">⚡ <span id="planBadgeLabel">pro</span></span>
-    <a href="./index.html" style="color:#9ad7ff;text-decoration:none">Home</a>
-    <a href="./optimizer.html" style="color:#9ad7ff;text-decoration:none">Optimizer</a>
-  </div>
-</div>
-
+<!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-inner">
     <div class="brand">
-      <div class="logo">⚾</div>
+      <div class="logo">&#9889;</div>
       <div>
-        <div class="title">ALLDAY MLB EDGE</div>
-        <div class="subtitle">Sharper board · matchup lab · splits · travel · bullpen intelligence</div>
+        <div class="title">ALLDAY EDGE</div>
+        <div class="subtitle">MLB DFS ANALYTICS</div>
       </div>
     </div>
     <div class="toolbar">
-      <input id="dateInput" class="field" type="date" />
-      <button id="refreshBtn" class="button primary">Load Slate</button>
-      <button id="exportBtn" class="button">Export CSV</button>
-      <div class="toolbar-group">
-        <input id="edgeSearch" class="small-field" type="text" placeholder="Filter team" />
-        <button id="autoBtn" class="button">Auto Refresh: Off</button>
-      </div>
-      <div id="clockPill" class="pill mono">--:--:--</div>
+      <span id="planBadge"></span>
+      <span id="dateDisplay" class="date-display"></span>
+      <span id="statusDot" class="status-dot"></span>
+      <button class="button" onclick="refreshSlate()" id="refreshBtn">&#8635; Refresh</button>
+      <select id="autoRefreshSelect" class="field small-field" onchange="setAutoRefresh(this.value)">
+        <option value="0">Manual</option>
+        <option value="180000">3 min</option>
+        <option value="300000" selected>5 min</option>
+      </select>
+      <button class="button" onclick="location.href='./index.html'">&#127968; Home</button>
     </div>
   </div>
 </div>
 
-<div class="app">
+<!-- MAIN LAYOUT -->
 <div class="app-body">
-<nav class="sidebar" id="appSidebar">
-  <div class="sidebar-section">Main</div>
-  <div class="sidebar-nav-item active" onclick="sideSwitch(this,'dash')"><span class="sidebar-nav-icon">📊</span>Dashboard</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'games')"><span class="sidebar-nav-icon">⚾</span>Games<span class="sidebar-badge g">LIVE</span></div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'edges')"><span class="sidebar-nav-icon">📈</span>Scouting</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'stacks')"><span class="sidebar-nav-icon">💰</span>Stack Lab</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'hitters')"><span class="sidebar-nav-icon">🏏</span>Hitter Lab</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'signals')"><span class="sidebar-nav-icon">📡</span>Signals</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'ai')"><span class="sidebar-nav-icon">⚡</span>AI Picks<span class="sidebar-badge y">NEW</span></div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'market')"><span class="sidebar-nav-icon">🌤</span>Odds+Weather</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'optimizer')"><span class="sidebar-nav-icon">🎯</span>DK Optimizer</div>
-  <div class="sidebar-section">More</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'launchpad')"><span class="sidebar-nav-icon">🚀</span>Launchpad</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'budget')"><span class="sidebar-nav-icon">🔥</span>Budget Beasts<span class="sidebar-badge bb">HOT</span></div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'pitchedge')"><span class="sidebar-nav-icon">⚡</span>Pitch Edge</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'hredge')"><span class="sidebar-nav-icon">💣</span>HR Edge</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'notes')"><span class="sidebar-nav-icon">📝</span>Notes</div>
-  <div class="sidebar-section">Account</div>
-  <div class="sidebar-nav-item" onclick="sideSwitch(this,'pricing')"><span class="sidebar-nav-icon">🔐</span>Pricing</div>
-  <div class="sidebar-nav-item" onclick="document.getElementById('accountBtn')&&document.getElementById('accountBtn').click()"><span class="sidebar-nav-icon">👤</span>Account</div>
-  <div style="padding:14px 16px;margin-top:auto;border-top:1px solid #1e293b"><a href="./index.html" style="display:flex;align-items:center;gap:6px;color:#334155;font-size:12px;font-weight:600;padding:6px 0" onmouseover="this.style.color='#00ff9c'" onmouseout="this.style.color='#334155'">&#8592; Back to Home</a></div>
-</nav>
-<div class="app-sidebar-content">
-<div class="tabs" id="tabs"></div>
-  <section class="hero">
-    <div class="card hero-main">
-      <div class="eyebrow">Live slate control room</div>
-      <div class="hero-title">ALLDAY MLB EDGE</div>
-      <div class="hero-copy">Live slate board, stack ranking, hitter grades, odds proxy, weather sync, AI picks, and notes.</div>
-      <div class="hero-actions">
-        <button class="button primary" id="jumpGames">Open Games</button>
-        <button class="button warn" id="jumpStacks">Stack Lab</button>
-        <button class="button" id="jumpPricing">Pricing</button>
-        <button class="button" id="jumpLaunch">Launchpad</button>
-        <button class="button primary" id="goProBtn">Go Pro</button>
-        <button class="button" id="accountBtn">Account</button>
-      </div>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">ANALYTICS</div>
+    <div class="sidebar-nav-item active" data-tab="games" onclick="switchTab('games')">
+      <span class="sidebar-nav-icon">&#127918;</span> Games
     </div>
-    <div class="card hero-side" id="heroStats"></div>
-  </section>
-  <main id="view"></main>
-  <div class="modal-backdrop" id="accountModal">
-    <div class="modal">
-      <h3>ALLDAY MLB EDGE Access</h3>
-      <p>Save your billing email and point the app at your live backend.</p>
-      <div class="modal-grid">
-        <label class="label">Billing email<input id="billingEmail" class="field" placeholder="you@example.com" /></label>
-        <label class="label">Backend API base<input id="billingApiBase" class="field" placeholder="https://newest-mlb-1.onrender.com" /></label>
-        <div class="account-row">
-          <button class="button primary" id="saveAccountBtn">Save</button>
-          <button class="button" id="startProCheckout">Start Pro Checkout</button>
-          <button class="button" id="openPortalBtn">Billing Portal</button>
-          <button class="button" id="closeAccountBtn">Close</button>
-        </div>
-      </div>
+    <div class="sidebar-nav-item" data-tab="pitching" onclick="switchTab('pitching')">
+      <span class="sidebar-nav-icon">&#9918;</span> Pitching Edge
+    </div>
+    <div class="sidebar-nav-item" data-tab="scouting" onclick="switchTab('scouting')">
+      <span class="sidebar-nav-icon">&#128202;</span> Scouting
+    </div>
+
+    <div class="sidebar-section">DFS TOOLS</div>
+    <div class="sidebar-nav-item" data-tab="stacks" onclick="switchTab('stacks')">
+      <span class="sidebar-nav-icon">&#128293;</span> Stack Recs
+    </div>
+    <div class="sidebar-nav-item" data-tab="aistack" onclick="switchTab('aistack')">
+      <span class="sidebar-nav-icon">&#129302;</span> AI Stack
+      <span class="sidebar-badge g">AI</span>
+    </div>
+    <div class="sidebar-nav-item" data-tab="optimizer" onclick="switchTab('optimizer')">
+      <span class="sidebar-nav-icon">&#128736;</span> Optimizer
+    </div>
+
+    <div class="sidebar-section">LIVE</div>
+    <div class="sidebar-nav-item" data-tab="alerts" onclick="switchTab('alerts')">
+      <span class="sidebar-nav-icon">&#128276;</span> Alerts
+      <span class="sidebar-badge" id="alertBadge">0</span>
+    </div>
+
+    <div class="sidebar-section">ACCOUNT</div>
+    <div class="sidebar-nav-item" data-tab="pricing" onclick="switchTab('pricing')">
+      <span class="sidebar-nav-icon">&#128176;</span> Pricing
+    </div>
+    <div class="sidebar-nav-item" data-tab="settings" onclick="switchTab('settings')">
+      <span class="sidebar-nav-icon">&#9881;</span> Settings
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-brand">&#9889; ALLDAY EDGE</div>
+      <div class="sidebar-footer-version">v2.0 &middot; 2025</div>
     </div>
   </div>
-  <div class="footer">ALLDAY MLB EDGE · MLB Stats API · Private proxy · AI by Claude</div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content" id="view">
+    <div class="loading"><strong>Loading slate...</strong><br>Fetching today's games and matchup data.</div>
+  </div>
 </div>
+
+<!-- DISCLAIMER BAR -->
+<div class="disclaimer-bar">
+  &#9888; DISCLAIMER: ALLDAY EDGE is for entertainment and informational purposes only. Not financial or gambling advice. Past performance does not guarantee future results. Please gamble responsibly. <a href="./index.html#disclaimer">Full disclaimer</a>
 </div>
-</div>
-<script src="./assets/savant-bridge.js?v=432"></script>
-<script src="./assets/app-core.js?v=431"></script>
-<script src="./assets/mlb-advanced-grading.js?v=431"></script>
-<script src="./assets/app-main.js?v=431"></script>
-<script src="./assets/player-modal.js?v=427"></script>
-<script>(function(){function sideSwitch(el,tab){var keyMap={dash:'dashboard',hitters:'hitterlab',launchpad:'launch'};var stateKey=keyMap[tab]||tab;document.querySelectorAll(".sidebar-nav-item").forEach(function(x){x.classList.remove("active")});el.classList.add("active");if(typeof state!=="undefined")state.tab=stateKey;if(typeof render==="function")render();document.querySelectorAll("#tabs .tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tab")===stateKey)})}window.sideSwitch=sideSwitch;var obs=new MutationObserver(function(){document.querySelectorAll(".grade:not([data-grade])").forEach(function(el){el.setAttribute("data-grade",el.innerText.trim())})});document.addEventListener("DOMContentLoaded",function(){obs.observe(document.body,{childList:true,subtree:true})})})();</script>
-<div id="playerDetailModal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(4,8,16,.88);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;overflow-y:auto"><div style="width:min(600px,100%);background:#0b1623;border:1px solid rgba(0,255,156,.25);border-radius:20px;overflow:hidden;position:relative"><button onclick="closePlayerModal()" style="position:absolute;top:14px;right:14px;cursor:pointer;">X</button><div style="padding:24px;background:#060e1a;border-bottom:1px solid #1e293b;display:flex;gap:16px;align-items:center"><div id="pdm-av" style="width:72px;height:72px;border-radius:50%;background:#0b1623;border:2px solid #1e293b;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:30px;font-weight:900">?</div><div><div id="pdm-pn" style="font-family:Barlow Condensed,sans-serif;font-size:28px;font-weight:900;color:#e8f0fa">Player</div><div id="pdm-pp" style="font-size:12px;color:#64748b">POS</div><div id="pdm-ps" style="font-size:12px">-</div></div><div style="margin-left:auto;text-align:right"><div id="pdm-gb" style="font-family:Barlow Condensed,sans-serif;font-size:60px;font-weight:900;line-height:.9">A</div><div id="pdm-gs" style="font-size:12px;color:#64748b">--/99</div></div></div><div style="padding:16px;display:flex;flex-direction:column;gap:14px"><div id="pdm-sg" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div><div id="pdm-sl" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div id="pdm-si" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div id="pdm-ry"></div><div style="display:flex;gap:8px;border-top:1px solid #1e293b;padding-top:10px"><button id="pdm-wb" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,255,156,.3);background:rgba(0,255,156,.1);color:#00ff9c;cursor:pointer;">Watch Player</button><button onclick="closePlayerModal()" style="padding:10px 16px;border-radius:8px;border:1px solid #1e293b;background:#060e1a;color:#64748b;cursor:pointer;">Close</button></div></div></div></div>
 
-<script>
-// ALLDAY MLB EDGE - Budget Beasts v5 Inline (bypasses Vercel CDN cache)
-// Uses: mlb-advanced-grading.js v5.0 — 10 factors, 30 parks, 100+ spring players
-(function initBB5() {
-
-  function gc(l){return{"A+":"#00ff9c","A":"#00e88a","B+":"#ffd000","B":"#f59e0b","C+":"#ff9e57","C":"#ff5f6d"}[l]||"#64748b";}
-  function glow(l){var a=l==="A+"||l==="A";var r={"A+":"0,255,156","A":"0,232,138","B+":"255,208,0","B":"245,158,11","C+":"255,158,87","C":"255,95,109"}[l]||"100,116,139";return(a?"box-shadow:0 0 18px rgba("+r+",.45);":"")+"border:1px solid rgba("+r+","+(a?".5":".3")+")";}
-  function fS(s){return "$"+(s>=1000?(s/1000).toFixed(1)+"K":s);}
-
-  window.renderBudgetBeasts = function() {
-    var view = document.querySelector("#main-view,#view,#app-view,.view-content,.view") || document.body;
-    if(typeof state === "undefined"){ view.innerHTML="<div style='padding:40px;text-align:center;color:#64748b'>Loading...</div>"; return; }
-    var maxSal = state.budgetSalaryMax || 3600;
-    var beasts = [];
-    var buildFn = (typeof window.buildBudgetBeasts==="function" && window.buildBudgetBeasts.toString().length>500) ? window.buildBudgetBeasts : (typeof buildBudgetBeasts==="function" ? buildBudgetBeasts : null);
-    if(buildFn) { try { beasts = buildFn(maxSal); } catch(e){console.warn("buildFn err",e);} }
-    if(!beasts.length && Object.keys(state.dkSalaries||{}).length) {
-      var temap = {}; (state.stackRows||[]).forEach(function(r){temap[(r.team||"").toUpperCase()]=r.score;});
-      Object.entries(state.dkSalaries).forEach(function(kv) {
-        var dk=kv[1]; if(!dk.salary||dk.salary>maxSal||dk.salary<2000) return;
-        if(/^(SP|RP|P)$/i.test(dk.pos||"")) return;
-        var te=temap[(dk.team||"").toUpperCase()]||52;
-        var pt=dk.avgPts>0?Math.min(28,dk.avgPts*3.9):16;
-        var sp=typeof springTrainingBoost==="function"?springTrainingBoost(dk.name):0;
-        var a=Math.max(28,Math.min(94,Math.round(te*0.63+pt+sp)));
-        if(a<68) return;
-        var l=a>=92?"A+":a>=84?"A":a>=76?"B+":"B";
-        beasts.push(Object.assign({},dk,{key:kv[0],adjScore:a,valueScore:dk.salary>0?Math.round((a/(dk.salary/1000))*10)/10:0,graded:false,letter:l,projPts:dk.avgPts||Math.round(a*.41)}));
-      });hh
-      beasts.sort(function(a,b){return b.valueScore-a.valueScore;});
-    }
-    var aC=beasts.filter(function(b){return b.letter==="A+"||b.letter==="A";}).length;
-    var bC=beasts.filter(function(b){return b.letter==="B+"||b.letter==="B";}).length;
-    var dkC=Object.keys(state.dkSalaries||{}).length;
-    var byPos={"C":[],"1B":[],"2B":[],"3B":[],"SS":[],"OF":[]};
-    beasts.forEach(function(b){
-      var p=(b.pos||"").toUpperCase();
-      if(p==="C"||p.includes("C/"))byPos.C.push(b);
-      else if(p==="1B"||p.includes("1B"))byPos["1B"].push(b);
-      else if(p==="2B"||p.includes("2B"))byPos["2B"].push(b);
-      else if(p==="3B"||p.includes("3B"))byPos["3B"].push(b);
-      else if(p==="SS"||p.includes("SS"))byPos.SS.push(b);
-      else if(["OF","LF","CF","RF"].includes(p))byPos.OF.push(b);
-    });
-    var stacks=[];
-    var sfn=(typeof window.buildSmartStacks==="function")?window.buildSmartStacks:(typeof buildSmartStacks==="function"?buildSmartStacks:null);
-    if(sfn){try{stacks=sfn();}catch(e){console.warn("stacks err",e);}}
-    var posColors={"C":"rgba(139,92,246,.2)","1B":"rgba(59,130,246,.2)","2B":"rgba(16,185,129,.2)","3B":"rgba(239,68,68,.2)","SS":"rgba(245,158,11,.2)","OF":"rgba(0,229,170,.2)"};
-    var posIcons={"C":"⚾","1B":"🏠","2B":"💨","3B":"🔥","SS":"⚡","OF":"🌿"};
-    var H = "";
-    H+="<div style='padding:20px;max-width:1400px;margin:0 auto'>";
-    // Header
-    H+="<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px'>";
-    H+="<div style='display:flex;align-items:center;gap:14px'><span style='font-size:32px'>🔥</span>";
-    H+="<div><h2 style='margin:0;font-family:Barlow Condensed,sans-serif;font-size:36px;font-weight:900;color:#fff;letter-spacing:1px'>BUDGET BEASTS</h2>";
-    H+="<p style='margin:0;color:#64748b;font-size:13px'>A & B grade value plays under $3,600 · Smart $50K stacks · DK Classic</p></div></div>";
-    H+="<div style='display:flex;gap:10px;flex-wrap:wrap;align-items:center'>";
-    H+="<button onclick='if(typeof syncDKSalaries==='function')syncDKSalaries()' style='padding:10px 18px;background:linear-gradient(135deg,#00e5aa,#00b8d4);color:#000;font-weight:700;border:none;border-radius:10px;cursor:pointer;font-size:13px'>⚡ Sync DK Salaries</button>";
-    H+="<button onclick='window.renderBudgetBeasts()' style='padding:10px 18px;background:#1e293b;color:#94a3b8;font-weight:600;border:1px solid #334155;border-radius:10px;cursor:pointer;font-size:13px'>↺ Refresh</button></div></div>";
-    // Stats bar
-    H+="<div style='display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap'>";
-    H+="<label style='color:#94a3b8;font-size:12px;font-weight:600'>MAX SALARY</label>";
-    H+="<input type='range' min='2500' max='4500' step='100' value='"+maxSal+"' style='width:120px;accent-color:#00e88a' onchange='if(typeof state!=='undefined')state.budgetSalaryMax=+this.value;document.getElementById('bbsv').textContent='$'+this.value;window.renderBudgetBeasts()'>";
-    H+="<span id='bbsv' style='color:#00e88a;font-weight:700;font-size:15px'>$"+maxSal+"</span>";
-    H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(0,232,138,.15);color:#00e88a;font-size:12px;font-weight:700'>"+aC+" A Grade</span>";
-    H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(245,158,11,.15);color:#f59e0b;font-size:12px;font-weight:700'>"+bC+" B Grade</span>";
-    H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(148,163,184,.1);color:#94a3b8;font-size:12px'>"+(aC+bC)+" total</span>";
-    H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(34,197,94,.1);color:#22c55e;font-size:12px'>"+dkC+" DK loaded</span>";
-    if((state.games||[]).length>0)H+="<span style='padding:4px 12px;border-radius:999px;background:rgba(99,102,241,.1);color:#818cf8;font-size:12px'>"+state.games.length+" games</span>";
-    H+="</div>";
-    // VALUE PLAYS BY POSITION
-    H+="<div style='margin-bottom:24px'>";
-    H+="<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px'><span style='font-size:20px'>🎯</span>";
-    H+="<h3 style='margin:0;font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:900;color:#fff'>VALUE PLAYS BY POSITION</h3>";
-    H+="<span style='color:#64748b;font-size:12px'>A & B grades · sorted by value/k</span></div>";
-    ["C","1B","2B","3B","SS","OF"].forEach(function(pos){
-      var pl=byPos[pos]||[];
-      H+="<div style='margin-bottom:14px;background:#0d1520;border:1px solid #1e293b;border-radius:14px;overflow:hidden'>";
-      H+="<div style='padding:10px 16px;background:"+posColors[pos]+";display:flex;justify-content:space-between;align-items:center'>";
-      H+="<span style='font-family:Barlow Condensed,sans-serif;font-size:18px;font-weight:800;color:#fff'>"+posIcons[pos]+" "+pos+"</span>";
-      H+="<span style='color:#64748b;font-size:12px'>"+pl.length+" play"+(pl.length!==1?"s":"")+" · Top: "+(pl[0]?pl[0].name:"none")+"</span></div>";
-      if(!pl.length){H+="<div style='padding:20px;text-align:center;color:#64748b;font-size:13px'>No A/B grade players at "+pos+"</div>";}
-      else{
-        H+="<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding:14px'>";
-        pl.slice(0,6).forEach(function(p){
-          var c=gc(p.letter);
-          H+="<div style='background:#121c2e;border-radius:12px;padding:14px;position:relative;"+glow(p.letter)+"'>";
-          H+="<div style='position:absolute;top:10px;right:10px;padding:3px 9px;border-radius:6px;font-weight:800;font-size:12px;background:rgba(0,0,0,.4);color:"+c+"'>"+p.letter+"</div>";
-          H+="<div style='font-weight:700;color:#f1f5f9;font-size:14px;padding-right:40px'>"+p.name+"</div>";
-          H+="<div style='color:#64748b;font-size:11px;margin:3px 0'>"+p.team+" · "+p.pos+" · "+fS(p.salary)+"</div>";
-          H+="<div style='display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #1e293b'>";
-          H+="<div><div style='color:#64748b;font-size:10px;margin-bottom:2px'>AVG PTS</div><div style='color:#f1f5f9;font-weight:700'>"+((p.avgPts||p.projPts||0).toFixed(1))+"</div></div>";
-          H+="<div><div style='color:#64748b;font-size:10px;margin-bottom:2px'>SCORE</div><div style='color:"+c+";font-weight:700'>"+p.adjScore+"/99</div></div>";
-          H+="<div><div style='color:#64748b;font-size:10px;margin-bottom:2px'>VAL/K</div><div style='color:#00e88a;font-weight:700'>"+p.valueScore+"</div></div>";
-          H+="</div>";
-          H+=p.graded?"<div style='margin-top:6px;font-size:9px;color:#22c55e;font-weight:600'>✓ 10-Factor Graded</div>":"<div style='margin-top:6px;font-size:9px;color:#64748b'>Est. — open Hitter Lab for full grade</div>";
-          H+="</div>";
-        });
-        H+="</div>";
-      }
-      H+="</div>";
-    });
-    H+="</div>";
-    // SMART $50K STACKS
-    H+="<div style='margin-bottom:24px'>";
-    H+="<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px'><span style='font-size:20px'>💰</span>";
-    H+="<h3 style='margin:0;font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:900;color:#fff'>SMART $50K STACKS</h3>";
-    H+="<span style='color:#64748b;font-size:12px'>2 SP + 8 batters · $50K cap · greedy-optimized</span></div>";
-    if(!stacks.length){
-      H+="<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;padding:40px;text-align:center;color:#64748b'><p style='margin:0'>⚡ Load today's slate + stack rankings to generate $50K lineups.</p></div>";
-    } else {
-      stacks.forEach(function(sk){
-        var vc=sk.valid?"#22c55e":"#ef4444";
-        H+="<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;margin-bottom:16px;overflow:hidden'>";
-        H+="<div style='padding:14px 18px;background:linear-gradient(135deg,rgba(0,229,170,.08),rgba(0,184,212,.05));display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e293b'>";
-        H+="<div style='display:flex;align-items:center;gap:10px'>";
-        H+="<span style='padding:4px 10px;background:rgba(0,229,170,.15);color:#00e5aa;border-radius:6px;font-weight:800;font-size:11px'>"+sk.badge+"</span>";
-        H+="<span style='font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:#fff'>"+sk.stackTeam+"</span>";
-        H+="<span style='color:#64748b'>vs</span>";
-        H+="<span style='font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:#94a3b8'>"+sk.stackOpp+"</span>";
-        H+="<span style='padding:3px 8px;background:rgba(245,158,11,.1);color:#f59e0b;border-radius:6px;font-size:11px;font-weight:700'>★×"+sk.stackCount+"</span>";
-        if(sk.bringBackCount>0)H+="<span style='padding:3px 8px;background:rgba(148,163,184,.1);color:#94a3b8;border-radius:6px;font-size:11px'>↺×"+sk.bringBackCount+"</span>";
-        H+="</div><div style='display:flex;gap:14px;align-items:center'>";
-        H+="<div style='text-align:right'><div style='color:#94a3b8;font-size:11px'>SALARY</div><div style='color:#f1f5f9;font-weight:700'>$"+sk.totalSalary.toLocaleString()+"</div></div>";
-        H+="<div style='text-align:right'><div style='color:#94a3b8;font-size:11px'>PROJ PTS</div><div style='color:#00e88a;font-weight:700'>"+sk.projPts+"</div></div>";
-        H+="<span style='padding:5px 12px;border-radius:8px;font-weight:700;font-size:12px;background:rgba("+(sk.valid?"34,197,94":"239,68,68")+",.15);color:"+vc+"'>"+(sk.valid?"✓ VALID":"✗ INVALID")+"</span>";
-        H+="</div></div>";
-        H+="<div style='padding:12px 18px;border-bottom:1px solid #1e293b;display:flex;gap:12px'>";
-        [sk.sp1,sk.sp2].forEach(function(sp){
-          if(!sp)return;
-          H+="<div style='background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:10px 14px;flex:1'>";
-          H+="<div style='color:#a78bfa;font-size:10px;font-weight:700;margin-bottom:4px'>SP</div>";
-          H+="<div style='color:#f1f5f9;font-weight:700'>"+sp.name+"</div>";
-          H+="<div style='color:#64748b;font-size:11px'>"+sp.team+" · "+fS(sp.salary)+"</div></div>";
-        });
-        H+="</div>";
-        H+="<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 18px'>";
-        (sk.hitters||[]).forEach(function(h){
-          H+="<div style='background:#0a1628;border:1px solid #1e293b;border-radius:8px;padding:10px'>";
-          H+="<div style='color:#64748b;font-size:9px;font-weight:700'>"+h.slot+"</div>";
-          H+="<div style='color:#f1f5f9;font-size:12px;font-weight:600;margin:2px 0'>"+h.name+(h.isStackTeam?" ★":"")+(h.isOpp?" ↺":"")+"</div>";
-          H+="<div style='color:#64748b;font-size:10px'>"+h.team+" · "+fS(h.salary||0)+"</div></div>";
-        });
-        H+="</div></div>";
-      });
-    }
-    H+="</div>";
-    // AI Picks $50K Optimizer section
-    H+="<div id='bb-ai-opt-container'></div>";
-    H+="</div>";
-    view.innerHTML = H;
-    // Fill AI optimizer
-    var aoc = view.querySelector("#bb-ai-opt-container");
-    if(aoc && typeof window.renderAIPicksOptimizer==="function") {
-      try { aoc.innerHTML = window.renderAIPicksOptimizerHTML ? window.renderAIPicksOptimizerHTML() : renderAIOptimizerHtml(); } catch(e){}
-    }
-  };
-
-  // AI Picks $50K Optimizer HTML builder
-  function renderAIOptimizerHtml() {
-    var rfn = typeof optimizeDKLineup==="function" ? optimizeDKLineup : null;
-    if(!rfn) return "<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;padding:40px;text-align:center;color:#64748b'><p style='margin:0'>🤖 AI Picks require DK salaries + matchup data. Load a slate first.</p></div>";
-    var result = rfn((typeof state!=="undefined"&&state.optimizerStackTeam)||"");
-    if(!result||!result.lineup||!result.lineup.length) return "<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;padding:40px;text-align:center;color:#64748b'><p>No optimized lineup yet.</p></div>";
-    var pitchers=result.lineup.filter(function(p){return p.isPitcher;});
-    var hitters=result.lineup.filter(function(p){return !p.isPitcher;});
-    var totalSal=result.lineup.reduce(function(s,p){return s+(p.salary||0);},0);
-    var rem=50000-totalSal, valid=totalSal<=50000&&pitchers.length>=2;
-    var tc={};hitters.forEach(function(p){tc[p.team]=(tc[p.team]||0)+1;});
-    var stks=Object.entries(tc).filter(function(e){return e[1]>=2;}).sort(function(a,b){return b[1]-a[1];});
-    var H="<div style='background:#0d1520;border:1px solid #1e293b;border-radius:14px;margin-bottom:24px;overflow:hidden'>";
-    H+="<div style='padding:16px 20px;background:linear-gradient(135deg,rgba(0,229,170,.1),rgba(99,102,241,.08));border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'>";
-    H+="<div style='display:flex;align-items:center;gap:10px'><span style='font-size:22px'>🤖</span>";
-    H+="<div><h3 style='margin:0;font-family:Barlow Condensed,sans-serif;font-size:24px;font-weight:900;color:#fff'>AI PICKS · $50K LINEUP</h3>";
-    H+="<p style='margin:0;color:#64748b;font-size:12px'>Optimal DraftKings Classic · 2 SP + 8 batters · 10-Factor grades</p></div></div>";
-    H+="<div style='display:flex;gap:12px;align-items:center;flex-wrap:wrap'>";
-    H+="<div style='text-align:right'><div style='color:#64748b;font-size:10px'>USED</div><div style='color:#f1f5f9;font-weight:700;font-size:15px'>$"+totalSal.toLocaleString()+"</div></div>";
-    H+="<div style='text-align:right'><div style='color:#64748b;font-size:10px'>REMAINING</div><div style='color:"+(rem>=0?"#22c55e":"#ef4444")+";font-weight:700;font-size:15px'>$"+rem.toLocaleString()+"</div></div>";
-    H+="<div style='text-align:right'><div style='color:#64748b;font-size:10px'>PROJ PTS</div><div style='color:#00e88a;font-weight:700;font-size:15px'>"+((result.projectedPts||0).toFixed(1))+"</div></div>";
-    H+="<span style='padding:6px 14px;border-radius:8px;font-weight:700;font-size:12px;background:rgba("+(valid?"34,197,94":"239,68,68")+",.15);color:"+(valid?"#22c55e":"#ef4444")+"'>"+(valid?"✓ VALID":"✗ INVALID")+"</span>";
-    stks.forEach(function(s){H+="<span style='padding:5px 10px;background:rgba(0,229,170,.12);color:#00e5aa;border-radius:6px;font-size:11px;font-weight:700'>"+s[0]+"×"+s[1]+"</span>";});
-    H+="</div></div>";
-    H+="<div style='padding:12px 20px;border-bottom:1px solid #1e293b;display:flex;gap:12px'>";
-    pitchers.forEach(function(sp){
-      H+="<div style='background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:12px 16px;flex:1'>";
-      H+="<div style='color:#a78bfa;font-size:10px;font-weight:700;margin-bottom:4px'>SP · "+sp.pos+"</div>";
-      H+="<div style='color:#f1f5f9;font-weight:700'>"+sp.name+"</div>";
-      H+="<div style='color:#64748b;font-size:11px'>"+sp.team+" · $"+sp.salary.toLocaleString()+"</div></div>";
-    });
-    H+="</div>";
-    H+="<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:14px 20px'>";
-    hitters.forEach(function(h){
-      H+="<div style='background:#121c2e;border:1px solid #1e293b;border-radius:10px;padding:12px'>";
-      H+="<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px'>";
-      H+="<div><div style='color:#64748b;font-size:9px;font-weight:700'>"+h.pos+"</div>";
-      H+="<div style='color:#f1f5f9;font-weight:700;font-size:13px'>"+h.name+"</div>";
-      H+="<div style='color:#64748b;font-size:11px'>"+h.team+" · $"+h.salary.toLocaleString()+"</div></div></div>";
-      H+="<div style='color:#00e88a;font-size:11px;font-weight:600'>"+((h.avgPts||0).toFixed(1))+" pts avg</div>";
-      H+="</div>";
-    });
-    H+="</div></div>";
-    return H;
-  }
-  window.renderAIPicksOptimizer = renderAIOptimizerHtml;
-  window.renderAIPicksOptimizerHTML = renderAIOptimizerHtml;
-
-  // PATCH render() and sideSwitch() for budget tab routing
-  function patchRender() {
-  // IMMEDIATELY patch sideSwitch - does NOT require window.render to exist
-  if(typeof window.sideSwitch==="function" && !window._bbSideSwitchPatched) {
-    var oSS = window.sideSwitch;
-    window.sideSwitch = function(el, tab) {
-      if(tab==="budget") {
-        document.querySelectorAll(".sidebar-nav-item").forEach(function(x){x.classList.remove("active");});
-        if(el) el.classList.add("active");
-        if(typeof state!=="undefined") state.tab="budget";
-        if(typeof renderTabs==="function") renderTabs();
-        window.renderBudgetBeasts();
-        return;
-      }
-      oSS(el, tab);
-    };
-    window._bbSideSwitchPatched = true;
-    console.log("[BB] sideSwitch patched for budget tab");
-  }
-  // Also patch render() if it is now available
-  var orig = window.render || window._coreRender;
-  if(!orig && typeof render==="function") orig = render;
-  if(orig && !window._bbRenderPatched) {
-    var patched = function(tab) {
-      if(tab==="budget") {
-        if(typeof renderTabs==="function") renderTabs();
-        window.renderBudgetBeasts();
-        return;
-      }
-      orig(tab);
-    };
-    window.render = patched;
-    window._coreRender = orig;
-    window._bbRenderPatched = true;
-    console.log("[BB] render() patched for budget tab");
-  }
-  // Keep retrying until sideSwitch is available (may not exist yet on load)
-  if(!window._bbSideSwitchPatched) { setTimeout(patchRender, 100); }
-}
-if(document.readyState==="loading") { document.addEventListener("DOMContentLoaded", function(){ setTimeout(patchRender, 100); }); }
-  else { setTimeout(patchRender, 100); }
-  console.log("[ALLDAY MLB EDGE] Budget Beasts v5 inline — 10 factors, 30 parks, 100+ Spring 2026 players");
-})();
-</script>
-
-<script>
-(function(){
-  var BACKEND='https://newest-mlb-1.onrender.com';
-  function getBase(){var b=document.getElementById('agBackend');return(b?b.value.trim():BACKEND).replace(/\/$/,'');}
-  function msg(txt,cls){var el=document.getElementById('agMsg');if(el){el.textContent=txt;el.style.color=cls==='err'?'#ff5f6d':cls==='ok'?'#00e5aa':'#89a0bd';}}
-  function closeGate(plan,email,base){
-    var gate=document.getElementById('authGate');
-    if(gate)gate.style.display='none';
-    if(typeof state!=='undefined'){
-      state.apiConfig=state.apiConfig||{};
-      state.apiConfig.proxyBaseUrl=base;
-      state.userPlan=plan;
-      state.userEmail=email;
-    }
-    var pb=document.getElementById('planBadge');
-    if(pb)pb.textContent=plan==='elite'?'ELITE PLAN':'FREE';
-  }
-  function initAuth(){
-    var signInBtn=document.getElementById('agSignInBtn');
-    var claimBtn=document.getElementById('agClaimBtn');
-    var autoBtn=document.getElementById('agAutoBtn');
-    if(!signInBtn)return;
-    signInBtn.onclick=function(){
-      var token=document.getElementById('agToken').value.trim();
-      var email=document.getElementById('agEmail').value.trim();
-      if(!token){msg('Paste your access token first.','err');return;}
-      var slowTimer=setTimeout(function(){msg('Waking up server (free tier)\u2026 please wait up to 30s\u2026','inf');},3500);
-      msg('Verifying\u2026','inf');
-      var base=getBase();
-      fetch(base+'/api/auth/verify',{headers:{'Authorization':'Bearer '+token},signal:AbortSignal.timeout(30000)})
-        .then(function(res){clearTimeout(slowTimer);return res.json().then(function(d){return{ok:res.ok,d:d};});})
-        .then(function(r){
-          if(!r.ok)throw new Error(r.d.error||'Invalid token');
-          localStorage.setItem('allday-mlb-edge-token',token);
-          closeGate(r.d.plan,r.d.email,base);
-        })
-        .catch(function(err){
-          clearTimeout(slowTimer);
-          if(err.name==='TimeoutError'){
-            msg('Server timed out — entering app offline mode\u2026','inf');
-            setTimeout(function(){closeGate('elite',email||'user',base);},1500);
-          } else {
-            closeGate('elite',email||'user',base);
-          }
-        });
-    };
-    if(claimBtn)claimBtn.onclick=function(){
-      var email=document.getElementById('agEmail').value.trim();
-      if(!email){msg('Enter your email.','err');return;}
-      msg('Sending claim\u2026','inf');
-      var base=getBase();
-      fetch(base+'/api/auth/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})})
-        .then(function(r){return r.json();})
-        .then(function(d){if(d.token){localStorage.setItem('allday-mlb-edge-token',d.token);document.getElementById('agToken').value=d.token;msg('Token saved! Click Sign In.','ok');}else{msg(d.error||'Failed','err');}})
-        .catch(function(){msg('Request failed','err');});
-    };
-    if(autoBtn)autoBtn.onclick=function(){
-      var saved=localStorage.getItem('allday-mlb-edge-token');
-      if(!saved){msg('No saved token found.','err');return;}
-      document.getElementById('agToken').value=saved;
-      signInBtn.click();
-    };
-    // Auto-fill saved data
-    var _prof=JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}');
-    var _tok=localStorage.getItem('allday-mlb-edge-token')||'';
-    if(_prof.email){var ef=document.getElementById('agEmail');if(ef&&!ef.value)ef.value=_prof.email;}
-    if(_tok){var tf=document.getElementById('agToken');if(tf&&!tf.value)tf.value=_tok;}
-  }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initAuth);}
-  else{initAuth();}
-})();
-</script>
-<script>
-(function(){
-  var P=[
-    {n:'Paul Skenes',t:'PIT',h:'RHP',s:9600,sc:94,g:'A+',e:2.40,w:0.95,k:12.8,b:2.0,i:175,tg:['Elite ERA 2.40','Elite WHIP 0.95','Elite 12.8 K/9'],p:['4-Seam 99mph','Splinker','Slider','Curveball'],no:'Best pure stuff in MLB. Explosive fastball/splinker. Elite K rate.'},
-    {n:'Tyler Glasnow',t:'LAD',h:'RHP',s:10000,sc:88,g:'A+',e:3.20,w:1.05,k:12.0,b:2.8,i:160,tg:['Strong ERA 3.20','Good WHIP 1.05','Elite 12.0 K/9'],p:['4-Seam 97mph','Curveball','Slider'],no:'Power pitcher. Elite Ks when healthy.'},
-    {n:'Tarik Skubal',t:'DET',h:'LHP',s:10400,sc:81,g:'A',e:2.75,w:1.00,k:11.5,b:1.8,i:192,tg:['Strong ERA 2.75','Elite WHIP 1.00','Good 11.5 K/9'],p:['4-Seam 94mph','Changeup','Slider','Curveball'],no:'Elite command. Changeup is devastating. Best LHP value.'},
-    {n:'Spencer Strider',t:'ATL',h:'RHP',s:9800,sc:76,g:'A',e:3.05,w:1.02,k:13.5,b:2.2,i:145,tg:['Good ERA 3.05','Elite 13.5 K/9','TJ recovery'],p:['4-Seam 97mph','Slider'],no:'Pure strikeout machine. Watch IP limits post-TJ.'},
-    {n:'Freddy Peralta',t:'MIL',h:'RHP',s:8200,sc:72,g:'B+',e:3.45,w:1.10,k:11.8,b:3.1,i:155,tg:['Solid ERA 3.45','High K/9 11.8','Elevated BB/9'],p:['4-Seam 94mph','Curveball','Changeup'],no:'Elite K rate but walks are a concern. Good pay-down.'},
-    {n:'Corbin Burnes',t:'BAL',h:'RHP',s:9600,sc:68,g:'B+',e:2.94,w:1.00,k:10.2,b:1.9,i:175,tg:['Elite ERA 2.94','Low BB/9 1.9','New park risk'],p:['Cutter','Sinker','Curveball','Changeup'],no:'Elite contact manager. New to Camden Yards - park still favorable.'},
-    {n:'Logan Webb',t:'SF',h:'RHP',s:9000,sc:62,g:'B',e:3.25,w:1.15,k:8.8,b:2.0,i:195,tg:['Pitcher-friendly park','Deep into games','Lower K/9'],p:['Sinker','Changeup','Slider','Curveball'],no:'Ground ball specialist. Oracle Park is his fortress. Low K ceiling.'},
-    {n:'Framber Valdez',t:'HOU',h:'LHP',s:8800,sc:58,g:'B',e:3.45,w:1.18,k:8.5,b:2.8,i:185,tg:['Solid ERA 3.45','Ground ball king','Low strikeouts'],p:['Sinker','Curveball','Changeup'],no:'Ground ball machine. Needs run support. Lower K upside for DFS.'}
-  ];
-  var H=[
-    {n:'Aaron Judge',t:'NYY',pos:'RF',s:5800,sc:96,pk:'Yankee Stadium',f:1.35,iso:.320,fb:52,pull:48,la:17,no:'Monster power. Short porch + elite ISO + elite FB% = best HR play.'},
-    {n:'Yordan Alvarez',t:'HOU',pos:'DH',s:5600,sc:91,pk:'Minute Maid Park',f:1.15,iso:.310,fb:49,pull:44,la:14,no:'Elite raw power. 3 True Outcomes. Minute Maid juice factor.'},
-    {n:'Elly De La Cruz',t:'CIN',pos:'SS',s:4800,sc:87,pk:'Great American BP',f:1.10,iso:.270,fb:42,pull:46,la:13,no:'Raw power breakout. Plus park factor + aggressive pull approach.'},
-    {n:'Kyle Tucker',t:'CHC',pos:'RF',s:5200,sc:83,pk:'Wrigley Field',f:1.08,iso:.285,fb:46,pull:42,la:15,no:'Elite contact + power combo. Wrigley wind boost potential.'},
-    {n:'Gunnar Henderson',t:'BAL',pos:'SS',s:5000,sc:79,pk:'Camden Yards',f:1.12,iso:.275,fb:45,pull:50,la:12,no:'Plus power, Camden Yards friendly. Pull-heavy hitter.'},
-    {n:'Shohei Ohtani',t:'LAD',pos:'DH',s:6200,sc:88,pk:'Dodger Stadium',f:1.05,iso:.300,fb:47,pull:40,la:16,no:'Elite all-around. Dodger Stadium park factor not ideal but ISO is elite.'},
-    {n:'Juan Soto',t:'NYM',pos:'RF',s:5400,sc:74,pk:'Citi Field',f:1.08,iso:.260,fb:40,pull:38,la:11,no:'Elite OBP + solid power. Citi Field can suppress HRs.'},
-    {n:'Bobby Witt Jr.',t:'KC',pos:'SS',s:5200,sc:71,pk:'Kauffman Stadium',f:1.15,iso:.250,fb:38,pull:48,la:10,no:'Speed + improving power. Kauffman can play big. Pull-heavy approach.'}
-  ];
-  function gc(g){
-    if(g==='A+'||g==='S') return '#00d46a';
-    if(g==='A') return '#89ff57';
-    if(g==='B+') return '#ffd54a';
-    return '#ff9e57';
-  }
-  function gsc(sc){
-    if(sc>=90) return '#00d46a';
-    if(sc>=80) return '#89ff57';
-    if(sc>=70) return '#ffd54a';
-    return '#ff9e57';
-  }
-  window.rPE=function(){
-    var el=document.getElementById('view')||document.querySelector('#main-view,#app-view,.view-content');
-    if(!el) return;
-    var h='<div style="padding:24px 16px;max-width:1200px;margin:0 auto">';
-    h+='<div style="font-size:11px;color:#89a0bd;margin-bottom:20px;letter-spacing:1px;text-transform:uppercase">Pitcher Vulnerability Rankings - higher grade = better SP for DFS</div>';
-    P.forEach(function(p){
-      h+='<div style="background:var(--card);border:1px solid #1e2938;border-radius:16px;padding:20px 24px;margin-bottom:14px">';
-      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
-      h+='<div><span style="font-size:15px;font-weight:700;color:var(--text)">'+p.n+'</span>';
-      h+='<span style="font-size:11px;color:#89a0bd;margin-left:8px">'+p.t+' / '+p.h+'</span></div>';
-      h+='<div style="display:flex;align-items:center;gap:12px">';
-      h+='<div style="background:'+gc(p.g)+';color:#000;font-weight:900;font-size:13px;padding:4px 12px;border-radius:20px">'+p.g+'</div>';
-      h+='<span style="font-size:11px;color:#89a0bd">'+p.sc+'/100</span>';
-      h+='<span style="font-size:11px;color:#89a0bd">$'+p.s.toLocaleString()+'</span></div></div>';
-      h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">';
-      [['ERA',p.e],['WHIP',p.w],['K/9',p.k],['BB/9',p.b],['IP',p.i]].forEach(function(sv){
-        h+='<div style="background:#0a1520;border-radius:8px;padding:8px 10px;text-align:center">';
-        h+='<div style="font-size:9px;color:#89a0bd;letter-spacing:1px">'+sv[0]+'</div>';
-        h+='<div style="font-size:14px;font-weight:700;color:var(--text)">'+sv[1]+'</div></div>';
-      });
-      h+='</div>';
-      h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';
-      p.tg.forEach(function(tag){h+='<span style="background:#0a1520;border:1px solid #1e2938;border-radius:20px;padding:3px 10px;font-size:10px;color:#89a0bd">'+tag+'</span>';});
-      h+='</div>';
-      h+='<div style="font-size:10px;color:#64748b;font-style:italic">'+p.no+'</div>';
-      h+='</div>';
-    });
-    h+='</div>';
-    el.innerHTML=h;
-    if(typeof renderTabs==='function') renderTabs();
-  };
-  window.rHR=function(){
-    var el=document.getElementById('view')||document.querySelector('#main-view,#app-view,.view-content');
-    if(!el) return;
-    var h='<div style="padding:24px 16px;max-width:1200px;margin:0 auto">';
-    h+='<div style="font-size:11px;color:#89a0bd;margin-bottom:20px;letter-spacing:1px;text-transform:uppercase">HR Probability Model - park factors, ISO, launch angle</div>';
-    h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
-    H.forEach(function(d){
-      var pfc=d.f>=1.20?'#00d46a':d.f>=1.10?'#89ff57':d.f>=1.00?'#ffd54a':'#ff9e57';
-      h+='<div style="background:var(--card);border:1px solid #1e2938;border-radius:16px;padding:18px 20px">';
-      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">';
-      h+='<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+d.n+'</div>';
-      h+='<div style="font-size:11px;color:#89a0bd;margin-top:2px">'+d.t+' / '+d.pos+' / $'+d.s.toLocaleString()+'</div></div>';
-      h+='<div style="font-size:20px;font-weight:900;color:'+gsc(d.sc)+'">'+d.sc+'</div></div>';
-      h+='<div style="margin-bottom:10px">';
-      h+='<div style="font-size:9px;color:#89a0bd;margin-bottom:4px;letter-spacing:1px">PARK FACTOR</div>';
-      h+='<div style="display:flex;justify-content:space-between;margin-bottom:4px">';
-      h+='<span style="font-size:10px;color:#89a0bd">'+d.pk+'</span>';
-      h+='<span style="font-size:11px;font-weight:700;color:'+pfc+'">x'+d.f.toFixed(2)+'</span></div>';
-      h+='<div style="background:#0a1520;border-radius:4px;height:6px">';
-      h+='<div style="background:'+pfc+';height:6px;border-radius:4px;width:'+Math.min(100,Math.round(d.f*70))+'%"></div></div></div>';
-      h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">';
-      [['ISO',d.iso.toFixed(3)],['FB%',d.fb+'%'],['PULL%',d.pull+'%']].forEach(function(sv){
-        h+='<div style="background:#0a1520;border-radius:8px;padding:6px 8px;text-align:center">';
-        h+='<div style="font-size:8px;color:#89a0bd">'+sv[0]+'</div>';
-        h+='<div style="font-size:12px;font-weight:700;color:var(--text)">'+sv[1]+'</div></div>';
-      });
-      h+='</div>';
-      h+='<div style="font-size:10px;color:#64748b;font-style:italic">'+d.no+'</div>';
-      h+='</div>';
-    });
-    h+='</div></div>';
-    el.innerHTML=h;
-    if(typeof renderTabs==='function') renderTabs();
-  };
-  function patch(){
-    if(typeof window.sideSwitch==='function'&&!window._peHrP){
-      var o=window.sideSwitch;
-      window.sideSwitch=function(el,tab){
-        if(tab==='pitchedge'){
-          document.querySelectorAll('.sidebar-nav-item').forEach(function(x){x.classList.remove('active');});
-          if(el) el.classList.add('active');
-          if(typeof state!=='undefined') state.tab='pitchedge';
-          if(typeof renderTabs==='function') renderTabs();
-          window.rPE();
-          return;
-        }
-        if(tab==='hredge'){
-          document.querySelectorAll('.sidebar-nav-item').forEach(function(x){x.classList.remove('active');});
-          if(el) el.classList.add('active');
-          if(typeof state!=='undefined') state.tab='hredge';
-          if(typeof renderTabs==='function') renderTabs();
-          window.rHR();
-          return;
-        }
-        o(el,tab);
-      };
-      window._peHrP=true;
-      console.log('[PE/HR] sideSwitch patched ok');
-      // Patch render() for PE/HR tabs
-      if(typeof window.render==='function'&&!window._peHrRenderP){
-        var origRender=window.render;
-        window.render=function(){
-          if(typeof state!=='undefined'&&state.tab==='pitchedge'){window.rPE();return;}
-          if(typeof state!=='undefined'&&state.tab==='hredge'){window.rHR();return;}
-          origRender();
-        };
-        window._peHrRenderP=true;
-      }
-    } else if(!window._peHrP){
-      setTimeout(patch,100);
-    }
-  }
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){setTimeout(patch,300);});
-  } else {
-    setTimeout(patch,300);
-  }
-})();
-</script>
-  <script src="./assets/dk-salaries-inject.js?v=428"></script>
+<script src="./assets/app-core.js"></script>
+<script src="./assets/app-main.js"></script>
+<script src="./assets/dk-salaries-inject.js"></script>
+<script src="./assets/savant-bridge.js"></script>
+<script src="./assets/mlb-advanced-grading.js"></script>
 </body>
 </html>

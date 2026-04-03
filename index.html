@@ -3,170 +3,317 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>ALLDAY MLB EDGE - Win DFS. Beat The Books.</title>
-  <meta name="description" content="The ultimate MLB DFS + betting weapon. AI-powered picks from Grok, ChatGPT and Claude."/>
+  <title>ALLDAY EDGE - The #1 MLB DFS & Betting Analytics Tool</title>
+  <meta name="description" content="ALLDAY EDGE — the ultimate MLB DFS weapon. AI-powered player grades, pitcher matchups, stack recommendations, and lineup optimization. Beat the books every day."/>
   <meta name="theme-color" content="#060e1a"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/style.css"/>
 </head>
 <body>
 
 <nav>
-  <div class="nb">&#9889; ALLDAY MLB EDGE</div>
+  <div class="nb"><span class="logo-icon">&#9889;</span> ALLDAY EDGE</div>
   <div class="nl">
+    <a href="#features">FEATURES</a>
     <a href="#edge-board">EDGE BOARD</a>
-    <a href="#stack-builder">STACK BUILDER</a>
     <a href="#pitch-edge">PITCH EDGE</a>
     <a href="#pricing">PRICING</a>
-    <a class="nlb" href="./app.html">LOGIN</a>
+    <a class="nlb" href="./app.html">LAUNCH APP</a>
   </div>
+  <button class="mobile-menu" onclick="document.querySelector('.nl').classList.toggle('open')">&#9776;</button>
 </nav>
+
+<!-- HERO -->
 <div class="hero">
-  <div class="hl" style="display:flex;justify-content:center">
-    <div class="pcard" style="border:2px solid #00ff9c;box-shadow:0 0 30px rgba(0,255,156,.33)">
-      <div class="pcimg" style="background:linear-gradient(135deg,rgba(0,255,156,.13) 0%,#060e1a 100%)">&#9918;</div>
-      <div class="pcinfo"><div class="pcn">Shohei Ohtani</div><div class="pct">LAD</div><div class="pcg" style="color:#00ff9c;text-shadow:0 0 20px #00ff9c">A+</div></div>
+  <div class="hl">
+    <div class="pcard glow-green">
+      <div class="pcimg"><div class="avatar-bat">&#9918;</div></div>
+      <div class="pcinfo">
+        <div class="pcn">Shohei Ohtani</div>
+        <div class="pct">LAD &middot; DH</div>
+        <div class="pcg grade-aplus">A+</div>
+        <div class="fires">&#128293;&#128293;&#128293;&#128293;&#128293;</div>
+      </div>
     </div>
   </div>
   <div class="hc">
-    <div class="hbadge">&#127942; #1 MLB DFS + BETTING TOOL</div>
-    <h1>WIN DFS.<br><span>BEAT THE BOOKS.</span></h1>
-    <p>The ultimate MLB DFS + betting weapon.<br>AI-powered picks from Grok, ChatGPT &amp; Claude.</p>
-    <button class="hcta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">&#128073; UNLOCK EDGE</button>
-    <div class="hsub">&#128274; Secured by Stripe &middot; Cancel anytime</div>
+    <div class="hbadge">&#127942; #1 MLB DFS + BETTING ANALYTICS TOOL</div>
+    <h1>FIND YOUR<br><span class="glow-text">EDGE.</span><br>EVERY DAY.</h1>
+    <p>AI-powered player grades, pitcher matchup analysis, stack recommendations, and lineup optimization. Built by experts. Powered by data.</p>
+    <div class="hero-btns">
+      <button class="hcta pulse-btn" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">&#128073; GET YOUR EDGE</button>
+      <button class="hcta-secondary" onclick="location.href='./app.html'">&#9654; LAUNCH FREE</button>
+    </div>
+    <div class="hsub">&#128274; Secured by Stripe &middot; Cancel anytime &middot; No contracts</div>
+    <div class="trust-badges">
+      <span class="trust-badge">&#9989; Live Data</span>
+      <span class="trust-badge">&#9989; AI Powered</span>
+      <span class="trust-badge">&#9989; DK Integrated</span>
+    </div>
   </div>
-  <div class="hr" style="display:flex;justify-content:center">
-    <div class="pcard" style="border:2px solid #00ff9c;box-shadow:0 0 30px rgba(0,255,156,.33)">
-      <div class="pcimg" style="background:linear-gradient(135deg,rgba(0,255,156,.13) 0%,#060e1a 100%)">&#9918;</div>
-      <div class="pcinfo"><div class="pcn">Aaron Judge</div><div class="pct">NYY</div><div class="pcg" style="color:#00ff9c;text-shadow:0 0 20px #00ff9c">A+</div></div>
+  <div class="hr">
+    <div class="pcard glow-gold">
+      <div class="pcimg"><div class="avatar-bat">&#9918;</div></div>
+      <div class="pcinfo">
+        <div class="pcn">Aaron Judge</div>
+        <div class="pct">NYY &middot; OF</div>
+        <div class="pcg grade-a">A</div>
+        <div class="fires">&#128293;&#128293;&#128293;&#128293;</div>
+      </div>
     </div>
   </div>
 </div>
-<section class="sec" id="edge-board">
-  <div class="st"><h2>&#128202; EDGE BOARD</h2><p>Real-time DFS grades &middot; Updated every 15 min</p></div>
-  <div class="etable">
-    <div class="ehdr"><span class="ech">PLAYER</span><span class="ech">TEAM</span><span class="ech">OPP</span><span class="ech">EDGE</span><span class="ech">OWN%</span><span class="ech">STACK</span></div>
-    <div class="erow"><span class="ep">Ohtani</span><span class="et">LAD</span><span class="eo">SF</span><span class="eg" style="color:#00ff9c;text-shadow:0 0 12px #00ff9c">A+</span><span class="eown">18%</span><span class="es">&#128293;&#128293;&#128293;</span></div>
-    <div class="erow"><span class="ep">Judge</span><span class="et">NYY</span><span class="eo">BOS</span><span class="eg" style="color:#00ff9c;text-shadow:0 0 12px #00ff9c">A+</span><span class="eown">22%</span><span class="es">&#128293;&#128293;&#128293;</span></div>
-    <div class="erow"><span class="ep">Acu&ntilde;a</span><span class="et">ATL</span><span class="eo">NYM</span><span class="eg" style="color:#ffd000;text-shadow:0 0 12px #ffd000">A</span><span class="eown">15%</span><span class="es">&#128293;&#128293;</span></div>
-    <div class="erow"><span class="ep">Soto</span><span class="et">NYY</span><span class="eo">BOS</span><span class="eg" style="color:#60a5fa;text-shadow:0 0 12px #60a5fa">B+</span><span class="eown">12%</span><span class="es">&#128293;&#128293;</span></div>
-    <div class="erow"><span class="ep">Tatis Jr.</span><span class="et">SD</span><span class="eo">COL</span><span class="eg" style="color:#ffd000;text-shadow:0 0 12px #ffd000">A</span><span class="eown">11%</span><span class="es">&#128293;&#128293;</span></div>
+
+<!-- LIVE STATS TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-content">
+    <span class="ticker-item">&#128200; Games Analyzed Daily: <strong>15+</strong></span>
+    <span class="ticker-divider">|</span>
+    <span class="ticker-item">&#9918; Players Graded: <strong>300+</strong></span>
+    <span class="ticker-divider">|</span>
+    <span class="ticker-item">&#128202; Factors Per Grade: <strong>10+</strong></span>
+    <span class="ticker-divider">|</span>
+    <span class="ticker-item">&#128161; AI Models: <strong>3</strong></span>
+    <span class="ticker-divider">|</span>
+    <span class="ticker-item">&#9201; Refresh Rate: <strong>3-5 min</strong></span>
+    <span class="ticker-divider">|</span>
+    <span class="ticker-item">&#127942; Data Sources: <strong>Baseball Savant + MLB API + Vegas</strong></span>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="sec" id="features">
+  <div class="st"><h2>7 POWERFUL TABS. ONE EDGE.</h2><p>Everything you need to dominate DFS and beat the books</p></div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">&#127918;</div>
+      <h3>GAMES</h3>
+      <p>Run projections scored 0-100 for every game. Best games to play highlighted with detailed analysis on pitching, weather, park factors, and Vegas lines.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#9918;</div>
+      <h3>PITCHING EDGE</h3>
+      <p>Every pitcher ranked by arsenal, velocity, prior matchups, and vulnerability. Full breakdown of fastball, slider, curve, and changeup effectiveness.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128202;</div>
+      <h3>SCOUTING</h3>
+      <p>Batters graded A-F with fire ratings. 10+ factor analysis including power matchups, park factors, platoon splits, weather, lineup position, and Vegas odds.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128293;</div>
+      <h3>STACK RECS</h3>
+      <p>Optimal 10-player lineup recommendation daily. Best pitcher, catcher, infielders, and outfielders based on grades, DraftKings salary, and AI analysis.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#129302;</div>
+      <h3>AI STACK</h3>
+      <p>5 complete AI-generated lineups using ownership, Vegas odds, grades, and advanced correlation. Built by Claude AI for GPP tournaments.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">&#128736;</div>
+      <h3>OPTIMIZER</h3>
+      <p>Full DraftKings lineup optimizer with salary cap management. Build optimal lineups for every game and contest type.</p>
+    </div>
+    <div class="feature-card feature-card-alert">
+      <div class="feature-icon">&#128276;</div>
+      <h3>LIVE ALERTS</h3>
+      <p>Real-time notifications for injuries, lineup changes, weather updates, and breaking MLB news. Never miss a late swap opportunity.</p>
+    </div>
   </div>
 </section>
-<section class="seca" id="pitch-edge">
+
+<!-- EDGE BOARD PREVIEW -->
+<section class="seca" id="edge-board">
   <div class="secin">
-    <div class="st"><h2>&#9889; PITCH EDGE</h2><p>Matchup analysis &middot; Batter vs. Pitcher edge</p></div>
-    <div class="pgrid">
-      <div class="pcard2">
-        <div class="plbl">PITCHER</div><div class="pname">Blake Snell</div>
-        <div class="sgrid">
-          <div class="sbox"><div class="sk">ERA</div><div class="sv" style="color:#00ff9c">2.14</div></div>
-          <div class="sbox"><div class="sk">K/9</div><div class="sv" style="color:#00ff9c">11.8</div></div>
-          <div class="sbox"><div class="sk">FIP</div><div class="sv" style="color:#00ff9c">2.31</div></div>
-          <div class="sbox"><div class="sk">WHIP</div><div class="sv" style="color:#00ff9c">0.93</div></div>
-        </div>
-        <div class="mxt">PITCH MIX</div>
-        <div class="br"><div class="brl"><span>Fastball</span><span style="color:#ff3b3b;font-weight:700">45%</span></div><div class="brt"><div class="brf" style="width:45%;background:#ff3b3b"></div></div></div>
-        <div class="br"><div class="brl"><span>Slider</span><span style="color:#ffd000;font-weight:700">32%</span></div><div class="brt"><div class="brf" style="width:32%;background:#ffd000"></div></div></div>
-        <div class="br"><div class="brl"><span>Curveball</span><span style="color:#60a5fa;font-weight:700">23%</span></div><div class="brt"><div class="brf" style="width:23%;background:#60a5fa"></div></div></div>
-      </div>
-      <div class="exp"><div class="exl">EXPLOIT SCORE</div><div class="exn">92</div><div class="ext">&#128293; HIGH</div><div style="color:#64748b;font-size:11px;margin-top:16px;max-width:120px">Strong batter advantage vs this pitching profile</div></div>
-      <div class="pcard2">
-        <div class="plbl">BATTER</div><div class="pname">Shohei Ohtani</div>
-        <div class="sgrid">
-          <div class="sbox"><div class="sk">ISO</div><div class="sv" style="color:#ffd000">.312</div></div>
-          <div class="sbox"><div class="sk">wRC+</div><div class="sv" style="color:#ffd000">168</div></div>
-          <div class="sbox"><div class="sk">OBP</div><div class="sv" style="color:#ffd000">.393</div></div>
-          <div class="sbox"><div class="sk">SLG</div><div class="sv" style="color:#ffd000">.654</div></div>
-        </div>
-        <div class="mxt">VS PITCH TYPE</div>
-        <div class="br"><div class="brl"><span>vs Fastball</span><span style="color:#00ff9c;font-weight:700">88</span></div><div class="brt"><div class="brf" style="width:88%;background:#00ff9c"></div></div></div>
-        <div class="br"><div class="brl"><span>vs Slider</span><span style="color:#ffd000;font-weight:700">76</span></div><div class="brt"><div class="brf" style="width:76%;background:#ffd000"></div></div></div>
-        <div class="br"><div class="brl"><span>vs Curve</span><span style="color:#60a5fa;font-weight:700">82</span></div><div class="brt"><div class="brf" style="width:82%;background:#60a5fa"></div></div></div>
-      </div>
+    <div class="st"><h2>&#128202; EDGE BOARD PREVIEW</h2><p>Real-time DFS grades &middot; Updated every 3-5 min &middot; 10+ factor analysis</p></div>
+    <div class="etable">
+      <div class="ehdr"><span class="ech">PLAYER</span><span class="ech">TEAM</span><span class="ech">GRADE</span><span class="ech">SCORE</span><span class="ech">FIRE</span><span class="ech">MATCHUP</span></div>
+      <div class="erow"><span class="ep">Ohtani</span><span class="et">LAD</span><span class="eg grade-aplus">A+</span><span class="esc">96/99</span><span class="ef">&#128293;&#128293;&#128293;&#128293;&#128293;</span><span class="em">vs SF &middot; Coors Field</span></div>
+      <div class="erow"><span class="ep">Judge</span><span class="et">NYY</span><span class="eg grade-aplus">A+</span><span class="esc">93/99</span><span class="ef">&#128293;&#128293;&#128293;&#128293;&#128293;</span><span class="em">vs BOS &middot; Yankee Stadium</span></div>
+      <div class="erow"><span class="ep">Soto</span><span class="et">NYY</span><span class="eg grade-a">A</span><span class="esc">87/99</span><span class="ef">&#128293;&#128293;&#128293;&#128293;</span><span class="em">vs BOS &middot; Yankee Stadium</span></div>
+      <div class="erow"><span class="ep">Acuna Jr.</span><span class="et">ATL</span><span class="eg grade-a">A</span><span class="esc">84/99</span><span class="ef">&#128293;&#128293;&#128293;&#128293;</span><span class="em">vs NYM &middot; Truist Park</span></div>
+      <div class="erow"><span class="ep">Tatis Jr.</span><span class="et">SD</span><span class="eg grade-bplus">B+</span><span class="esc">76/99</span><span class="ef">&#128293;&#128293;&#128293;</span><span class="em">vs COL &middot; Petco Park</span></div>
+    </div>
+    <div style="text-align:center;margin-top:24px">
+      <button class="hcta-secondary" onclick="location.href='./app.html'" style="font-size:15px">&#128073; SEE FULL BOARD IN APP</button>
     </div>
   </div>
 </section>
-<section class="sec" id="stack-builder">
-  <div class="st"><h2>&#128176; STACK BUILDER</h2><p>AI-powered correlated lineup stacks</p></div>
-  <div class="sscroll">
-    <div class="scard" style="border:2px solid rgba(0,255,156,.27);box-shadow:0 0 20px rgba(0,255,156,.13)">
-      <div class="steam" style="color:#00ff9c">Braves Stack &#128163;</div>
-      <div><div class="srow"><span class="slbl">STACK RATING</span><span class="sval" style="color:#00ff9c">94</span></div><div class="strk" style="background:rgba(0,255,156,.2)"><div class="sfll" style="width:94%;background:#00ff9c"></div></div><div class="shr">HR Upside: <strong style="color:#00ff9c">38%</strong></div></div>
+
+<!-- PITCH EDGE PREVIEW -->
+<section class="sec" id="pitch-edge">
+  <div class="st"><h2>&#9918; PITCH EDGE PREVIEW</h2><p>Matchup analysis &middot; Batter vs. Pitcher edge &middot; Arsenal breakdown</p></div>
+  <div class="pgrid">
+    <div class="pcard2">
+      <div class="plbl">PITCHER</div><div class="pname">Blake Snell</div>
+      <div class="sgrid">
+        <div class="sbox"><div class="sk">ERA</div><div class="sv sv-green">2.14</div></div>
+        <div class="sbox"><div class="sk">K/9</div><div class="sv sv-green">11.8</div></div>
+        <div class="sbox"><div class="sk">FIP</div><div class="sv sv-green">2.31</div></div>
+        <div class="sbox"><div class="sk">WHIP</div><div class="sv sv-green">0.93</div></div>
+      </div>
+      <div class="mxt">PITCH ARSENAL</div>
+      <div class="br"><div class="brl"><span>4-Seam Fastball</span><span class="bar-fb">96 mph &middot; 45%</span></div><div class="brt"><div class="brf" style="width:45%;background:linear-gradient(90deg,#ff3b3b,#ff6b6b)"></div></div></div>
+      <div class="br"><div class="brl"><span>Slider</span><span class="bar-sl">87 mph &middot; 32%</span></div><div class="brt"><div class="brf" style="width:32%;background:linear-gradient(90deg,#ffd000,#ffe44d)"></div></div></div>
+      <div class="br"><div class="brl"><span>Curveball</span><span class="bar-cu">79 mph &middot; 23%</span></div><div class="brt"><div class="brf" style="width:23%;background:linear-gradient(90deg,#7c3aed,#a78bfa)"></div></div></div>
     </div>
-    <div class="scard" style="border:2px solid rgba(255,208,0,.27);box-shadow:0 0 20px rgba(255,208,0,.13)">
-      <div class="steam" style="color:#ffd000">Yankees Stack &#128293;</div>
-      <div><div class="srow"><span class="slbl">STACK RATING</span><span class="sval" style="color:#ffd000">91</span></div><div class="strk" style="background:rgba(255,208,0,.2)"><div class="sfll" style="width:91%;background:#ffd000"></div></div><div class="shr">HR Upside: <strong style="color:#ffd000">34%</strong></div></div>
+    <div class="exp">
+      <div class="exl">EXPLOIT SCORE</div>
+      <div class="exn">92</div>
+      <div class="ext">&#128293; HIGH EDGE</div>
+      <div class="exp-detail">Strong batter advantage vs this pitching profile. Fastball vulnerable, slider exploitable.</div>
     </div>
-    <div class="scard" style="border:2px solid rgba(96,165,250,.27);box-shadow:0 0 20px rgba(96,165,250,.13)">
-      <div class="steam" style="color:#60a5fa">Dodgers Stack &#9889;</div>
-      <div><div class="srow"><span class="slbl">STACK RATING</span><span class="sval" style="color:#60a5fa">89</span></div><div class="strk" style="background:rgba(96,165,250,.2)"><div class="sfll" style="width:89%;background:#60a5fa"></div></div><div class="shr">HR Upside: <strong style="color:#60a5fa">31%</strong></div></div>
-    </div>
-    <div class="scard" style="border:2px solid rgba(244,114,182,.27);box-shadow:0 0 20px rgba(244,114,182,.13)">
-      <div class="steam" style="color:#f472b6">Padres Stack &#127754;</div>
-      <div><div class="srow"><span class="slbl">STACK RATING</span><span class="sval" style="color:#f472b6">82</span></div><div class="strk" style="background:rgba(244,114,182,.2)"><div class="sfll" style="width:82%;background:#f472b6"></div></div><div class="shr">HR Upside: <strong style="color:#f472b6">27%</strong></div></div>
+    <div class="pcard2">
+      <div class="plbl">BATTER</div><div class="pname">Shohei Ohtani</div>
+      <div class="sgrid">
+        <div class="sbox"><div class="sk">ISO</div><div class="sv sv-gold">.312</div></div>
+        <div class="sbox"><div class="sk">wRC+</div><div class="sv sv-gold">168</div></div>
+        <div class="sbox"><div class="sk">OBP</div><div class="sv sv-gold">.393</div></div>
+        <div class="sbox"><div class="sk">SLG</div><div class="sv sv-gold">.654</div></div>
+      </div>
+      <div class="mxt">VS PITCH TYPE (BAA)</div>
+      <div class="br"><div class="brl"><span>vs Fastball</span><span class="bar-green">88</span></div><div class="brt"><div class="brf" style="width:88%;background:linear-gradient(90deg,#00ff9c,#00cc7d)"></div></div></div>
+      <div class="br"><div class="brl"><span>vs Slider</span><span class="bar-gold">76</span></div><div class="brt"><div class="brf" style="width:76%;background:linear-gradient(90deg,#ffd000,#ffb800)"></div></div></div>
+      <div class="br"><div class="brl"><span>vs Curve</span><span class="bar-blue">82</span></div><div class="brt"><div class="brf" style="width:82%;background:linear-gradient(90deg,#59a9ff,#3b8bff)"></div></div></div>
     </div>
   </div>
 </section>
+
+<!-- DATA SOURCES -->
 <section class="seca">
   <div class="secin">
-    <div class="st"><h2>&#128202; TODAY'S EDGE SLATE</h2><p>MLB Schedule &mdash; Live &amp; Upcoming</p></div>
-    <div class="ggrid">
-      <div class="gcard" style="border:1px solid #00ff9c;box-shadow:0 0 20px rgba(0,255,156,.2)"><div class="gbadge" style="background:rgba(0,255,156,.13);color:#00ff9c">&#128308; LIVE &middot; Top 3</div><div class="gbody"><div><div class="gaw">Pirates</div><div class="ghm">Mets</div></div><div class="gscores"><div class="gscore">3</div><div class="gscore" style="color:#00ff9c">5</div></div></div></div>
-      <div class="gcard" style="border:1px solid #ffd000;box-shadow:0 0 20px rgba(255,208,0,.2)"><div class="gbadge" style="background:rgba(255,208,0,.13);color:#ffd000">&#128308; LIVE &middot; Top 1</div><div class="gbody"><div><div class="gaw">White Sox</div><div class="ghm">Brewers</div></div><div class="gscores"><div class="gscore">1</div><div class="gscore" style="color:#ffd000">0</div></div></div></div>
-      <div class="gcard" style="border:1px solid #1e293b"><div class="gbadge" style="background:#1e293b;color:#64748b">&#8987; 11:20 AM</div><div class="gbody"><div><div class="gaw">Nationals</div><div class="ghm">Cubs</div></div></div></div>
-      <div class="gcard" style="border:1px solid #1e293b"><div class="gbadge" style="background:#1e293b;color:#64748b">&#8987; 12:05 PM</div><div class="gbody"><div><div class="gaw">Twins</div><div class="ghm">Orioles</div></div></div></div>
+    <div class="st"><h2>&#128200; POWERED BY THE BEST DATA</h2><p>We pull from every major source to give you the complete picture</p></div>
+    <div class="data-grid">
+      <div class="data-card"><div class="data-icon">&#9918;</div><h4>Baseball Savant</h4><p>Statcast data: exit velocity, barrel rate, xwOBA, xBA, xSLG, spin rate, launch angle</p></div>
+      <div class="data-card"><div class="data-icon">&#128202;</div><h4>MLB Stats API</h4><p>Live schedules, lineups, game states, season stats, pitcher matchups</p></div>
+      <div class="data-card"><div class="data-icon">&#128176;</div><h4>Vegas Odds</h4><p>Moneylines, team totals, run lines, HR props from all major sportsbooks</p></div>
+      <div class="data-card"><div class="data-icon">&#127780;</div><h4>Weather + Parks</h4><p>Real-time weather, wind direction, temperature, dome status, park factors for all 30 stadiums</p></div>
+      <div class="data-card"><div class="data-icon">&#128178;</div><h4>DraftKings</h4><p>Live salary data, contest slates, ownership projections, salary optimization</p></div>
+      <div class="data-card"><div class="data-icon">&#129302;</div><h4>Claude AI</h4><p>Multi-AI analysis engine: stack correlations, sharp edges, GPP tournament picks</p></div>
     </div>
   </div>
 </section>
+
+<!-- PRICING -->
 <section class="sec" id="pricing">
   <div class="st">
     <h2>&#128274; CHOOSE YOUR PLAN</h2>
-    <p>Unlock the full ALLDAY MLB EDGE suite</p>
-    <div class="psec">&#128274; Secured by Stripe &middot; Cancel anytime</div>
+    <p>Unlock the full ALLDAY EDGE suite. Every plan includes live data.</p>
+    <div class="psec">&#128274; Secured by Stripe &middot; Cancel anytime &middot; No contracts</div>
   </div>
   <div class="pgrid2">
-    <div class="plan" style="border:2px solid #112240">
-      <div class="plnm" style="color:#64748b">Free</div>
-      <div class="plpr-row"><span class="plpr">$0</span><span class="plper">/mo</span></div>
-      <ul class="plfeats"><li class="plfeat"><span style="color:#64748b">&#10003;</span> Daily matchup grades</li><li class="plfeat"><span style="color:#64748b">&#10003;</span> Basic player edges</li><li class="plfeat"><span style="color:#64748b">&#10003;</span> Weather data</li><li class="plfeat"><span style="color:#64748b">&#10003;</span> Mobile friendly</li></ul>
-      <button class="plbtn" style="background:#64748b;color:#fff" onclick="location.href='./app.html'">Get Started Free</button>
+    <div class="plan plan-starter">
+      <div class="plnm">STARTER</div>
+      <div class="plpr-row"><span class="plpr">$19<span class="plpr-sm">.99</span></span><span class="plper">/mo</span></div>
+      <div class="plan-desc">Perfect for casual DFS players</div>
+      <ul class="plfeats">
+        <li class="plfeat"><span class="check-starter">&#10003;</span> Daily game ratings (0-100)</li>
+        <li class="plfeat"><span class="check-starter">&#10003;</span> Basic player grades (A-F)</li>
+        <li class="plfeat"><span class="check-starter">&#10003;</span> Weather + park factors</li>
+        <li class="plfeat"><span class="check-starter">&#10003;</span> Pitching edge overview</li>
+        <li class="plfeat"><span class="check-starter">&#10003;</span> Mobile friendly</li>
+      </ul>
+      <button class="plbtn plbtn-starter" onclick="startCheckout('starter')">Get Started &mdash; $19.99/mo</button>
     </div>
-    <div class="plan" style="border:2px solid #7c3aed">
-      <div class="plbdg" style="background:#7c3aed;color:#fff">POPULAR</div>
-      <div class="plnm" style="color:#7c3aed">EDGE PRO</div>
-      <div class="plpr-row"><span class="plpr">$49.99</span><span class="plper">/mo</span></div>
-      <ul class="plfeats"><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> Everything in Free</li><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> DK salary sync</li><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> Lineup Optimizer</li><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> Smart Stacks</li><li class="plfeat"><span style="color:#7c3aed">&#10003;</span> Multi-AI picks</li></ul>
-      <button class="plbtn" id="checkoutBtn-pro" style="background:#7c3aed;color:#fff" onclick="startCheckout('pro')">Subscribe &mdash; $49.99/mo</button>
+    <div class="plan plan-veteran">
+      <div class="plbdg plbdg-veteran">MOST POPULAR</div>
+      <div class="plnm">VETERAN</div>
+      <div class="plpr-row"><span class="plpr">$49<span class="plpr-sm">.99</span></span><span class="plper">/mo</span></div>
+      <div class="plan-desc">For serious DFS grinders</div>
+      <ul class="plfeats">
+        <li class="plfeat"><span class="check-veteran">&#10003;</span> Everything in Starter</li>
+        <li class="plfeat"><span class="check-veteran">&#10003;</span> Full scouting reports</li>
+        <li class="plfeat"><span class="check-veteran">&#10003;</span> Stack recommendations</li>
+        <li class="plfeat"><span class="check-veteran">&#10003;</span> DK salary optimizer</li>
+        <li class="plfeat"><span class="check-veteran">&#10003;</span> Pitcher arsenal breakdown</li>
+        <li class="plfeat"><span class="check-veteran">&#10003;</span> Head-to-head matchup data</li>
+        <li class="plfeat"><span class="check-veteran">&#10003;</span> Live alerts</li>
+      </ul>
+      <button class="plbtn plbtn-veteran" onclick="startCheckout('veteran')">Subscribe &mdash; $49.99/mo</button>
     </div>
-    <div class="plan" style="border:2px solid #00ff9c;box-shadow:0 0 30px rgba(0,255,156,.33)">
-      <div class="plbdg" style="background:#00ff9c;color:#060e1a">BEST VALUE</div>
-      <div class="plnm" style="color:#00ff9c">ELITE EDGE</div>
-      <div class="plpr-row"><span class="plpr">$99.99</span><span class="plper">/mo</span></div>
-      <ul class="plfeats"><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Everything in Pro</li><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Real-time alerts</li><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Advanced pitcher grades</li><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Stack correlation</li><li class="plfeat"><span style="color:#00ff9c">&#10003;</span> Priority support</li></ul>
-      <button class="plbtn" id="checkoutBtn-elite" style="background:#00ff9c;color:#060e1a;box-shadow:0 0 20px rgba(0,255,156,.53)" onclick="startCheckout('elite')">Subscribe &mdash; $99.99/mo</button>
+    <div class="plan plan-elite">
+      <div class="plbdg plbdg-elite">BEST VALUE</div>
+      <div class="plnm">ELITE PRO</div>
+      <div class="plpr-row"><span class="plpr">$99<span class="plpr-sm">.99</span></span><span class="plper">/mo</span></div>
+      <div class="plan-desc">For professionals who want it all</div>
+      <ul class="plfeats">
+        <li class="plfeat"><span class="check-elite">&#10003;</span> Everything in Veteran</li>
+        <li class="plfeat"><span class="check-elite">&#10003;</span> 5 AI-generated lineups daily</li>
+        <li class="plfeat"><span class="check-elite">&#10003;</span> Multi-AI analysis (Claude + Grok + GPT)</li>
+        <li class="plfeat"><span class="check-elite">&#10003;</span> Advanced ownership projections</li>
+        <li class="plfeat"><span class="check-elite">&#10003;</span> Vegas sharp edges</li>
+        <li class="plfeat"><span class="check-elite">&#10003;</span> Priority support</li>
+        <li class="plfeat"><span class="check-elite">&#10003;</span> Early access to new features</li>
+      </ul>
+      <button class="plbtn plbtn-elite" onclick="startCheckout('elite')">Subscribe &mdash; $99.99/mo</button>
     </div>
   </div>
   <div class="pnote">All plans billed monthly. No contracts. Cancel anytime. &middot; Questions? <a href="mailto:aldaye2015@gmail.com">aldaye2015@gmail.com</a></div>
 </section>
+
+<!-- CTA -->
 <section class="cta">
-  <h2>STOP GUESSING.<br><span>START WINNING.</span></h2>
-  <p>Join thousands of DFS players and sports bettors using ALLDAY MLB EDGE daily.</p>
-  <button class="ctabtn" onclick="location.href='./app.html'">&#128073; GET ACCESS</button>
+  <h2>STOP GUESSING.<br><span class="glow-text">START WINNING.</span></h2>
+  <p>Join the smartest DFS players and sports bettors using ALLDAY EDGE daily.</p>
+  <button class="ctabtn pulse-btn" onclick="location.href='./app.html'">&#128073; GET YOUR EDGE NOW</button>
 </section>
+
+<!-- FOOTER -->
 <footer>
   <div class="fin">
-    <div><div class="fbrand">&#9889; ALLDAY MLB EDGE</div><div class="fdesc">The most advanced MLB DFS + sports betting AI tool. Win more. Every day.</div></div>
+    <div>
+      <div class="fbrand">&#9889; ALLDAY EDGE</div>
+      <div class="fdesc">The most advanced MLB DFS + sports betting analytics tool. Find your edge. Every day.</div>
+    </div>
     <div class="fcols">
-      <div><div class="fct">PRODUCT</div><a class="fcl" href="#edge-board">Edge Board</a><a class="fcl" href="#stack-builder">Stack Builder</a><a class="fcl" href="#pitch-edge">Pitch Edge</a><a class="fcl" href="#pricing">Pricing</a></div>
-      <div><div class="fct">COMPANY</div><a class="fcl" href="#">About</a><a class="fcl" href="#">Blog</a><a class="fcl" href="mailto:aldaye2015@gmail.com">Contact</a><a class="fcl" href="#">Support</a></div>
-      <div><div class="fct">LEGAL</div><a class="fcl" href="#">Terms</a><a class="fcl" href="#">Privacy</a><a class="fcl" href="#">Cookies</a></div>
+      <div>
+        <div class="fct">PRODUCT</div>
+        <a class="fcl" href="#features">Features</a>
+        <a class="fcl" href="#edge-board">Edge Board</a>
+        <a class="fcl" href="#pitch-edge">Pitch Edge</a>
+        <a class="fcl" href="#pricing">Pricing</a>
+      </div>
+      <div>
+        <div class="fct">RESOURCES</div>
+        <a class="fcl" href="#">API Sources</a>
+        <a class="fcl" href="mailto:aldaye2015@gmail.com">Contact</a>
+        <a class="fcl" href="#">Support</a>
+      </div>
+      <div>
+        <div class="fct">LEGAL</div>
+        <a class="fcl" href="#disclaimer">Disclaimer</a>
+        <a class="fcl" href="#">Terms of Service</a>
+        <a class="fcl" href="#">Privacy Policy</a>
+      </div>
     </div>
   </div>
-  <div class="fbot"><div class="fcp">&copy; 2025 ALLDAY MLB EDGE. All rights reserved.</div><div class="fsoc"><a class="fsl" href="#">Twitter</a><a class="fsl" href="#">Discord</a><a class="fsl" href="#">YouTube</a></div></div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer" id="disclaimer">
+    <h4>&#9888; DISCLAIMER</h4>
+    <p>ALLDAY EDGE is an analytics and information tool only. The content provided on this website is for entertainment and informational purposes only and does not constitute financial advice, gambling advice, or any other form of professional advice. Past performance is not indicative of future results. Sports betting and daily fantasy sports involve risk and you may lose money. ALLDAY EDGE makes no guarantees regarding the accuracy of projections, grades, or recommendations. All data is sourced from publicly available APIs and third-party providers. Users are responsible for complying with all applicable local, state, and federal laws regarding sports betting and daily fantasy sports in their jurisdiction. You must be of legal age in your jurisdiction to participate in sports betting or daily fantasy sports. If you or someone you know has a gambling problem, call 1-800-GAMBLER.</p>
+  </div>
+
+  <div class="fbot">
+    <div class="fcp">&copy; 2025 ALLDAY EDGE. All rights reserved. ALLDAY EDGE&trade; is a trademark. All MLB team names, logos, and related marks are trademarks of Major League Baseball and its member clubs. Used under fair use for informational and analytical purposes. ALLDAY EDGE is not affiliated with, endorsed by, or sponsored by Major League Baseball, DraftKings, FanDuel, or any sportsbook.</div>
+    <div class="fsoc">
+      <a class="fsl" href="#">Twitter</a>
+      <a class="fsl" href="#">Discord</a>
+      <a class="fsl" href="#">YouTube</a>
+    </div>
+  </div>
 </footer>
 
-<script src="./assets/app-core.js"></script>
-<script src="./assets/app-main.js"></script>
-<script src="./assets/site-init.js"></script>
+<script>
+function startCheckout(plan){
+  const prices={starter:'price_starter_1999',veteran:'price_veteran_4999',elite:'price_elite_9999'};
+  const profile=JSON.parse(localStorage.getItem('allday-mlb-edge-access')||'{}');
+  const apiBase=(profile.apiBase||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');
+  fetch(apiBase+'/api/checkout/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,customerEmail:profile.email||'',successUrl:window.location.origin+'/app.html?checkout=success',cancelUrl:window.location.href})}).then(r=>r.json()).then(d=>{if(d.url)window.open(d.url,'_blank');}).catch(()=>location.href='./app.html');
+}
+</script>
 </body>
 </html>
