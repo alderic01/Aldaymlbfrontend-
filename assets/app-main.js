@@ -412,6 +412,7 @@ function renderSettings() {
         '</div>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
           '<button class="button" onclick="document.getElementById(\'dkFileInput\').click()">\u{1F4C2} Browse CSV File</button>' +
+          '<button class="button primary" onclick="autoPullDKSalaries()">\u26A1 Auto-Pull DK Salaries</button>' +
           '<button class="button" onclick="syncDKSalaries().then(render)">\u{1F504} Sync from Backend</button>' +
           '<button class="button" onclick="loadFantasyLabsSalaries()">\u{1F4CA} Pull from FantasyLabs</button>' +
         '</div>' +
@@ -547,6 +548,109 @@ function attachEventListeners() {
       }
     };
   });
+}
+
+// ─── Auto-Pull DraftKings Salaries (No CSV needed) ───────────────────────────
+async function autoPullDKSalaries() {
+  var msg = document.getElementById('dkUploadMsg');
+  if (msg) { msg.style.display = 'block'; msg.style.color = '#ffd000'; msg.textContent = 'Auto-pulling DraftKings MLB salaries...'; }
+
+  try {
+    // Step 1: Get today's MLB draft groups from DraftKings
+    var groupResp = await fetch('https://www.draftkings.com/lobby/getcontests?sport=MLB');
+    var fallbackMode = false;
+
+    if (!groupResp.ok) {
+      // Try the alternate endpoint
+      groupResp = await fetch('https://api.draftkings.com/draftgroups/v1/?sport=MLB');
+      fallbackMode = true;
+    }
+
+    var groupData = await groupResp.json();
+    var draftGroups = [];
+
+    if (fallbackMode) {
+      draftGroups = (groupData.draftGroups || []).filter(function(g) {
+        return g.sportId === 2 || (g.sport && g.sport.toLowerCase() === 'mlb');
+      });
+    } else {
+      // Parse from contest lobby
+      var contests = groupData.Contests || groupData.contests || [];
+      var seen = {};
+      contests.forEach(function(c) {
+        var dgId = c.dg || c.DraftGroupId || c.draftGroupId;
+        if (dgId && !seen[dgId] && (c.gameType === 'Classic' || c.GameType === 'Classic' || !c.gameType)) {
+          seen[dgId] = true;
+          draftGroups.push({ draftGroupId: dgId });
+        }
+      });
+    }
+
+    if (!draftGroups.length) throw new Error('No MLB draft groups found today. Games may not be posted yet.');
+
+    // Step 2: Get player pool from the first Classic draft group
+    var dgId = draftGroups[0].draftGroupId || draftGroups[0].DraftGroupId || draftGroups[0].id;
+    var poolResp = await fetch('https://api.draftkings.com/draftgroups/v1/draftgroups/' + dgId + '/draftables');
+    if (!poolResp.ok) throw new Error('DraftKings player pool returned ' + poolResp.status);
+    var poolData = await poolResp.json();
+    var draftables = poolData.draftables || [];
+
+    if (!draftables.length) throw new Error('No players found in draft group ' + dgId);
+
+    // Step 3: Parse into our salary format
+    var salaries = {};
+    draftables.forEach(function(p) {
+      var name = p.displayName || p.firstName + ' ' + p.lastName || '';
+      if (!name) return;
+      var teamAbbrev = '';
+      if (p.teamAbbreviation) teamAbbrev = p.teamAbbreviation;
+      else if (p.competition) teamAbbrev = p.competition.teamAbbreviation || '';
+
+      var gameInfo = '';
+      if (p.competition) {
+        gameInfo = (p.competition.awayTeam || '') + '@' + (p.competition.homeTeam || '');
+      }
+
+      salaries[name.toLowerCase()] = {
+        name: name,
+        salary: Number(p.salary || 0),
+        pos: p.rosterSlotId ? posFromSlotId(p.rosterSlotId) : (p.position || p.rosterPosition || ''),
+        team: teamAbbrev,
+        avgPts: Number(p.draftStatAttributes ? (p.draftStatAttributes.find(function(a) { return a.id === 90; }) || {}).value || 0 : 0),
+        game: gameInfo,
+        status: p.status || 'None'
+      };
+    });
+
+    var count = Object.keys(salaries).length;
+    if (count === 0) throw new Error('Could not parse player salaries');
+
+    state.dkSalaries = salaries;
+    state.dkSalaryDate = new Date().toISOString().slice(0, 10);
+    state.dkSyncStatus = { status: 'ok', updatedAt: new Date().toISOString(), error: '' };
+    localStorage.setItem('mlb-edge-dk-salaries', JSON.stringify(state.dkSalaries));
+    localStorage.setItem('mlb-edge-dk-salary-date', state.dkSalaryDate);
+    if (msg) { msg.style.color = '#00ff9c'; msg.textContent = '\u2705 Auto-loaded ' + count + ' players from DraftKings (Draft Group ' + dgId + ')'; }
+    setTimeout(render, 500);
+  } catch (err) {
+    // If DK API fails due to CORS, try via our backend proxy
+    try {
+      if (msg) { msg.textContent = 'Direct DK failed, trying backend proxy...'; }
+      await syncDKSalaries();
+      var count2 = Object.keys(state.dkSalaries || {}).length;
+      if (count2 > 0) {
+        if (msg) { msg.style.color = '#00ff9c'; msg.textContent = '\u2705 Loaded ' + count2 + ' players via backend proxy'; }
+        setTimeout(render, 500);
+        return;
+      }
+    } catch(e2) {}
+    if (msg) { msg.style.color = '#ff3b3b'; msg.textContent = 'Auto-pull failed: ' + err.message + '. Upload a CSV from DraftKings or FantasyLabs instead.'; }
+  }
+}
+
+function posFromSlotId(id) {
+  var map = { 70: 'SP', 71: 'SP', 80: 'C', 81: '1B', 82: '2B', 83: '3B', 84: 'SS', 85: 'OF', 86: 'OF', 87: 'OF', 88: 'UTIL' };
+  return map[id] || 'UTIL';
 }
 
 // ─── AI PICKS GENERATOR ───────────────────────────────────────────────────────
@@ -714,3 +818,4 @@ window.startCheckout = startCheckout;
 window.handleDKDrop = handleDKDrop;
 window.handleDKFile = handleDKFile;
 window.loadFantasyLabsSalaries = loadFantasyLabsSalaries;
+window.autoPullDKSalaries = autoPullDKSalaries;
