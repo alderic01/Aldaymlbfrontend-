@@ -45,9 +45,13 @@ function runScoreColor(score) {
 
 // ─── RENDER DISPATCHER ─────────────────────────────────────────────────────────
 function render() {
-  if (!view) return;
+  if (!view) { console.error('RENDER: #view element not found'); return; }
   if (state.loading) {
-    view.innerHTML = '<div class="loading"><strong>Loading slate data...</strong><br>Fetching games, pitchers, and matchup grades.</div>';
+    view.innerHTML = '<div class="loading"><strong>Loading slate data...</strong><br>Fetching games from MLB API for ' + (state.selectedDate || 'today') + '...<br><br><span style="font-size:12px;color:#475569">If this takes more than 15 seconds, the MLB API may be slow or have no games scheduled for this date.</span></div>';
+    return;
+  }
+  if (!state.games || !state.games.length) {
+    view.innerHTML = '<div class="empty" style="padding:40px"><h2 style="margin-bottom:12px">No Games Found</h2><p style="color:var(--muted)">No MLB games found for <strong>' + escapeHtml(state.selectedDate) + '</strong>.</p><p style="color:var(--muted);margin-top:8px">The MLB season typically runs April through October. If games should be available, try refreshing.</p><button class="button primary" onclick="loadSlate()" style="margin-top:16px">Retry</button></div>';
     return;
   }
   const dateEl = document.getElementById('dateDisplay');
