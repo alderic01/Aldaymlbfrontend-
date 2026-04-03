@@ -389,26 +389,151 @@ function renderPricing() {
 
 // ─── SETTINGS TAB ─────────────────────────────────────────────────────────────
 function renderSettings() {
+  var dkCount = Object.keys(state.dkSalaries || {}).length;
   return '<section>' +
     '<div class="section-title"><h2>\u2699 SETTINGS</h2></div>' +
     '<div class="settings-grid">' +
+
+      // DK Salaries - CSV Upload
+      '<div class="settings-card" style="grid-column:1/-1">' +
+        '<h3>\u{1F4B0} DraftKings Salaries</h3>' +
+        '<div style="font-size:13px;color:var(--muted);margin-bottom:12px">' + dkCount + ' players loaded' +
+          (state.dkSalaryDate ? ' \u00B7 Slate: ' + escapeHtml(state.dkSalaryDate) : '') +
+          (state.dkSyncStatus.status === 'ok' ? ' \u00B7 <span style="color:#00ff9c">\u2705 Synced</span>' : '') +
+        '</div>' +
+
+        // CSV Upload
+        '<div style="border:2px dashed rgba(0,255,156,.2);border-radius:14px;padding:20px;text-align:center;margin-bottom:14px;cursor:pointer;transition:border-color .2s" ' +
+          'id="dkDropZone" ondragover="event.preventDefault();this.style.borderColor=\'#00ff9c\'" ondragleave="this.style.borderColor=\'rgba(0,255,156,.2)\'" ondrop="handleDKDrop(event)">' +
+          '<div style="font-size:24px;margin-bottom:8px">\u{1F4C1}</div>' +
+          '<div style="font-weight:700;margin-bottom:4px">Drag & Drop DraftKings CSV here</div>' +
+          '<div style="font-size:12px;color:var(--muted)">Or click to browse. Export CSV from any DK MLB Classic contest page.</div>' +
+          '<input type="file" id="dkFileInput" accept=".csv" style="display:none" onchange="handleDKFile(this.files[0])" />' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+          '<button class="button" onclick="document.getElementById(\'dkFileInput\').click()">\u{1F4C2} Browse CSV File</button>' +
+          '<button class="button" onclick="syncDKSalaries().then(render)">\u{1F504} Sync from Backend</button>' +
+          '<button class="button" onclick="loadFantasyLabsSalaries()">\u{1F4CA} Pull from FantasyLabs</button>' +
+        '</div>' +
+        '<div id="dkUploadMsg" style="margin-top:10px;font-size:13px;display:none"></div>' +
+
+        // FantasyLabs API Config
+        '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:8px">FANTASYLABS API</div>' +
+          '<label style="display:grid;gap:6px;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px">FantasyLabs API Key<input id="cfgFantasyLabsKey" class="field" value="' + escapeHtml(state.apiConfig.fantasyLabsKey || '') + '" placeholder="Your FantasyLabs API key" /></label>' +
+          '<div style="font-size:11px;color:var(--muted)">Get your API key from your FantasyLabs account dashboard. Used to auto-pull DK salaries, ownership projections, and player models daily.</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Backend API
       '<div class="settings-card"><h3>Backend API</h3>' +
         '<label>Backend URL<input id="cfgBackend" class="field" value="' + escapeHtml(state.apiConfig.proxyBaseUrl || 'https://newest-mlb-1.onrender.com') + '" /></label>' +
         '<label>Odds API Key<input id="cfgOddsKey" class="field" value="' + escapeHtml(state.apiConfig.oddsApiKey || '') + '" placeholder="Your odds API key" /></label>' +
         '<button class="button primary" onclick="saveSettingsFromUI()" style="margin-top:10px">Save Settings</button></div>' +
-      '<div class="settings-card"><h3>DK Salaries</h3>' +
-        '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Status: ' + (state.dkSyncStatus.status === 'ok' ? '<span style="color:#00ff9c">Synced</span>' : state.dkSyncStatus.status === 'loading' ? 'Syncing...' : '<span style="color:#ff3b3b">' + escapeHtml(state.dkSyncStatus.error || 'Not synced') + '</span>') + '</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">' + Object.keys(state.dkSalaries || {}).length + ' players loaded</div>' +
-        '<button class="button" onclick="syncDKSalaries().then(render)">Sync DK Salaries</button></div>' +
+
+      // Live Data
       '<div class="settings-card"><h3>Live Data</h3>' +
-        '<button class="button" onclick="syncWeatherForSlate()" style="margin-bottom:8px">Sync Weather</button>' +
-        '<button class="button" onclick="syncOddsForSlate()">Sync Odds</button>' +
+        '<button class="button" onclick="syncWeatherForSlate()" style="margin-bottom:8px">\u{1F326} Sync Weather</button>' +
+        '<button class="button" onclick="syncOddsForSlate()">\u{1F4B0} Sync Odds</button>' +
         '<div style="font-size:12px;color:var(--muted);margin-top:10px">Weather: ' + (state.liveSync.weather.status || 'idle') + ' \u00B7 Odds: ' + (state.liveSync.odds.status || 'idle') + '</div></div>' +
+
+      // Account
       '<div class="settings-card"><h3>Account</h3>' +
         '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">' + escapeHtml(getAccessProfile().email || 'Not logged in') + '</div>' +
         '<button class="button" onclick="openBillingPortal()">Manage Billing</button>' +
         '<button class="button danger" onclick="logout()" style="margin-top:8px">Logout</button></div>' +
+
     '</div></section>';
+}
+
+// ─── DK CSV Upload Handlers ───────────────────────────────────────────────────
+function handleDKDrop(e) {
+  e.preventDefault();
+  e.currentTarget.style.borderColor = 'rgba(0,255,156,.2)';
+  var file = e.dataTransfer.files[0];
+  if (file) handleDKFile(file);
+}
+
+function handleDKFile(file) {
+  if (!file) return;
+  var msg = document.getElementById('dkUploadMsg');
+  if (msg) { msg.style.display = 'block'; msg.style.color = '#ffd000'; msg.textContent = 'Reading ' + file.name + '...'; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var text = e.target.result;
+      var salaries = parseDKCsv(text);
+      var count = Object.keys(salaries).length;
+      if (count === 0) {
+        if (msg) { msg.style.color = '#ff3b3b'; msg.textContent = 'No players found. Make sure this is a DraftKings CSV export.'; }
+        return;
+      }
+      state.dkSalaries = salaries;
+      state.dkSalaryDate = new Date().toISOString().slice(0, 10);
+      state.dkSyncStatus = { status: 'ok', updatedAt: new Date().toISOString(), error: '' };
+      localStorage.setItem('mlb-edge-dk-salaries', JSON.stringify(state.dkSalaries));
+      localStorage.setItem('mlb-edge-dk-salary-date', state.dkSalaryDate);
+      if (msg) { msg.style.color = '#00ff9c'; msg.textContent = '\u2705 Loaded ' + count + ' players from ' + file.name; }
+      setTimeout(render, 500);
+    } catch (err) {
+      if (msg) { msg.style.color = '#ff3b3b'; msg.textContent = 'Error parsing CSV: ' + err.message; }
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ─── FantasyLabs Integration ──────────────────────────────────────────────────
+async function loadFantasyLabsSalaries() {
+  var msg = document.getElementById('dkUploadMsg');
+  var apiKey = (document.getElementById('cfgFantasyLabsKey') || {}).value || state.apiConfig.fantasyLabsKey || '';
+  if (!apiKey) {
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#ff3b3b'; msg.textContent = 'Enter your FantasyLabs API key first.'; }
+    return;
+  }
+  // Save the key
+  state.apiConfig.fantasyLabsKey = apiKey;
+  localStorage.setItem('mlb-edge-api-config', JSON.stringify(state.apiConfig));
+  if (msg) { msg.style.display = 'block'; msg.style.color = '#ffd000'; msg.textContent = 'Pulling salaries from FantasyLabs...'; }
+
+  try {
+    // FantasyLabs MLB DFS endpoint
+    var today = state.selectedDate || new Date().toISOString().slice(0, 10);
+    var url = 'https://www.fantasylabs.com/api/playermodel/2/' + today + '/?projectionsource=4';
+    var resp = await fetch(url, {
+      headers: { 'x-api-key': apiKey, 'Accept': 'application/json' }
+    });
+    if (!resp.ok) throw new Error('FantasyLabs API returned ' + resp.status);
+    var data = await resp.json();
+    var players = Array.isArray(data) ? data : (data.PlayerModels || data.players || []);
+    if (!players.length) throw new Error('No player data returned');
+
+    var salaries = {};
+    players.forEach(function(p) {
+      var name = p.Player_Name || p.PlayerName || p.Name || '';
+      if (!name) return;
+      salaries[name.toLowerCase()] = {
+        name: name,
+        salary: Number(p.Salary || p.DK_Salary || 0),
+        pos: p.Position || p.Pos || '',
+        team: p.Team || '',
+        avgPts: Number(p.AvgPts || p.Median || p.Ceiling || 0),
+        ownership: Number(p.Ownership || p.OwnPct || 0),
+        value: Number(p.Value || 0)
+      };
+    });
+    var count = Object.keys(salaries).length;
+    if (count === 0) throw new Error('Could not parse player data');
+
+    state.dkSalaries = salaries;
+    state.dkSalaryDate = today;
+    state.dkSyncStatus = { status: 'ok', updatedAt: new Date().toISOString(), error: '' };
+    localStorage.setItem('mlb-edge-dk-salaries', JSON.stringify(state.dkSalaries));
+    localStorage.setItem('mlb-edge-dk-salary-date', state.dkSalaryDate);
+    if (msg) { msg.style.color = '#00ff9c'; msg.textContent = '\u2705 Loaded ' + count + ' players from FantasyLabs for ' + today; }
+    setTimeout(render, 500);
+  } catch (err) {
+    if (msg) { msg.style.color = '#ff3b3b'; msg.textContent = 'FantasyLabs error: ' + err.message + '. Try uploading a DK CSV instead.'; }
+  }
 }
 
 // ─── EVENT LISTENERS ──────────────────────────────────────────────────────────
@@ -483,8 +608,10 @@ function clearAlerts() {
 function saveSettingsFromUI() {
   const backend = document.getElementById('cfgBackend');
   const oddsKey = document.getElementById('cfgOddsKey');
+  const flKey = document.getElementById('cfgFantasyLabsKey');
   if (backend) state.apiConfig.proxyBaseUrl = backend.value.trim();
   if (oddsKey) state.apiConfig.oddsApiKey = oddsKey.value.trim();
+  if (flKey) state.apiConfig.fantasyLabsKey = flKey.value.trim();
   localStorage.setItem('mlb-edge-api-config', JSON.stringify(state.apiConfig));
   render();
 }
@@ -584,3 +711,6 @@ window.claimAccess = claimAccess;
 window.enterFreeMode = enterFreeMode;
 window.logout = logout;
 window.startCheckout = startCheckout;
+window.handleDKDrop = handleDKDrop;
+window.handleDKFile = handleDKFile;
+window.loadFantasyLabsSalaries = loadFantasyLabsSalaries;
