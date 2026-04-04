@@ -66,15 +66,25 @@ export default async function handler(req, res) {
 
     if (!resp.ok) {
       // Fallback: try Gemini generateContent with image generation
-      const url2 = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_KEY}`;
-      const resp2 = await fetch(url2, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Generate an image: ' + prompt }] }],
-          generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
-        })
-      });
+      // Try multiple image-capable models
+      const imageModels = [
+        'gemini-2.0-flash-preview-image-generation',
+        'gemini-2.0-flash-exp-image-generation',
+        'gemini-1.5-flash'
+      ];
+      let resp2 = null;
+      for (const model of imageModels) {
+        const url2 = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_KEY}`;
+        resp2 = await fetch(url2, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Generate an image: ' + prompt }] }],
+            generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
+          })
+        });
+        if (resp2.ok) break;
+      }
 
       if (!resp2.ok) {
         const errBody = await resp2.text().catch(() => '');
