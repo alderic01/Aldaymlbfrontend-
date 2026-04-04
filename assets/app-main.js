@@ -639,33 +639,188 @@ function renderScouting() {
 
 // ─── TAB 4: STACK RECOMMENDATIONS ─────────────────────────────────────────────
 function renderStacks() {
-  const rec = buildStackRecommendation();
-  if (!rec || !rec.picks.length) {
+  if (!state.games.length) {
     return '<section><div class="section-title"><h2>\u{1F525} STACK RECOMMENDATIONS</h2></div>' +
-      '<div class="card" style="padding:20px"><p style="color:var(--muted)">DraftKings salary data needed. Sync salaries in Settings or load a slate first.</p></div></section>';
+      '<div class="card empty">Load today\'s games first.</div></section>';
+  }
+
+  // Build stacks using the same pool as the optimizer
+  var CAP = 50000;
+  var SLOTS = [
+    {id:'P1',label:'P',pos:'P',isPitcher:true},{id:'P2',label:'P',pos:'P',isPitcher:true},
+    {id:'C',label:'C',pos:'C'},{id:'1B',label:'1B',pos:'1B'},
+    {id:'2B',label:'2B',pos:'2B'},{id:'3B',label:'3B',pos:'3B'},
+    {id:'SS',label:'SS',pos:'SS'},
+    {id:'OF1',label:'OF',pos:'OF'},{id:'OF2',label:'OF',pos:'OF'},{id:'OF3',label:'OF',pos:'OF'}
+  ];
+
+  // Build the player pool from ALL today's games
+  var pool = [];
+  state.games.forEach(function(g) {
+    var park = parkFor(g.venue.name);
+    var m = getMarket(g);
+    var awayEdge = teamEdgeScore(g, 'away'), homeEdge = teamEdgeScore(g, 'home');
+
+    // Pitchers
+    [{p:g.awayPitcher,team:g.away.abbr,side:'away',oppEdge:homeEdge},
+     {p:g.homePitcher,team:g.home.abbr,side:'home',oppEdge:awayEdge}].forEach(function(x) {
+      if (!x.p || !x.p.name || x.p.name === 'TBD') return;
+      var dk = getDKSalary(x.p.name);
+      var salary = dk ? dk.salary : 8000;
+      if (salary < 1000) salary = 8000;
+      var pts = dkProjectPitcher(x.p, x.oppEdge, park);
+      pool.push({name:x.p.name,team:x.team,pos:'P',salary:salary,proj:pts,gamePk:g.gamePk,isPitcher:true,
+        oppName:x.side==='away'?g.home.abbr:g.away.abbr,venue:g.venue.name});
+    });
+
+    // Hitters from DK salary data
+    Object.values(state.dkSalaries || {}).forEach(function(dk) {
+      if (!dk.salary || dk.salary < 2000) return;
+      if (/^(SP|RP|P)$/i.test(dk.pos || '')) return;
+      var teamKey = (dk.team || '').toUpperCase();
+      if ((g.away.abbr||'').toUpperCase() !== teamKey && (g.home.abbr||'').toUpperCase() !== teamKey) return;
+      if (pool.some(function(p) { return p.name.toLowerCase() === dk.name.toLowerCase(); })) return;
+      var isHome = (g.home.abbr||'').toUpperCase() === teamKey;
+      var oppP = isHome ? g.awayPitcher : g.homePitcher;
+      var pts = dkProjectHitter({avg:.260,ops:.740,slg:.420,obp:.330,hr:15,sb:5,rbi:50,pa:400,batSide:'R',name:dk.name}, oppP||{}, park, m, isHome);
+      if (dk.avgPts > pts) pts = dk.avgPts;
+      pool.push({name:dk.name,team:dk.team,pos:(dk.pos||'OF').toUpperCase(),salary:dk.salary,proj:pts,gamePk:g.gamePk,isPitcher:false,
+        oppName:isHome?g.away.abbr:g.home.abbr,venue:g.venue.name});
+    });
+
+    // Hardcoded DK_PLAYERS
+    if (typeof DK_PLAYERS !== 'undefined') {
+      DK_PLAYERS.forEach(function(dk) {
+        if (!dk.salary || dk.salary < 2000) return;
+        if (/^(SP|RP|P)$/i.test(dk.pos || '')) return;
+        var teamKey = (dk.team || '').toUpperCase();
+        if ((g.away.abbr||'').toUpperCase() !== teamKey && (g.home.abbr||'').toUpperCase() !== teamKey) return;
+        if (pool.some(function(p) { return p.name.toLowerCase() === dk.name.toLowerCase(); })) return;
+        var isHome = (g.home.abbr||'').toUpperCase() === teamKey;
+        var pts = dk.avgPts || (dk.salary / 1000 * 2.5);
+        pool.push({name:dk.name,team:dk.team,pos:(dk.pos||dk.rosterPos||'OF').toUpperCase(),salary:dk.salary,proj:pts,gamePk:g.gamePk,isPitcher:false,
+          oppName:isHome?g.away.abbr:g.home.abbr,venue:g.venue.name});
+      });
+    }
+  });
+
+  // Dedupe
+  var seen = {};
+  pool = pool.filter(function(p) { var k = p.name.toLowerCase(); if(seen[k]) return false; seen[k]=true; return true; });
+
+  // Sort by highest projection
+  pool.sort(function(a, b) { return b.proj - a.proj; });
+
+  // Position eligibility
+  function fitsSlot(p, slotPos, slotIsPitcher) {
+    if (slotIsPitcher) return p.isPitcher;
+    if (p.isPitcher) return false;
+    var allPos = p.pos.toUpperCase().split(/[\/,]/);
+    if (slotPos === 'OF') return allPos.some(function(pp) { return pp==='OF'||pp==='CF'||pp==='LF'||pp==='RF'; });
+    return allPos.some(function(pp) { return pp === slotPos; });
+  }
+
+  // Build one optimal lineup
+  var lineup = [], used = {}, salaryUsed = 0, teamCounts = {}, gameSet = {};
+
+  for (var si = 0; si < SLOTS.length; si++) {
+    var slot = SLOTS[si];
+    var slotsLeft = SLOTS.length - lineup.length - 1;
+    var maxForThis = CAP - salaryUsed - (slotsLeft * 2000);
+    for (var pi = 0; pi < pool.length; pi++) {
+      var p = pool[pi];
+      if (used[p.name] || p.salary > maxForThis) continue;
+      if (!fitsSlot(p, slot.pos, slot.isPitcher)) continue;
+      if (!p.isPitcher && (teamCounts[p.team]||0) >= 5) continue;
+      lineup.push(Object.assign({}, p, {slotLabel:slot.label, slotId:slot.id}));
+      used[p.name] = true;
+      salaryUsed += p.salary;
+      if (!p.isPitcher) teamCounts[p.team] = (teamCounts[p.team]||0) + 1;
+      gameSet[p.gamePk] = true;
+      break;
+    }
+  }
+
+  // Upgrade pass — max out salary
+  var remaining = CAP - salaryUsed;
+  var rounds = 0;
+  while (remaining > 500 && rounds < 40) {
+    rounds++;
+    var cheapIdx = -1, cheapSal = Infinity;
+    for (var ci = 0; ci < lineup.length; ci++) {
+      if (lineup[ci].salary < cheapSal) { cheapSal = lineup[ci].salary; cheapIdx = ci; }
+    }
+    if (cheapIdx < 0) break;
+    var cheap = lineup[cheapIdx];
+    var maxBudget = cheap.salary + remaining;
+    var upgrade = null;
+    for (var ui = 0; ui < pool.length; ui++) {
+      var u = pool[ui];
+      if (used[u.name] || u.salary > maxBudget || u.salary <= cheap.salary || u.proj <= cheap.proj) continue;
+      if (!fitsSlot(u, cheap.slotLabel, cheap.isPitcher)) continue;
+      if (!u.isPitcher && (teamCounts[u.team]||0) >= 5 && u.team !== cheap.team) continue;
+      upgrade = u;
+      break;
+    }
+    if (!upgrade) break;
+    delete used[cheap.name];
+    used[upgrade.name] = true;
+    salaryUsed = salaryUsed - cheap.salary + upgrade.salary;
+    remaining = CAP - salaryUsed;
+    if (!cheap.isPitcher && cheap.team !== upgrade.team) {
+      teamCounts[cheap.team] = Math.max(0, (teamCounts[cheap.team]||0) - 1);
+      teamCounts[upgrade.team] = (teamCounts[upgrade.team]||0) + 1;
+    }
+    gameSet[upgrade.gamePk] = true;
+    lineup[cheapIdx] = Object.assign({}, upgrade, {slotLabel:cheap.slotLabel, slotId:cheap.slotId});
+  }
+
+  var totalSalary = lineup.reduce(function(s,p){return s+p.salary;},0);
+  var totalProj = lineup.reduce(function(s,p){return s+p.proj;},0);
+  var gameCount = Object.keys(gameSet).length;
+  var valid = lineup.length === 10 && totalSalary <= CAP && gameCount >= 2;
+
+  if (!lineup.length) {
+    return '<section><div class="section-title"><h2>\u{1F525} STACK RECOMMENDATIONS</h2></div>' +
+      '<div class="card empty">No players found. Make sure DK salaries are loaded (check Settings tab).</div></section>';
   }
 
   return '<section>' +
-    '<div class="section-title"><h2>\u{1F525} STACK RECOMMENDATIONS — 10 PLAYERS</h2><div class="meta">Best at each position \u00B7 DK salary optimized \u00B7 Total: $' + rec.totalSalary.toLocaleString() + ' \u00B7 Remaining: $' + rec.remaining.toLocaleString() + '</div></div>' +
-    '<div class="card" style="padding:4px">' +
-    rec.picks.map((p, i) => {
-      const isP = p.posSlot === 'SP';
-      return '<div class="stack-position">' +
-        '<div class="stack-pos-label">' + escapeHtml(p.posLabel) + '</div>' +
-        '<div>' +
-          '<div class="stack-player">' + escapeHtml(p.name) + '</div>' +
-          '<div class="stack-detail">' + escapeHtml(p.team) + ' \u00B7 ' + escapeHtml(p.pos) + ' \u00B7 vs ' + escapeHtml(p.oppPitcherName) + ' \u00B7 ' + escapeHtml(p.venue) + ' \u00B7 Grade: ' + p.score + '/99</div>' +
-        '</div>' +
-        '<div class="stack-salary">$' + (p.salary || 0).toLocaleString() + '</div>' +
-      '</div>';
-    }).join('') +
+    '<div class="section-title"><h2>\u{1F525} STACK RECOMMENDATIONS — TODAY\'S LINEUP</h2><div class="meta">' + state.games.length + ' games \u00B7 $' + totalSalary.toLocaleString() + '/$50K \u00B7 ' + fmtNum(totalProj, 1) + ' proj pts \u00B7 ' + (valid ? '\u2705 Valid' : '\u274C') + '</div></div>' +
+
+    '<div class="lineup-card">' +
+      '<div class="lineup-header">' +
+        '<div class="lineup-label">OPTIMAL STACK</div>' +
+        '<div class="lineup-total"><strong style="color:#ffd000">' + fmtNum(totalProj, 1) + ' pts</strong> \u00B7 $' + totalSalary.toLocaleString() + ' \u00B7 ' + gameCount + ' games</div>' +
+      '</div>' +
+      '<div class="opt-row opt-header"><div class="opt-cell">POS</div><div class="opt-cell">PLAYER</div><div class="opt-cell">TEAM</div><div class="opt-cell">OPP</div><div class="opt-cell">SALARY</div><div class="opt-cell">PROJ</div></div>' +
+      lineup.map(function(p) {
+        return '<div class="opt-row">' +
+          '<div class="opt-cell opt-pos">' + p.slotLabel + '</div>' +
+          '<div class="opt-cell opt-name">' + escapeHtml(p.name) + '</div>' +
+          '<div class="opt-cell">' + p.team + '</div>' +
+          '<div class="opt-cell" style="color:var(--muted)">' + (p.oppName || '-') + '</div>' +
+          '<div class="opt-cell opt-salary">$' + p.salary.toLocaleString() + '</div>' +
+          '<div class="opt-cell opt-proj">' + p.proj.toFixed(1) + '</div>' +
+        '</div>';
+      }).join('') +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(30,41,59,.4);background:rgba(6,14,26,.4)">' +
+        '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (totalSalary <= CAP ? '#00ff9c' : '#ff3b3b') + '">$' + totalSalary.toLocaleString() + '</div><div class="pcard-stat-lbl">SALARY</div></div>' +
+        '<div class="pcard-stat"><div class="pcard-stat-val" style="color:#ffd000">$' + remaining.toLocaleString() + '</div><div class="pcard-stat-lbl">REMAINING</div></div>' +
+        '<div class="pcard-stat"><div class="pcard-stat-val" style="color:#00ff9c">' + fmtNum(totalProj, 1) + '</div><div class="pcard-stat-lbl">PROJ PTS</div></div>' +
+        '<div class="pcard-stat"><div class="pcard-stat-val">' + gameCount + '</div><div class="pcard-stat-lbl">GAMES</div></div>' +
+      '</div>' +
     '</div>' +
-    '<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">' +
-      '<div class="stat-box" style="flex:1"><div class="label">TOTAL SALARY</div><div class="value" style="color:' + (rec.totalSalary <= 50000 ? '#00ff9c' : '#ff3b3b') + '">$' + rec.totalSalary.toLocaleString() + '</div><div class="detail">of $50,000 cap</div></div>' +
-      '<div class="stat-box" style="flex:1"><div class="label">REMAINING</div><div class="value" style="color:#ffd000">$' + rec.remaining.toLocaleString() + '</div></div>' +
-      '<div class="stat-box" style="flex:1"><div class="label">POSITIONS</div><div class="value">' + rec.picks.length + '/10</div><div class="detail">' + (rec.valid ? '\u2705 Valid lineup' : '\u274C Incomplete') + '</div></div>' +
-    '</div>' +
-    '</section>';
+
+    // Team stack breakdown
+    '<div style="margin-top:16px"><div class="section-title"><h2>TEAM EXPOSURE</h2></div>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+      Object.keys(teamCounts).sort(function(a,b){return teamCounts[b]-teamCounts[a];}).map(function(t) {
+        return '<div class="tag smash" style="font-size:13px;padding:8px 14px">' + t + ' \u00D7 ' + teamCounts[t] + '</div>';
+      }).join('') +
+    '</div></div>' +
+
+  '</section>';
 }
 
 // ─── TAB 5: AI STACK ──────────────────────────────────────────────────────────
