@@ -1678,6 +1678,8 @@ function renderSettings() {
 
       // Live Data
       '<div class="settings-card"><h3>Live Data</h3>' +
+        '<button class="button primary" onclick="fetchLiveLineups()" style="margin-bottom:8px">\u{1F4CB} Sync Live Lineups</button>' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Lineups: ' + (state.lineupsStatus.status === 'ok' ? '<span style="color:#00ff9c">' + (state.lineupsStatus.count || 0) + ' games from ' + (state.lineupsStatus.source || '?') + '</span>' : state.lineupsStatus.status) + '</div>' +
         '<button class="button" onclick="syncWeatherForSlate()" style="margin-bottom:8px">\u{1F326} Sync Weather</button>' +
         '<button class="button" onclick="syncOddsForSlate()">\u{1F4B0} Sync Odds</button>' +
         '<div style="font-size:12px;color:var(--muted);margin-top:10px">Weather: ' + (state.liveSync.weather.status || 'idle') + ' \u00B7 Odds: ' + (state.liveSync.odds.status || 'idle') + '</div></div>' +

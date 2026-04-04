@@ -755,6 +755,7 @@ async function loadSlate(){
     if(state.apiConfig.autoSyncWeather||state.apiConfig.autoSyncOdds)try{await syncLiveFeeds();}catch(e){console.warn(e);}
     try{if(typeof autoPullDKSalaries==='function')await autoPullDKSalaries();else await syncDKSalaries();}catch(e){console.warn('DK sync:',e);}
     try{await syncPlayerProps();}catch(e){console.warn('Props sync:',e);}
+    try{if(typeof fetchLiveLineups==='function')await fetchLiveLineups();}catch(e){console.warn('Lineups:',e);}
   }catch(err){console.error(err);state.games=[];state.stackRows=[];state.teamEdges=[];state.selectedGameData=null;}
   finally{state.loading=false;buildHero();if(typeof render==='function')render();}
 }
@@ -1026,4 +1027,67 @@ function switchSlate(slateId) {
   if (typeof render === 'function') render();
 }
 window.switchSlate = switchSlate;
+
+// ─── Live Lineups from RotoWire / MLB API ────────────────────────────────────
+state.liveLineups = null;
+state.lineupsStatus = { status: 'idle' };
+
+async function fetchLiveLineups() {
+  state.lineupsStatus = { status: 'loading' };
+  try {
+    var resp = await fetch('/api/lineups');
+    if (!resp.ok) throw new Error('Lineups API returned ' + resp.status);
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    state.liveLineups = data;
+    state.lineupsStatus = { status: 'ok', count: data.count, source: data.source, updatedAt: data.updatedAt };
+
+    // Apply lineups to DK_CONFIRMED_LINEUPS for the AI
+    if (data.games && data.games.length && typeof window !== 'undefined') {
+      var confirmed = {};
+      data.games.forEach(function(g) {
+        if (!g.away || !g.home) return;
+        var key = g.away + '@' + g.home;
+        confirmed[key] = {
+          away: {
+            team: g.away,
+            pitcher: g.awayPitcher || 'TBD',
+            lineup: (g.awayLineup || []).map(function(p) {
+              return { order: p.order, name: p.name, pos: '', bat: '' };
+            })
+          },
+          home: {
+            team: g.home,
+            pitcher: g.homePitcher || 'TBD',
+            lineup: (g.homeLineup || []).map(function(p) {
+              return { order: p.order, name: p.name, pos: '', bat: '' };
+            })
+          }
+        };
+      });
+      window.DK_CONFIRMED_LINEUPS = confirmed;
+
+      // Build flat list
+      window.DK_LINEUP_PLAYERS = [];
+      Object.keys(confirmed).forEach(function(game) {
+        var g = confirmed[game];
+        ['away','home'].forEach(function(side) {
+          var s = g[side];
+          (s.lineup || []).forEach(function(p) {
+            window.DK_LINEUP_PLAYERS.push({
+              name: p.name, team: s.team, order: p.order, game: game, pitcher: s.pitcher
+            });
+          });
+        });
+      });
+
+      console.log('[Live Lineups] Updated ' + Object.keys(confirmed).length + ' games, ' + (window.DK_LINEUP_PLAYERS || []).length + ' players from ' + (data.source || 'unknown'));
+    }
+  } catch (err) {
+    state.lineupsStatus = { status: 'error', error: err.message };
+    console.warn('[Live Lineups] Failed:', err.message);
+  }
+  if (typeof render === 'function') render();
+}
+window.fetchLiveLineups = fetchLiveLineups;
 window.getPlayerPropLine = getPlayerPropLine;
