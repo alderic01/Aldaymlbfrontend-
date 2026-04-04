@@ -1890,12 +1890,28 @@ async function generateAIPicks() {
         salaryMap[(p.name || '').toLowerCase()] = { name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts || 0 };
       }
     });
+    // Build confirmed lineups string for Claude
+    var lineupText = '';
+    if (typeof DK_CONFIRMED_LINEUPS !== 'undefined') {
+      var lg = DK_CONFIRMED_LINEUPS;
+      Object.keys(lg).forEach(function(game) {
+        var g = lg[game];
+        lineupText += '\n' + game + ':\n';
+        ['away','home'].forEach(function(side) {
+          var s = g[side];
+          lineupText += '  ' + s.team + ' (SP: ' + s.pitcher + '): ';
+          lineupText += s.lineup.map(function(p) { return p.order + '. ' + p.name + ' (' + p.bat + ') ' + p.pos; }).join(', ');
+          lineupText += '\n';
+        });
+      });
+    }
+
     var dkSals = Object.values(salaryMap).sort(function(a,b) { return b.salary - a.salary; }).slice(0, 150);
-    console.log('[AI Picks] Sending ' + dkSals.length + ' players with salaries. Top: ' + (dkSals[0] ? dkSals[0].name + ' $' + dkSals[0].salary : 'none'));
+    console.log('[AI Picks] Sending ' + dkSals.length + ' players, ' + dkPitchers.length + ' pitchers, lineups: ' + (lineupText ? 'YES' : 'NO'));
     const resp = await fetch('/api/ai-picks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ games, date: state.selectedDate, mode: state.aiMode, dkSalaries: dkSals, dkPitchers: dkPitchers.slice(0, 30), slate: state.activeSlate })
+      body: JSON.stringify({ games, date: state.selectedDate, mode: state.aiMode, dkSalaries: dkSals, dkPitchers: dkPitchers.slice(0, 30), slate: state.activeSlate, confirmedLineups: lineupText })
     });
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
