@@ -1088,10 +1088,19 @@ function runEliteOptimizer() {
     });
   }
 
-  // Sort by projection value (proj per $1K)
-  pool.sort(function(a, b) { return (b.proj / (b.salary / 1000)) - (a.proj / (a.salary / 1000)); });
+  // Sort by HIGHEST PROJECTION (best players first, maximize points)
+  pool.sort(function(a, b) { return b.proj - a.proj; });
 
-  // Generate multiple lineups
+  // Position eligibility check
+  function fitsSlot(p, slotPos, slotIsPitcher) {
+    if (slotIsPitcher) return p.isPitcher;
+    if (p.isPitcher) return false;
+    var allPos = p.pos.toUpperCase().split(/[\/,]/);
+    if (slotPos === 'OF') return allPos.some(function(pp) { return pp === 'OF' || pp === 'CF' || pp === 'LF' || pp === 'RF'; });
+    return allPos.some(function(pp) { return pp === slotPos; });
+  }
+
+  // Generate lineups
   var lineups = [];
   for (var li = 0; li < numLineups; li++) {
     var lineup = [];
@@ -1100,13 +1109,14 @@ function runEliteOptimizer() {
     var teamCounts = {};
     var gameSet = {};
 
-    // For diversity, slightly randomize order after first lineup
+    // Diversity: randomize slightly after first lineup
     var sortedPool = pool.slice();
     if (li > 0) {
-      sortedPool.forEach(function(p) { p._rnd = p.proj * (0.85 + Math.random() * 0.3); });
-      sortedPool.sort(function(a, b) { return (b._rnd / (b.salary / 1000)) - (a._rnd / (a.salary / 1000)); });
+      sortedPool.forEach(function(p) { p._rnd = p.proj * (0.8 + Math.random() * 0.4); });
+      sortedPool.sort(function(a, b) { return b._rnd - a._rnd; });
     }
 
+    // PASS 1: Fill each slot with highest projected eligible player
     for (var si = 0; si < SLOTS.length; si++) {
       var slot = SLOTS[si];
       var slotsLeft = SLOTS.length - lineup.length - 1;
@@ -1118,39 +1128,14 @@ function runEliteOptimizer() {
         var p = sortedPool[pi];
         if (used[p.name]) continue;
         if (p.salary > maxForThis) continue;
-
-        // Position match — handle multi-position (e.g. "C/1B", "1B/OF", "SS/2B")
-        if (slot.isPitcher) {
-          if (!p.isPitcher) continue;
-        } else {
-          if (p.isPitcher) continue;
-          var allPos = p.pos.toUpperCase().split(/[\/,]/);
-          var matched = false;
-          if (slot.pos === 'OF') {
-            matched = allPos.some(function(pp) { return pp === 'OF' || pp === 'CF' || pp === 'LF' || pp === 'RF'; });
-          } else if (slot.pos === 'C') {
-            matched = allPos.some(function(pp) { return pp === 'C'; });
-          } else if (slot.pos === '1B') {
-            matched = allPos.some(function(pp) { return pp === '1B'; });
-          } else if (slot.pos === '2B') {
-            matched = allPos.some(function(pp) { return pp === '2B'; });
-          } else if (slot.pos === '3B') {
-            matched = allPos.some(function(pp) { return pp === '3B'; });
-          } else if (slot.pos === 'SS') {
-            matched = allPos.some(function(pp) { return pp === 'SS'; });
-          }
-          if (!matched) continue;
-        }
-
-        // Max 5 hitters per team
+        if (!fitsSlot(p, slot.pos, slot.isPitcher)) continue;
         if (!p.isPitcher && (teamCounts[p.team] || 0) >= 5) continue;
-
         pick = p;
         break;
       }
 
       if (pick) {
-        lineup.push({ ...pick, slotLabel: slot.label, slotId: slot.id });
+        lineup.push(Object.assign({}, pick, { slotLabel: slot.label, slotId: slot.id }));
         used[pick.name] = true;
         salaryUsed += pick.salary;
         if (!pick.isPitcher) teamCounts[pick.team] = (teamCounts[pick.team] || 0) + 1;
@@ -1158,7 +1143,73 @@ function runEliteOptimizer() {
       }
     }
 
-    // Validate: 2+ games
+    // PASS 2: Upgrade — spend remaining salary by swapping cheap players for better ones
+    var remaining = CAP - salaryUsed;
+    var upgradeRounds = 0;
+    while (remaining > 500 && upgradeRounds < 40) {
+      upgradeRounds++;
+      // Find cheapest hitter in lineup
+      var cheapIdx = -1, cheapSal = Infinity;
+      for (var ci = 0; ci < lineup.length; ci++) {
+        if (lineup[ci].isPitcher) continue;
+        if (lineup[ci].salary < cheapSal) { cheapSal = lineup[ci].salary; cheapIdx = ci; }
+      }
+      if (cheapIdx < 0) break;
+
+      var cheap = lineup[cheapIdx];
+      var maxBudget = cheap.salary + remaining;
+
+      // Find highest-projected upgrade for this slot
+      var upgrade = null;
+      for (var ui = 0; ui < sortedPool.length; ui++) {
+        var u = sortedPool[ui];
+        if (used[u.name]) continue;
+        if (u.salary > maxBudget || u.salary <= cheap.salary) continue;
+        if (u.proj <= cheap.proj) continue;
+        if (!fitsSlot(u, cheap.slotLabel, false)) continue;
+        if ((teamCounts[u.team] || 0) >= 5 && u.team !== cheap.team) continue;
+        upgrade = u;
+        break;
+      }
+
+      if (upgrade) {
+        delete used[cheap.name];
+        used[upgrade.name] = true;
+        salaryUsed = salaryUsed - cheap.salary + upgrade.salary;
+        remaining = CAP - salaryUsed;
+        if (cheap.team !== upgrade.team) {
+          teamCounts[cheap.team] = Math.max(0, (teamCounts[cheap.team] || 0) - 1);
+          teamCounts[upgrade.team] = (teamCounts[upgrade.team] || 0) + 1;
+        }
+        gameSet[upgrade.gamePk] = true;
+        lineup[cheapIdx] = Object.assign({}, upgrade, { slotLabel: cheap.slotLabel, slotId: cheap.slotId });
+      } else {
+        break;
+      }
+    }
+
+    // Also try upgrading pitchers
+    remaining = CAP - salaryUsed;
+    if (remaining > 500) {
+      for (var pi2 = 0; pi2 < lineup.length; pi2++) {
+        if (!lineup[pi2].isPitcher) continue;
+        var cheapP = lineup[pi2];
+        var maxP = cheapP.salary + remaining;
+        for (var upi = 0; upi < sortedPool.length; upi++) {
+          var up = sortedPool[upi];
+          if (!up.isPitcher || used[up.name]) continue;
+          if (up.salary > maxP || up.salary <= cheapP.salary || up.proj <= cheapP.proj) continue;
+          delete used[cheapP.name];
+          used[up.name] = true;
+          salaryUsed = salaryUsed - cheapP.salary + up.salary;
+          remaining = CAP - salaryUsed;
+          gameSet[up.gamePk] = true;
+          lineup[pi2] = Object.assign({}, up, { slotLabel: cheapP.slotLabel, slotId: cheapP.slotId });
+          break;
+        }
+      }
+    }
+
     var gameCount = Object.keys(gameSet).length;
     var totalSalary = lineup.reduce(function(s, p) { return s + p.salary; }, 0);
     var totalProj = lineup.reduce(function(s, p) { return s + p.proj; }, 0);
@@ -1174,6 +1225,8 @@ function runEliteOptimizer() {
       stackTeam: stackTeam
     });
   }
+
+  lineups.sort(function(a, b) { return b.totalProj - a.totalProj; });
 
   state.optimizerResults = lineups;
   if (typeof render === 'function') render();
