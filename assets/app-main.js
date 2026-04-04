@@ -273,20 +273,21 @@ function renderDashboard() {
 
   return '<div class="dash">' +
 
-    // Row 1: Live Games Ticker
+    // Row 1: Games Grid (clickable)
     '<div class="dash-section">' +
-      '<div class="dash-header"><span class="dash-dot live"></span> LIVE & UPCOMING <span class="dash-count">' + state.games.length + ' games</span></div>' +
-      '<div class="dash-ticker">' +
-        allSorted.slice(0, 8).map(function(g) {
+      '<div class="dash-header"><span class="dash-dot live"></span> TODAY\'S GAMES — Click any game for stacks <span class="dash-count">' + state.games.length + ' games</span></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:0 0 8px">' +
+        allSorted.slice(0, 12).map(function(g) {
           var isLive = g.status === 'Live';
           var isFinal = g.status === 'Final';
-          return '<div class="dash-game ' + (isLive ? 'live' : (isFinal ? 'final' : '')) + '" data-game="' + g.gamePk + '" onclick="openGameStack(' + g.gamePk + ')" style="cursor:pointer">' +
+          var isSelected = state._dashGameStack && state._dashGameStack.game && state._dashGameStack.game.gamePk === g.gamePk;
+          return '<button class="dash-game-btn ' + (isLive ? 'live' : '') + (isSelected ? ' selected' : '') + '" onclick="window.openGameStack(' + g.gamePk + ')">' +
             '<div class="dash-game-status">' + (isLive ? '<span class="dash-live-dot"></span> LIVE' : (isFinal ? 'FINAL' : fmtTime(g.gameDate))) + '</div>' +
             '<div class="dash-game-teams">' +
               '<div class="dash-game-row"><span class="dash-team">' + g.away.abbr + '</span><span class="dash-score">' + g.away.score + '</span></div>' +
               '<div class="dash-game-row"><span class="dash-team">' + g.home.abbr + '</span><span class="dash-score">' + g.home.score + '</span></div>' +
             '</div>' +
-          '</div>';
+          '</button>';
         }).join('') +
       '</div>' +
     '</div>' +
