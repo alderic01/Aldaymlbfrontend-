@@ -88,11 +88,18 @@ function getPlayerAvatar(name, team) {
 
 // ─── DFS BATTER — Uses AI image if available, SVG fallback ───────────────────
 function playerCardImage(id, teamColor, accentColor, jerseyNum, teamAbbr, playerName) {
+  // Priority 1: Nano Banana team avatar (always available, fast CDN)
+  var teamImg = (typeof getTeamAvatar === 'function') ? getTeamAvatar(teamAbbr) : '';
+  if (teamImg) {
+    return '<img src="' + escapeHtml(teamImg) + '" class="dfs-batter-img" alt="' + escapeHtml(teamAbbr) + '" loading="lazy" />';
+  }
+  // Priority 2: AI-generated player avatar (slow, per-player)
   var imgUrl = getPlayerAvatar(playerName, teamAbbr);
   if (imgUrl) {
     return '<img src="' + escapeHtml(imgUrl) + '" class="dfs-batter-img" alt="' + escapeHtml(playerName) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'" />' +
       '<div style="display:none">' + batterSVG(id, teamColor, accentColor, jerseyNum, teamAbbr) + '</div>';
   }
+  // Priority 3: SVG cartoon batter fallback
   return batterSVG(id, teamColor, accentColor, jerseyNum, teamAbbr);
 }
 
