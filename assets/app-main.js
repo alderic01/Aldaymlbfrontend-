@@ -43,6 +43,56 @@ function runScoreColor(score) {
   return '#ff3b3b';
 }
 
+// ─── DFS BATTER SILHOUETTE SVG ────────────────────────────────────────────────
+function batterSVG(id, teamColor, accentColor, jerseyNum) {
+  var tc = teamColor || '#1e293b';
+  var ac = accentColor || '#00ff9c';
+  var num = jerseyNum || '';
+  return '<svg viewBox="0 0 100 140" class="dfs-batter-svg" fill="none">' +
+    '<defs>' +
+      '<linearGradient id="bg' + id + '" x1="50" y1="0" x2="50" y2="140" gradientUnits="userSpaceOnUse">' +
+        '<stop offset="0" stop-color="#c0c8d4" stop-opacity=".6"/>' +
+        '<stop offset=".5" stop-color="#8896a8" stop-opacity=".4"/>' +
+        '<stop offset="1" stop-color="#4a5568" stop-opacity=".2"/>' +
+      '</linearGradient>' +
+      '<linearGradient id="body' + id + '" x1="40" y1="30" x2="60" y2="120" gradientUnits="userSpaceOnUse">' +
+        '<stop offset="0" stop-color="#d0d8e4" stop-opacity=".7"/>' +
+        '<stop offset="1" stop-color="#6b7a8d" stop-opacity=".35"/>' +
+      '</linearGradient>' +
+      '<linearGradient id="bat' + id + '" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#e8d8b0" stop-opacity=".9"/>' +
+        '<stop offset="1" stop-color="#a08850" stop-opacity=".7"/>' +
+      '</linearGradient>' +
+    '</defs>' +
+    // Helmet
+    '<ellipse cx="42" cy="22" rx="14" ry="15" fill="url(#bg' + id + ')" stroke="' + ac + '" stroke-width="1" stroke-opacity=".4"/>' +
+    '<ellipse cx="42" cy="19" rx="15" ry="8" fill="' + tc + '" opacity=".5"/>' +
+    // Head/face
+    '<circle cx="42" cy="26" r="10" fill="url(#bg' + id + ')"/>' +
+    // Body — batting stance, leaning forward
+    '<path d="M30 48c0-6 4-12 12-12s14 6 14 12v32c0 3-2 5-5 5H35c-3 0-5-2-5-5V48z" fill="url(#body' + id + ')" stroke="' + ac + '" stroke-width=".8" stroke-opacity=".25"/>' +
+    // Front arm (reaching to bat)
+    '<path d="M44 44c4-2 10-4 16-2" stroke="url(#body' + id + ')" stroke-width="6" stroke-linecap="round"/>' +
+    // Back arm
+    '<path d="M34 46c-3-1-6-3-8-2" stroke="url(#body' + id + ')" stroke-width="5" stroke-linecap="round"/>' +
+    // Bat — angled up in stance
+    '<rect x="58" y="14" width="4" height="52" rx="2" transform="rotate(20 58 14)" fill="url(#bat' + id + ')" stroke="#c8b070" stroke-width=".5" stroke-opacity=".4"/>' +
+    // Bat knob
+    '<circle cx="55" cy="62" r="3" fill="#a08850" opacity=".7"/>' +
+    // Front leg
+    '<path d="M38 83l-6 32" stroke="url(#body' + id + ')" stroke-width="7" stroke-linecap="round"/>' +
+    // Back leg
+    '<path d="M46 83l8 30" stroke="url(#body' + id + ')" stroke-width="7" stroke-linecap="round"/>' +
+    // Front shoe
+    '<ellipse cx="30" cy="116" rx="8" ry="4" fill="#333" opacity=".7"/>' +
+    // Back shoe
+    '<ellipse cx="56" cy="114" rx="8" ry="4" fill="#333" opacity=".7"/>' +
+    // Jersey number
+    '<text x="38" y="70" text-anchor="middle" font-size="16" font-weight="900" fill="' + ac + '" opacity=".7" font-family="Barlow Condensed">' + num + '</text>' +
+    // Fire icons for high grades (rendered via CSS glow instead)
+  '</svg>';
+}
+
 // ─── RENDER DISPATCHER ─────────────────────────────────────────────────────────
 function render() {
   if (!view) { console.error('RENDER: #view element not found'); return; }
@@ -440,13 +490,7 @@ function renderScouting() {
           '<div class="dfs-card-grade-badge ' + gradeClass(letter) + '">' + letter + '</div>' +
           // Center: batter silhouette
           '<div class="dfs-card-body">' +
-            '<svg viewBox="0 0 100 130" class="dfs-batter-svg" fill="none">' +
-              '<defs><linearGradient id="bg' + i + '" x1="50" y1="0" x2="50" y2="130" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="' + tColor + '" stop-opacity=".3"/><stop offset="1" stop-color="' + tColor + '" stop-opacity=".05"/></linearGradient></defs>' +
-              '<circle cx="50" cy="26" r="16" fill="url(#bg' + i + ')" stroke="' + gradeColor + '" stroke-width="1.5" stroke-opacity=".5"/>' +
-              '<path d="M32 56c0-10 8-18 18-18s18 8 18 18v38c0 3-2.5 5.5-5.5 5.5h-25c-3 0-5.5-2.5-5.5-5.5V56z" fill="url(#bg' + i + ')" stroke="' + gradeColor + '" stroke-width="1" stroke-opacity=".3"/>' +
-              '<rect x="66" y="36" width="5" height="48" rx="2.5" transform="rotate(25 66 36)" fill="' + gradeColor + '" opacity=".4"/>' +
-              '<text x="50" y="80" text-anchor="middle" font-size="22" font-weight="900" fill="' + gradeColor + '" opacity=".8" font-family="Barlow Condensed">' + (h.lineupOrder || '') + '</text>' +
-            '</svg>' +
+            batterSVG('sc' + i, tColor, gradeColor, h.lineupOrder || '') +
           '</div>' +
           // Name
           '<div class="dfs-card-name">' + escapeHtml(h.name) + '</div>' +
@@ -852,12 +896,7 @@ function renderBudgetBeasts() {
             '<div class="dfs-card-grade-badge" style="color:' + gColor + '">' + b.grade + '</div>' +
             // Batter silhouette
             '<div class="dfs-card-body">' +
-              '<svg viewBox="0 0 100 130" class="dfs-batter-svg" fill="none">' +
-                '<defs><linearGradient id="bb' + i + '" x1="50" y1="0" x2="50" y2="130" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="' + tColor + '" stop-opacity=".3"/><stop offset="1" stop-color="' + tColor + '" stop-opacity=".05"/></linearGradient></defs>' +
-                '<circle cx="50" cy="26" r="16" fill="url(#bb' + i + ')" stroke="' + gColor + '" stroke-width="1.5" stroke-opacity=".5"/>' +
-                '<path d="M32 56c0-10 8-18 18-18s18 8 18 18v38c0 3-2.5 5.5-5.5 5.5h-25c-3 0-5.5-2.5-5.5-5.5V56z" fill="url(#bb' + i + ')" stroke="' + gColor + '" stroke-width="1" stroke-opacity=".3"/>' +
-                '<rect x="66" y="36" width="5" height="48" rx="2.5" transform="rotate(25 66 36)" fill="' + gColor + '" opacity=".4"/>' +
-              '</svg>' +
+              batterSVG('bb' + i, tColor, gColor, '') +
             '</div>' +
             // Name
             '<div class="dfs-card-name">' + escapeHtml(b.name) + '</div>' +

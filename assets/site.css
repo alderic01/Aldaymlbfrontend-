@@ -1873,3 +1873,13 @@ body::before {
   box-shadow: 0 0 16px rgba(255,208,0,.5);
   cursor: grab;
 }
+
+/* Updated batter SVG sizing for new detailed silhouette */
+.dfs-batter-svg {
+  width: 85px;
+  height: 120px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(200,210,224,.1));
+}
+.dfs-card-body {
+  min-height: 150px;
+}
