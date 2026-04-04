@@ -1836,6 +1836,38 @@ async function generateAIPicks() {
       awayEra: g.awayPitcher.era, homeEra: g.homePitcher.era,
       park: parkFor(g.venue.name)
     }));
+
+    // Get DK slate pitchers (these are the SOURCE OF TRUTH for today's starters)
+    var dkPitchers = [];
+    var salarySource = state.dkSalaries || {};
+    Object.values(salarySource).forEach(function(p) {
+      if (!p.salary || p.salary < 6000) return;
+      var pos = (p.pos || '').toUpperCase();
+      if (pos === 'SP' || pos === 'RP' || pos === 'P') {
+        dkPitchers.push({ name: p.name, team: p.team, salary: p.salary, avgPts: p.avgPts || 0 });
+      }
+    });
+    // Also from hardcoded DK_PLAYERS
+    if (typeof DK_PLAYERS !== 'undefined' && Array.isArray(DK_PLAYERS)) {
+      DK_PLAYERS.forEach(function(p) {
+        if (p.salary >= 6000 && /^(SP|RP)$/i.test(p.pos)) {
+          if (!dkPitchers.some(function(dp) { return dp.name.toLowerCase() === p.name.toLowerCase(); })) {
+            dkPitchers.push({ name: p.name, team: p.team, salary: p.salary, avgPts: p.avgPts || 0 });
+          }
+        }
+      });
+    }
+    // From main slate
+    if (typeof DK_SLATE_MAIN !== 'undefined' && state.activeSlate === 'main') {
+      DK_SLATE_MAIN.players.forEach(function(p) {
+        if (p.salary >= 6000 && /^(SP|RP)$/i.test(p.pos)) {
+          if (!dkPitchers.some(function(dp) { return dp.name.toLowerCase() === p.name.toLowerCase(); })) {
+            dkPitchers.push({ name: p.name, team: p.team, salary: p.salary, avgPts: p.avgPts || 0 });
+          }
+        }
+      });
+    }
+    dkPitchers.sort(function(a, b) { return b.salary - a.salary; });
     // Build salary data — prefer players with real salaries (>$0)
     var salaryMap = {};
     // First: hardcoded DK_PLAYERS (always have real salaries from dk-salaries-inject.js)
@@ -1863,7 +1895,7 @@ async function generateAIPicks() {
     const resp = await fetch('/api/ai-picks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ games, date: state.selectedDate, mode: state.aiMode, dkSalaries: dkSals })
+      body: JSON.stringify({ games, date: state.selectedDate, mode: state.aiMode, dkSalaries: dkSals, dkPitchers: dkPitchers.slice(0, 30), slate: state.activeSlate })
     });
     const data = await resp.json();
     if (data.error) throw new Error(data.error);

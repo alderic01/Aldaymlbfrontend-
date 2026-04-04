@@ -10,12 +10,19 @@ export default async function handler(req, res) {
   try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body; }
   catch { body = {}; }
 
-  const { games = [], date = '', mode = 'picks', dkSalaries = [] } = body;
+  const { games = [], date = '', mode = 'picks', dkSalaries = [], dkPitchers = [], slate: activeSlate = 'early' } = body;
 
-  // Build slate string
+  // Build slate string from games
   const slate = games.length
     ? games.map(g => `${g.away} @ ${g.home} | ${g.venue} | Away: ${g.awayPitcher} ERA ${g.awayEra} | Home: ${g.homePitcher} ERA ${g.homeEra}`).join('\n')
     : 'No slate — give general MLB DFS advice.';
+
+  // Build DK pitchers context (SOURCE OF TRUTH for who is pitching)
+  let pitcherContext = '';
+  if (dkPitchers.length) {
+    pitcherContext = '\n\nDRAFTKINGS STARTING PITCHERS (use ONLY these pitchers — this is the official DK slate):\n' +
+      dkPitchers.map(p => `${p.name} (${p.team}) $${p.salary.toLocaleString()}${p.avgPts ? ' ' + p.avgPts.toFixed(1) + 'pts' : ''}`).join('\n');
+  }
 
   // Build DK salary context grouped by position
   let dkContext = '';
@@ -63,7 +70,7 @@ CRITICAL SALARY RULE: Total MUST be $50,000 or less. Add up every salary and ver
 
 Slate (${date}):
 ${slate}
-${dkContext}
+${dkContext}${pitcherContext}
 
 ${dkRules}
 
@@ -84,7 +91,7 @@ Use ONLY players and salaries from the data above. ADD UP THE SALARIES CAREFULLY
 
     stacks: `MLB GPP specialist. Slate (${date}):
 ${slate}
-${dkContext}
+${dkContext}${pitcherContext}
 
 ${dkRules}
 
@@ -95,7 +102,7 @@ ADD UP ALL SALARIES AND VERIFY UNDER $50,000.`,
 
     edges: `Sharp MLB DFS edge finder. Slate (${date}):
 ${slate}
-${dkContext}
+${dkContext}${pitcherContext}
 
 ${dkRules}
 
