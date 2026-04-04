@@ -56,8 +56,10 @@ ${dkContext}
 
 ${dkRules}
 
-BUILD EXACTLY 1 OPTIMAL LINEUP with all 10 roster spots filled:
-P1: [Name] ([Team]) - $[Salary] - [Why: matchup, K upside, win prob]
+BUILD EXACTLY 3 DIFFERENT LINEUPS, each with all 10 roster spots filled. Each lineup must use different core stacks for lineup diversity.
+
+LINEUP 1 — CASH/SAFE (highest floor):
+P1: [Name] ([Team]) - $[Salary] - [Why]
 P2: [Name] ([Team]) - $[Salary] - [Why]
 C: [Name] ([Team]) - $[Salary] - [Why]
 1B: [Name] ([Team]) - $[Salary] - [Why]
@@ -67,12 +69,17 @@ SS: [Name] ([Team]) - $[Salary] - [Why]
 OF1: [Name] ([Team]) - $[Salary] - [Why]
 OF2: [Name] ([Team]) - $[Salary] - [Why]
 OF3: [Name] ([Team]) - $[Salary] - [Why]
+TOTAL: $[sum] (≤$50,000) | PROJ: [pts] | STACK: [team]
 
-TOTAL SALARY: $[sum] (MUST be ≤ $50,000)
-PROJECTED POINTS: [estimate]
-STACK CORRELATION: [which team stack and why]
+LINEUP 2 — GPP/TOURNAMENT (highest ceiling):
+[Same 10-slot format]
+TOTAL: $[sum] (≤$50,000) | PROJ: [pts] | STACK: [team]
 
-Use EXACT DK salaries provided. Verify the total. Prioritize: ceiling, correlation, park factors, pitcher matchups, ownership leverage. Be specific with matchup reasoning for each pick.`,
+LINEUP 3 — CONTRARIAN (low ownership, high upside):
+[Same 10-slot format]
+TOTAL: $[sum] (≤$50,000) | PROJ: [pts] | STACK: [team]
+
+Use EXACT DK salaries provided. Verify each total ≤ $50,000. Each lineup must use a DIFFERENT primary stack team. Prioritize: ceiling, correlation, park factors, pitcher matchups, ownership leverage. Be specific with matchup reasoning.`,
 
     stacks: `You are the #1 MLB GPP specialist. Slate (${date}):
 ${slate}
