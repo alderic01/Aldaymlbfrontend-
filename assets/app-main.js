@@ -651,7 +651,14 @@ function renderPitching() {
     { p: g.awayPitcher, game: g, side: 'away', opp: g.home.abbr, team: g.away.abbr },
     { p: g.homePitcher, game: g, side: 'home', opp: g.away.abbr, team: g.home.abbr }
   ]; }).filter(function(x) { return x.p && x.p.name && x.p.name !== 'TBD'; })
-   .map(function(x) { return Object.assign({}, x, { rank: pitcherEdgeRank(x.p, x.game, x.side), tend: pitcherTendencies(x.p) }); })
+   .map(function(x) {
+     var spot = (typeof pitcherSpotScore === 'function') ? pitcherSpotScore(x.p, x.game, x.side) : null;
+     return Object.assign({}, x, {
+       rank: spot ? spot.spotScore : pitcherEdgeRank(x.p, x.game, x.side),
+       tend: pitcherTendencies(x.p),
+       spot: spot
+     });
+   })
    .sort(function(a, b) { return b.rank - a.rank; });
 
   // Grade pitchers A-F based on rank
@@ -711,18 +718,47 @@ function renderPitching() {
             '</div>' +
             '<div class="scout-report-grade" style="color:' + g.color + '">' + g.letter + ' <span style="font-size:16px;color:var(--muted)">' + x.rank + '/99</span></div>' +
           '</div>' +
+          // 7-Factor breakdown with bars
+          (x.spot ? (function() {
+            var f = x.spot.factors;
+            var factors = [
+              {label:'K Edge',val:f.kEdge,desc:'Strikeout rate, swing & miss, CSW'},
+              {label:'Command',val:f.command,desc:'Walk control, zone, first pitch strikes'},
+              {label:'Arsenal Fit',val:f.arsenal,desc:'Pitch mix vs lineup, platoon'},
+              {label:'Run Prevention',val:f.runPrev,desc:'Park, weather, hard contact suppression'},
+              {label:'Win Support',val:f.winSupport,desc:'Run support, bullpen, opponent weakness'},
+              {label:'Workload',val:f.workload,desc:'Expected IP, manager trust, leash'},
+              {label:'Recent Trend',val:f.trend,desc:'Velocity, whiff, command trajectory'}
+            ];
+            return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">' +
+              '<div class="stat-box"><div class="label">Spot Score</div><div class="value" style="color:' + g.color + '">' + x.spot.spotScore + '</div></div>' +
+              '<div class="stat-box"><div class="label">Win Score</div><div class="value">' + x.spot.winScore + '</div></div>' +
+              '<div class="stat-box"><div class="label">DFS Ceiling</div><div class="value" style="color:#ffd000">' + x.spot.dfsScore + '</div></div>' +
+              '<div class="stat-box"><div class="label">Vegas Score</div><div class="value">' + x.spot.vegasScore + '</div></div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+              factors.map(function(fc) {
+                var barColor = fc.val >= 75 ? '#00ff9c' : fc.val >= 55 ? '#ffd000' : '#ff3b3b';
+                return '<div style="background:rgba(6,14,26,.4);border:1px solid rgba(30,41,59,.4);border-radius:12px;padding:10px 12px">' +
+                  '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px">' + fc.label + '</span><span style="font-family:JetBrains Mono;font-size:13px;font-weight:800;color:' + barColor + '">' + fc.val + '</span></div>' +
+                  '<div style="height:6px;border-radius:3px;background:rgba(30,41,59,.5);overflow:hidden"><div style="height:100%;width:' + fc.val + '%;background:' + barColor + ';border-radius:3px;box-shadow:0 0 6px ' + barColor + '"></div></div>' +
+                  '<div style="font-size:10px;color:#475569;margin-top:4px">' + fc.desc + '</div>' +
+                '</div>';
+              }).join('') +
+            '</div>';
+          })() :
           '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">' +
             '<div class="stat-box"><div class="label">Vulnerability</div><div class="value" style="color:' + (weak >= 70 ? '#00ff9c' : weak >= 55 ? '#ffd000' : '#ff3b3b') + '">' + weak + '</div></div>' +
             '<div class="stat-box"><div class="label">Profile</div><div class="value" style="font-size:16px">' + escapeHtml(x.tend.profile) + '</div></div>' +
             '<div class="stat-box"><div class="label">Exp IP</div><div class="value">' + fmtNum(x.tend.expIP, 1) + '</div></div>' +
-          '</div>' +
+          '</div>') +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' +
             '<span class="tag ' + (weak >= 70 ? 'smash' : weak >= 55 ? 'strong' : weak >= 45 ? 'watch' : 'fade') + '">' + (weak >= 70 ? '\u{1F525} SMASH SPOT' : weak >= 55 ? 'ATTACKABLE' : weak >= 45 ? 'HOLD' : '\u{1F6E1} ACE') + '</span>' +
             (p.pitchHand === 'L' ? '<span class="tag strong">LHP \u2014 Stack RHB</span>' : '<span class="tag watch">RHP \u2014 Stack LHB</span>') +
             (hr9 >= 1.3 ? '<span class="tag smash">HR PRONE</span>' : '') +
             (k9 >= 10 ? '<span class="tag fade">\u26A0 HIGH K</span>' : '') +
           '</div>' +
-          '<div class="synopsis">' + (x.tend.notes.length ? x.tend.notes.map(function(n) { return escapeHtml(n); }).join('. ') + '.' : 'Standard matchup profile.') + ' Attack score: ' + x.tend.attack + '/90.</div>' +
+          '<div class="synopsis">' + escapeHtml(x.tend.profile) + '. ' + (x.tend.notes.length ? x.tend.notes.map(function(n) { return escapeHtml(n); }).join('. ') + '.' : '') + ' Exp ' + fmtNum(x.tend.expIP, 1) + ' IP. Attack: ' + x.tend.attack + '/90.</div>' +
           '<button class="button" onclick="event.stopPropagation();toggleScoutReport(\'' + cardId + '\')" style="margin-top:12px;width:100%">Close Report</button>' +
         '</div>' +
       '</div>';

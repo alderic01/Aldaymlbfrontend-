@@ -107,6 +107,89 @@ function liveStatusPill(sync){if(!sync||sync.status==='idle')return'<span class=
 function gradeBadge(score){if(score>=88)return['A','smash'];if(score>=78)return['B+','strong'];if(score>=68)return['B','watch'];return['C','fade'];}
 function gameBadge(status){if(status==='Live')return'live';if(status==='Final')return'final';return'preview';}
 
+// ─── Advanced Pitcher Grading (7-Factor Weighted Model) ──────────────────────
+function pitcherSpotScore(p, game, side) {
+  var era = Number(p.era || 4.3), whip = Number(p.whip || 1.3), k9 = Number(p.k9 || 8.6), hr9 = Number(p.hr9 || 1.15);
+  var park = parkFor(game.venue ? game.venue.name : '');
+  var m = getMarket(game);
+  var oppSide = side === 'home' ? 'away' : 'home';
+  var oppEdge = teamEdgeScore(game, oppSide);
+
+  // K Edge (0-100): strikeout potential vs this lineup
+  var kRate = Math.min(100, Math.max(0, (k9 - 5) * 10)); // normalize K/9 to 0-100
+  var swStr = Math.min(100, Math.max(0, kRate * 0.8)); // estimate swinging strike from K rate
+  var csw = Math.min(100, Math.max(0, kRate * 0.9 + 10)); // CSW estimate
+  var oppKvuln = Math.min(100, Math.max(0, oppEdge * 0.6)); // opponent K vulnerability
+  var kEdge = Math.round(kRate * 0.32 + swStr * 0.28 + csw * 0.22 + oppKvuln * 0.18);
+
+  // Command (0-100): walk control + zone
+  var bbSafety = Math.min(100, Math.max(0, 100 - (whip - 0.9) * 80)); // lower WHIP = better command
+  var fps = Math.min(100, Math.max(0, 70 - (whip - 1.0) * 30)); // first pitch strike estimate
+  var zoneCtl = Math.min(100, Math.max(0, 80 - (era - 3.0) * 10));
+  var command = Math.round(bbSafety * 0.42 + fps * 0.30 + zoneCtl * 0.28);
+
+  // Arsenal Fit (0-100): pitch mix vs lineup
+  var arsenalFit = Math.min(100, Math.max(0, 50 + (k9 - 7) * 8 - (hr9 - 1.0) * 15));
+  var platoonFit = Math.min(100, Math.max(0, 60 + (side === 'home' ? 5 : -3)));
+  var arsenal = Math.round(arsenalFit * 0.62 + platoonFit * 0.38);
+
+  // Run Prevention (0-100): park + weather + hard contact
+  var hardContactSupp = Math.min(100, Math.max(0, 80 - (hr9 - 0.8) * 25));
+  var hrSafety = Math.min(100, Math.max(0, 80 - (hr9 - 1.0) * 30));
+  var parkScore = Math.min(100, Math.max(0, 100 - (park.run - 0.85) * 100));
+  var ws = weatherScore(m);
+  var weatherSafe = Math.min(100, Math.max(0, 100 - ws));
+  var runPrev = Math.round(hardContactSupp * 0.28 + hrSafety * 0.24 + parkScore * 0.28 + weatherSafe * 0.20);
+
+  // Win Support (0-100): run support + bullpen
+  var total = Number(m.total || 8.5);
+  var ml = Number(side === 'home' ? m.homeMoneyline : m.awayMoneyline) || 0;
+  var implied = mlToImplied(ml) || 50;
+  var runSupport = Math.min(100, Math.max(0, implied * 1.5 + (total - 7) * 5));
+  var bullpenSupp = Math.min(100, Math.max(0, 65)); // default neutral
+  var oppAttack = Math.min(100, Math.max(0, 100 - oppEdge));
+  var winSupport = Math.round(runSupport * 0.40 + bullpenSupp * 0.28 + oppAttack * 0.32);
+
+  // Workload (0-100): expected innings + leash
+  var expIP = starterProjection(p);
+  var pitchCount = Math.min(100, Math.max(0, expIP * 14));
+  var managerTrust = Math.min(100, Math.max(0, expIP >= 6 ? 80 : expIP >= 5 ? 65 : 45));
+  var workload = Math.round(pitchCount * 0.55 + managerTrust * 0.45);
+
+  // Recent Trend (0-100): velocity + whiff + command trends (estimated from ERA/WHIP)
+  var veloTrend = Math.min(100, Math.max(0, 70 - (era - 3.5) * 8));
+  var whiffTrend = Math.min(100, Math.max(0, 50 + (k9 - 7.5) * 6));
+  var cmdTrend = Math.min(100, Math.max(0, 80 - (whip - 1.1) * 30));
+  var trend = Math.round(veloTrend * 0.30 + whiffTrend * 0.40 + cmdTrend * 0.30);
+
+  // Weighted Pitcher Spot Score
+  var spotScore = Math.round(
+    kEdge * 0.25 +
+    command * 0.15 +
+    arsenal * 0.15 +
+    runPrev * 0.10 +
+    winSupport * 0.15 +
+    workload * 0.10 +
+    trend * 0.10
+  );
+  spotScore = Math.max(0, Math.min(100, spotScore));
+
+  // Derived scores
+  var winScore = Math.round(winSupport * 0.34 + workload * 0.18 + runPrev * 0.16 + command * 0.16 + kEdge * 0.10 + trend * 0.06);
+  var dfsScore = Math.round(kEdge * 0.42 + arsenal * 0.18 + workload * 0.14 + trend * 0.12 + runPrev * 0.08 + command * 0.06);
+  var vegasScore = Math.round(winSupport * 0.28 + command * 0.20 + runPrev * 0.18 + workload * 0.16 + trend * 0.10 + kEdge * 0.08);
+
+  // Grade
+  var grade = spotScore >= 92 ? 'A+' : spotScore >= 85 ? 'A' : spotScore >= 76 ? 'B+' : spotScore >= 67 ? 'B' : spotScore >= 57 ? 'C' : spotScore >= 45 ? 'D' : 'F';
+
+  return {
+    spotScore: spotScore, winScore: winScore, dfsScore: dfsScore, vegasScore: vegasScore,
+    grade: grade,
+    factors: { kEdge: kEdge, command: command, arsenal: arsenal, runPrev: runPrev, winSupport: winSupport, workload: workload, trend: trend }
+  };
+}
+window.pitcherSpotScore = pitcherSpotScore;
+
 function pitcherWeakness(p={}){
   const era=Number(p.era||4.3),whip=Number(p.whip||1.3),hr9=Number(p.hr9||1.15),k9=Number(p.k9||8.6);
   let score=50;
