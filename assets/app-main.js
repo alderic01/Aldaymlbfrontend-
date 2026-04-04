@@ -515,12 +515,12 @@ function renderStacks() {
 function renderAIStack() {
   const stacks = buildSmartStacks();
   return '<section>' +
-    '<div class="section-title"><h2>\u{1F916} AI STACK — 5 LINEUPS</h2><div class="meta">AI-generated lineups using ownership, odds, grades \u00B7 Built for GPP tournaments</div></div>' +
+    '<div class="section-title"><h2>\u{1F916} AI LINEUP BUILDER</h2><div class="meta">Claude AI builds full 10-player DK Classic lineups \u00B7 $50K cap \u00B7 2P/C/1B/2B/3B/SS/3OF</div></div>' +
     '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' +
-      '<button class="button ' + (state.aiMode === 'picks' ? 'primary' : '') + '" onclick="state.aiMode=\'picks\';render()">Top Picks</button>' +
-      '<button class="button ' + (state.aiMode === 'stacks' ? 'primary' : '') + '" onclick="state.aiMode=\'stacks\';render()">Stack Ranks</button>' +
-      '<button class="button ' + (state.aiMode === 'edges' ? 'primary' : '') + '" onclick="state.aiMode=\'edges\';render()">Sharp Edges</button>' +
-      '<button class="button primary" onclick="generateAIPicks()" id="aiGenBtn">' + (state.aiLoading ? 'Generating...' : '\u26A1 Generate AI Lineups') + '</button>' +
+      '<button class="button ' + (state.aiMode === 'picks' ? 'primary' : '') + '" onclick="state.aiMode=\'picks\';render()">\u{1F3AF} Optimal Lineup</button>' +
+      '<button class="button ' + (state.aiMode === 'stacks' ? 'primary' : '') + '" onclick="state.aiMode=\'stacks\';render()">\u{1F525} 3 GPP Lineups</button>' +
+      '<button class="button ' + (state.aiMode === 'edges' ? 'primary' : '') + '" onclick="state.aiMode=\'edges\';render()">\u{1F4A1} Sharp Edges</button>' +
+      '<button class="button primary" onclick="generateAIPicks()" id="aiGenBtn">' + (state.aiLoading ? 'Generating...' : '\u26A1 Generate with Claude AI') + '</button>' +
     '</div>' +
     (state.aiError ? '<div class="card" style="padding:16px;border-color:rgba(255,59,59,.3);margin-bottom:14px"><p style="color:#ff6b6b">' + escapeHtml(state.aiError) + '</p></div>' : '') +
     (state.aiLoading ? '<div class="loading"><strong>Claude AI is analyzing ' + state.games.length + ' games...</strong><br>Generating optimal lineups based on ownership, odds, and grades.</div>' : '') +

@@ -37,10 +37,74 @@ export default async function handler(req, res) {
     dkContext = '\n\nDRAFTKINGS PRICING (salary cap $50,000 — must pick 2 SP, 1 C, 1 1B, 1 2B, 1 3B, 1 SS, 3 OF):\n' + lines.join('\n') + (budget ? '\nBudget plays under $3,600: ' + budget : '');
   }
 
+  const dkRules = `
+DK MLB CLASSIC RULES:
+- Salary cap: $50,000 (MUST NOT exceed)
+- Roster: 10 players — 2 Pitchers (P), 1 Catcher (C), 1 First Baseman (1B), 1 Second Baseman (2B), 1 Third Baseman (3B), 1 Shortstop (SS), 3 Outfielders (OF)
+- Must include players from at least 2 different MLB games
+- Max 5 hitters from any one team
+- SCORING — Hitters: Single +3, Double +5, Triple +8, HR +10, RBI +2, Run +2, BB +2, HBP +2, SB +5
+- SCORING — Pitchers: Out +0.75, K +2, Win +4, ER -2, H -0.6, BB -0.6, HBP -0.6, CG +2.5, CGSO +2.5, No-Hit +5
+- Pitcher hitting stats DO NOT count. Hitter pitching stats DO NOT count.`;
+
   const prompts = {
-    picks: `Elite MLB DFS analyst. Slate (${date}):\n${slate}${dkContext}\n\n1. TOP STACK (team + specific DK players with salaries)\n2. TOP ONE-OFF (best value under $4K)\n3. PITCHER TO TARGET (salary + matchup rationale)\n4. PITCHER TO FADE (overpriced given matchup)\n5. OPTIMAL $50K LINEUP (list all 10 slots: 2 SP, C, 1B, 2B, 3B, SS, 3 OF — include salary for each, verify total ≤$50K)\n\nUse exact DK salaries provided. Be direct.`,
-    stacks: `MLB GPP specialist. Slate (${date}):\n${slate}${dkContext}\n\nTop 3 GPP stacks within $50K DK cap. Each: team, pitcher, core hitters with DK salary, total stack cost, why.`,
-    edges: `Sharp MLB edge finder. Slate (${date}):\n${slate}${dkContext}\n\nOne total edge, one ML value, one DFS leverage play (include DK salary and value context). 2-3 sentences each.`
+    picks: `You are the #1 MLB DFS optimizer. Build the BEST possible DraftKings MLB Classic lineup for today.
+
+Slate (${date}):
+${slate}
+${dkContext}
+
+${dkRules}
+
+BUILD EXACTLY 1 OPTIMAL LINEUP with all 10 roster spots filled:
+P1: [Name] ([Team]) - $[Salary] - [Why: matchup, K upside, win prob]
+P2: [Name] ([Team]) - $[Salary] - [Why]
+C: [Name] ([Team]) - $[Salary] - [Why]
+1B: [Name] ([Team]) - $[Salary] - [Why]
+2B: [Name] ([Team]) - $[Salary] - [Why]
+3B: [Name] ([Team]) - $[Salary] - [Why]
+SS: [Name] ([Team]) - $[Salary] - [Why]
+OF1: [Name] ([Team]) - $[Salary] - [Why]
+OF2: [Name] ([Team]) - $[Salary] - [Why]
+OF3: [Name] ([Team]) - $[Salary] - [Why]
+
+TOTAL SALARY: $[sum] (MUST be ≤ $50,000)
+PROJECTED POINTS: [estimate]
+STACK CORRELATION: [which team stack and why]
+
+Use EXACT DK salaries provided. Verify the total. Prioritize: ceiling, correlation, park factors, pitcher matchups, ownership leverage. Be specific with matchup reasoning for each pick.`,
+
+    stacks: `You are the #1 MLB GPP specialist. Slate (${date}):
+${slate}
+${dkContext}
+
+${dkRules}
+
+Build 3 COMPLETE 10-player DraftKings Classic lineups optimized for GPP tournaments.
+
+For EACH lineup show all 10 slots (P1, P2, C, 1B, 2B, 3B, SS, OF1, OF2, OF3) with:
+- Player name, team, salary, and projected DK points
+- Total salary (must be ≤ $50,000)
+- Core stack (which team, how many players)
+- Bring-back (correlation from opposing team)
+- Why this lineup wins a GPP (ownership leverage, ceiling, correlation)
+
+Use EXACT DK salaries. Verify each total ≤ $50K.`,
+
+    edges: `Sharp MLB DFS edge finder. Slate (${date}):
+${slate}
+${dkContext}
+
+${dkRules}
+
+Give me:
+1. SMASH SPOT: Best game environment for stacking (team, pitcher matchup, park, weather, why)
+2. CONTRARIAN PLAY: Low-owned player with high ceiling (name, salary, ownership estimate, why)
+3. PITCHER LOCK: Best pitcher to build around (name, salary, K projection, win prob, matchup edge)
+4. VALUE PLAY: Best sub-$3,500 hitter (name, salary, why the price is wrong)
+5. FADE: Most overpriced player to avoid (name, salary, why)
+
+Be specific with stats, salaries, and reasoning.`
   };
 
   try {
@@ -53,7 +117,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [{ role: 'user', content: prompts[mode] || prompts.picks }]
       })
     });
