@@ -107,11 +107,64 @@ function liveStatusPill(sync){if(!sync||sync.status==='idle')return'<span class=
 function gradeBadge(score){if(score>=88)return['A','smash'];if(score>=78)return['B+','strong'];if(score>=68)return['B','watch'];return['C','fade'];}
 function gameBadge(status){if(status==='Live')return'live';if(status==='Final')return'final';return'preview';}
 
+// ─── Pitcher 2-Year Stat Tier + Spring Training ──────────────────────────────
+var PITCHER_SPRING_2026 = {
+  // Elite Spring (+5)
+  'Chris Sale':5,'Corbin Burnes':5,'Zack Wheeler':5,'Spencer Strider':5,'Shota Imanaga':5,
+  'Logan Webb':5,'Yoshinobu Yamamoto':5,'Paul Skenes':5,'Tarik Skubal':5,'Dylan Cease':5,
+  'Hunter Brown':5,'Chase Burns':5,'Roki Sasaki':5,'Garrett Crochet':5,
+  // Strong Spring (+3)
+  'Max Fried':3,'Gerrit Cole':3,'Tyler Glasnow':3,'Blake Snell':3,'Jacob deGrom':3,
+  'Freddy Peralta':3,'MacKenzie Gore':3,'Luis Castillo':3,'Joe Ryan':3,'Logan Gilbert':3,
+  'Bryan Woo':3,'George Kirby':3,'Sonny Gray':3,'Connelly Early':3,'Cristopher Sanchez':3,
+  'Andrew Painter':3,'Aaron Nola':3,'Taj Bradley':3,'Shane McClanahan':3,
+  'Edward Cabrera':3,'Sandy Alcantara':3,'Tanner Bibee':3,'Kodai Senga':3,
+  // Average Spring (0)
+  'Nick Pivetta':0,'Kyle Bradish':0,'Trevor Rogers':0,'Zach Eflin':0,'Shane Baz':0,
+  'Mitch Keller':0,'Randy Vasquez':0,'Jake Irvin':0,'Carmen Mlodzinski':0,
+  'Reid Detmers':0,'Jose Soriano':0,'Michael King':0,'Bryce Miller':0,
+  // Cold Spring (-3)
+  'Jack Leiter':-3,'Emmet Sheehan':-3,'Bobby Miller':-3,'Ranger Suarez':-3
+};
+
+function pitcherSpringBoost(name) {
+  if (!name) return 0;
+  var n = String(name).trim();
+  if (PITCHER_SPRING_2026[n] !== undefined) return PITCHER_SPRING_2026[n];
+  // Fuzzy match by last name
+  var last = n.split(' ').pop().toLowerCase();
+  for (var k in PITCHER_SPRING_2026) {
+    if (k.split(' ').pop().toLowerCase() === last) return PITCHER_SPRING_2026[k];
+  }
+  return 0;
+}
+
+function pitcherStatTier2Y(era, whip, k9) {
+  // Baselines from STAT_BASELINES_2Y
+  var eraTier = era <= 2.95 ? 8 : era <= 3.65 ? 5 : era <= 4.25 ? 2 : era <= 5.10 ? -2 : -5;
+  var whipTier = whip <= 1.00 ? 6 : whip <= 1.18 ? 4 : whip <= 1.30 ? 1 : whip <= 1.48 ? -2 : -4;
+  var k9Tier = k9 >= 11.5 ? 6 : k9 >= 9.2 ? 4 : k9 >= 8.0 ? 1 : k9 >= 6.5 ? -2 : -4;
+  var total = eraTier + whipTier + k9Tier;
+  if (total >= 15) return { tier: 'Elite', boost: 8, label: 'Elite 2Y' };
+  if (total >= 8) return { tier: 'Above Avg', boost: 5, label: 'Above Avg 2Y' };
+  if (total >= 2) return { tier: 'Average', boost: 2, label: 'Average 2Y' };
+  return { tier: 'Below Avg', boost: -2, label: 'Below Avg 2Y' };
+}
+
+window.pitcherSpringBoost = pitcherSpringBoost;
+window.pitcherStatTier2Y = pitcherStatTier2Y;
+
 // ─── Advanced Pitcher Grading (7-Factor Weighted Model) ──────────────────────
 function pitcherSpotScore(p, game, side) {
   var era = Number(p.era || 4.3), whip = Number(p.whip || 1.3), k9 = Number(p.k9 || 8.6), hr9 = Number(p.hr9 || 1.15);
   var park = parkFor(game.venue ? game.venue.name : '');
   var m = getMarket(game);
+
+  // 2-Year stat tier boost
+  var tier2Y = pitcherStatTier2Y(era, whip, k9);
+  var springBoost = pitcherSpringBoost(p.name || '');
+  // Blend: 2024 (30%) + 2025 (50%) + Spring 2026 (20%) — applied as score adjustments
+  var multiYearBoost = Math.round(tier2Y.boost * 0.8 + springBoost * 1.2);
   var oppSide = side === 'home' ? 'away' : 'home';
   var oppEdge = teamEdgeScore(game, oppSide);
 
@@ -172,18 +225,21 @@ function pitcherSpotScore(p, game, side) {
     workload * 0.10 +
     trend * 0.10
   );
+  // Apply 2-year stat tier + spring training boost
+  spotScore = spotScore + multiYearBoost;
   spotScore = Math.max(0, Math.min(100, spotScore));
 
-  // Derived scores
-  var winScore = Math.round(winSupport * 0.34 + workload * 0.18 + runPrev * 0.16 + command * 0.16 + kEdge * 0.10 + trend * 0.06);
-  var dfsScore = Math.round(kEdge * 0.42 + arsenal * 0.18 + workload * 0.14 + trend * 0.12 + runPrev * 0.08 + command * 0.06);
-  var vegasScore = Math.round(winSupport * 0.28 + command * 0.20 + runPrev * 0.18 + workload * 0.16 + trend * 0.10 + kEdge * 0.08);
+  // Derived scores (also get multi-year adjustment)
+  var winScore = Math.max(0, Math.min(100, Math.round(winSupport * 0.34 + workload * 0.18 + runPrev * 0.16 + command * 0.16 + kEdge * 0.10 + trend * 0.06) + Math.round(multiYearBoost * 0.7)));
+  var dfsScore = Math.max(0, Math.min(100, Math.round(kEdge * 0.42 + arsenal * 0.18 + workload * 0.14 + trend * 0.12 + runPrev * 0.08 + command * 0.06) + Math.round(multiYearBoost * 0.9)));
+  var vegasScore = Math.max(0, Math.min(100, Math.round(winSupport * 0.28 + command * 0.20 + runPrev * 0.18 + workload * 0.16 + trend * 0.10 + kEdge * 0.08) + Math.round(multiYearBoost * 0.6)));
 
   // Grade
   var grade = spotScore >= 92 ? 'A+' : spotScore >= 85 ? 'A' : spotScore >= 76 ? 'B+' : spotScore >= 67 ? 'B' : spotScore >= 57 ? 'C' : spotScore >= 45 ? 'D' : 'F';
 
   return {
     spotScore: spotScore, winScore: winScore, dfsScore: dfsScore, vegasScore: vegasScore,
+    tier2Y: tier2Y, springBoost: springBoost,
     grade: grade,
     factors: { kEdge: kEdge, command: command, arsenal: arsenal, runPrev: runPrev, winSupport: winSupport, workload: workload, trend: trend }
   };

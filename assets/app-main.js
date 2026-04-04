@@ -730,7 +730,16 @@ function renderPitching() {
               {label:'Workload',val:f.workload,desc:'Expected IP, manager trust, leash'},
               {label:'Recent Trend',val:f.trend,desc:'Velocity, whiff, command trajectory'}
             ];
-            return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">' +
+            var t2y = x.spot.tier2Y || {};
+            var spB = x.spot.springBoost || 0;
+            var spLabel = spB >= 4 ? '\u{1F525} HOT' : spB >= 2 ? '\u2705 SOLID' : spB <= -2 ? '\u2744 COLD' : '\u2796 AVG';
+            var spColor = spB >= 4 ? '#00ff9c' : spB >= 2 ? '#ffd000' : spB <= -2 ? '#ff3b3b' : '#94a3b8';
+            return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">' +
+              '<div class="stat-box"><div class="label">2-Year Tier</div><div class="value" style="font-size:16px;color:' + (t2y.boost >= 5 ? '#00ff9c' : t2y.boost >= 2 ? '#ffd000' : '#ff3b3b') + '">' + (t2y.label || 'N/A') + '</div><div class="detail">+' + (t2y.boost || 0) + ' boost</div></div>' +
+              '<div class="stat-box"><div class="label">Spring 2026</div><div class="value" style="font-size:16px;color:' + spColor + '">' + spLabel + '</div><div class="detail">' + (spB >= 0 ? '+' : '') + spB + ' boost</div></div>' +
+              '<div class="stat-box"><div class="label">Blend</div><div class="value" style="font-size:14px">2024 30% + 2025 50% + ST 20%</div></div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">' +
               '<div class="stat-box"><div class="label">Spot Score</div><div class="value" style="color:' + g.color + '">' + x.spot.spotScore + '</div></div>' +
               '<div class="stat-box"><div class="label">Win Score</div><div class="value">' + x.spot.winScore + '</div></div>' +
               '<div class="stat-box"><div class="label">DFS Ceiling</div><div class="value" style="color:#ffd000">' + x.spot.dfsScore + '</div></div>' +
