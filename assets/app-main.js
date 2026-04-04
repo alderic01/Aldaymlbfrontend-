@@ -350,6 +350,7 @@ function renderScouting() {
   return '<section>' +
     '<div class="section-title"><h2>\u{1F4CA} SCOUTING — BATTER GRADES</h2><div class="meta">' + allHitters.length + ' batters graded A-F \u00B7 10-factor analysis \u00B7 ' + escapeHtml(state.selectedGameData.away.abbr) + ' @ ' + escapeHtml(state.selectedGameData.home.abbr) + '</div></div>' +
     gameSelect +
+    '<div class="dfs-card-grid">' +
     allHitters.map((h, i) => {
       const g = h.grade;
       const dk = getDKSalary(h.name);
@@ -408,9 +409,9 @@ function renderScouting() {
 
       // Grade color for card accent
       var gradeColor = g.score >= 88 ? '#00ff9c' : g.score >= 78 ? '#00e88a' : g.score >= 66 ? '#ffd000' : g.score >= 50 ? '#ff9f43' : '#ff3b3b';
-      var gradeColorDim = g.score >= 88 ? 'rgba(0,255,156,.12)' : g.score >= 78 ? 'rgba(0,232,138,.1)' : g.score >= 66 ? 'rgba(255,208,0,.1)' : g.score >= 50 ? 'rgba(255,159,67,.1)' : 'rgba(255,59,59,.1)';
+      var gradeColorDim = g.score >= 88 ? 'rgba(0,255,156,.15)' : g.score >= 78 ? 'rgba(0,232,138,.12)' : g.score >= 66 ? 'rgba(255,208,0,.12)' : g.score >= 50 ? 'rgba(255,159,67,.1)' : 'rgba(255,59,59,.1)';
 
-      // Team color map for avatar accents
+      // Team colors
       var teamColors = {
         'NYY':'#003087','BOS':'#BD3039','LAD':'#005A9C','ATL':'#CE1141','HOU':'#EB6E1F',
         'NYM':'#002D72','PHI':'#E81828','SD':'#2F241D','SF':'#FD5A1E','CHC':'#0E3386',
@@ -421,54 +422,60 @@ function renderScouting() {
         'ATH':'#003831'
       };
       var tColor = teamColors[h.team] || '#1e293b';
-      var tColor2 = tColor + '88'; // semi-transparent
+      var projPts = dk ? (dk.avgPts || (g.score * 0.4).toFixed(1)) : (g.score * 0.4).toFixed(1);
+      var cardId = 'scard-' + i;
 
-      return '<div class="pcard-v2 ' + gradeCardClass(letter) + '" style="--accent:' + gradeColor + ';--accent-dim:' + gradeColorDim + ';--team-color:' + tColor + ';--team-color-dim:' + tColor2 + '">' +
-        // Top section: player info + grade
-        '<div class="pcard-top">' +
-          '<div class="pcard-avatar">' +
-            '<div class="pcard-silhouette">' +
-              '<svg viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" class="pcard-batter-svg">' +
-                '<circle cx="32" cy="16" r="12" fill="' + tColor + '" opacity=".9"/>' +
-                '<path d="M20 36c0-6.6 5.4-12 12-12s12 5.4 12 12v20c0 2.2-1.8 4-4 4H24c-2.2 0-4-1.8-4-4V36z" fill="' + tColor + '" opacity=".8"/>' +
-                '<rect x="42" y="24" width="4" height="32" rx="2" transform="rotate(30 42 24)" fill="' + tColor + '" opacity=".6"/>' +
-                '<text x="32" y="50" text-anchor="middle" font-size="14" font-weight="900" fill="rgba(255,255,255,.9)" font-family="Barlow Condensed">' + (h.lineupOrder || '') + '</text>' +
-              '</svg>' +
+      // DFS-style card (like the reference image)
+      return '<div class="dfs-card" style="--glow:' + gradeColor + ';--glow-dim:' + gradeColorDim + ';--tc:' + tColor + '" onclick="toggleScoutReport(\'' + cardId + '\')">' +
+        // Glow border
+        '<div class="dfs-card-inner">' +
+          // Top: team + position
+          '<div class="dfs-card-header">' +
+            '<span class="dfs-card-team">' + escapeHtml(h.team) + '</span>' +
+            '<span class="dfs-card-pos">' + escapeHtml(h.pos || '-') + '</span>' +
+          '</div>' +
+          // Grade badge (top right)
+          '<div class="dfs-card-grade-badge ' + gradeClass(letter) + '">' + letter + '</div>' +
+          // Center: batter silhouette
+          '<div class="dfs-card-body">' +
+            '<svg viewBox="0 0 100 130" class="dfs-batter-svg" fill="none">' +
+              '<defs><linearGradient id="bg' + i + '" x1="50" y1="0" x2="50" y2="130" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="' + tColor + '" stop-opacity=".3"/><stop offset="1" stop-color="' + tColor + '" stop-opacity=".05"/></linearGradient></defs>' +
+              '<circle cx="50" cy="26" r="16" fill="url(#bg' + i + ')" stroke="' + gradeColor + '" stroke-width="1.5" stroke-opacity=".5"/>' +
+              '<path d="M32 56c0-10 8-18 18-18s18 8 18 18v38c0 3-2.5 5.5-5.5 5.5h-25c-3 0-5.5-2.5-5.5-5.5V56z" fill="url(#bg' + i + ')" stroke="' + gradeColor + '" stroke-width="1" stroke-opacity=".3"/>' +
+              '<rect x="66" y="36" width="5" height="48" rx="2.5" transform="rotate(25 66 36)" fill="' + gradeColor + '" opacity=".4"/>' +
+              '<text x="50" y="80" text-anchor="middle" font-size="22" font-weight="900" fill="' + gradeColor + '" opacity=".8" font-family="Barlow Condensed">' + (h.lineupOrder || '') + '</text>' +
+            '</svg>' +
+          '</div>' +
+          // Name
+          '<div class="dfs-card-name">' + escapeHtml(h.name) + '</div>' +
+          // Bottom stats
+          '<div class="dfs-card-stats">' +
+            '<div class="dfs-card-stat"><div class="dfs-stat-label">SALARY</div><div class="dfs-stat-value gold">' + (dk ? '$' + dk.salary.toLocaleString() : '-') + '</div></div>' +
+            '<div class="dfs-card-stat"><div class="dfs-stat-label">PROJ PTS</div><div class="dfs-stat-value">' + projPts + '</div></div>' +
+          '</div>' +
+          // Score bar
+          '<div class="dfs-card-score-bar"><div class="dfs-card-score-fill" style="width:' + g.score + '%;background:' + gradeColor + '"></div></div>' +
+        '</div>' +
+      '</div>' +
+      // Hidden scouting report (shows on click)
+      '<div class="scout-report" id="' + cardId + '" style="display:none">' +
+        '<div class="scout-report-inner">' +
+          '<div class="scout-report-header">' +
+            '<div>' +
+              '<div class="scout-report-name">' + escapeHtml(h.name) + '</div>' +
+              '<div class="scout-report-meta">' + escapeHtml(h.pos || '-') + ' \u00B7 ' + escapeHtml(h.team) + ' \u00B7 ' + (h.batSide || 'R') + ' bat \u00B7 vs ' + escapeHtml(h.opp) + ' \u00B7 ' + escapeHtml(h.venue) + '</div>' +
             '</div>' +
-            '<div class="pcard-lineup-badge">' + (h.lineupOrder || '-') + '</div>' +
+            '<div class="scout-report-grade ' + gradeClass(letter) + '">' + letter + ' <span style="font-size:16px;color:var(--muted)">' + g.score + '/99</span> ' + fires + '</div>' +
           '</div>' +
-          '<div class="pcard-info">' +
-            '<div class="pcard-team-badge">' + escapeHtml(h.team) + '</div>' +
-            '<div class="pcard-name">' + escapeHtml(h.name) + '</div>' +
-            '<div class="pcard-pos">' + escapeHtml(h.pos || '-') + ' \u00B7 ' + (h.batSide || 'R') + ' bat \u00B7 vs ' + escapeHtml(h.opp) + '</div>' +
-            (dk ? '<div class="pcard-salary">$' + dk.salary.toLocaleString() + '</div>' : '') +
-            '<div class="pcard-matchup">' + platoonAdv + ' \u00B7 vs ' + (oppP.pitchHand || 'R') + 'HP \u00B7 ' + vuln + ' vuln</div>' +
-          '</div>' +
-          '<div class="pcard-grade-box">' +
-            '<div class="pcard-grade ' + gradeClass(letter) + (letter === 'A+' ? ' grade-aplus-glow' : '') + '">' + letter + '</div>' +
-            '<div class="pcard-score">' + g.score + '</div>' +
-            '<div class="pcard-score-label">SCORE</div>' +
-            '<div class="pcard-fires">' + fires + '</div>' +
-          '</div>' +
-        '</div>' +
-        // Stat boxes row (like the Premier League card bottom)
-        '<div class="pcard-stats">' +
-          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (h.avg >= .300 ? '#00ff9c' : h.avg >= .260 ? '#ffd000' : '#94a3b8') + '">' + fmtPct(h.avg) + '</div><div class="pcard-stat-lbl">AVG</div></div>' +
-          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (h.ops >= .850 ? '#00ff9c' : h.ops >= .750 ? '#ffd000' : '#94a3b8') + '">' + fmtPct(h.ops) + '</div><div class="pcard-stat-lbl">OPS</div></div>' +
-          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (h.hr >= 20 ? '#00ff9c' : h.hr >= 10 ? '#ffd000' : '#94a3b8') + '">' + h.hr + '</div><div class="pcard-stat-lbl">HR</div></div>' +
-          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (pWeak >= 65 ? '#00ff9c' : pWeak >= 50 ? '#ffd000' : '#ff3b3b') + '">' + pWeak + '</div><div class="pcard-stat-lbl">P.WEAK</div></div>' +
-          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (park.run >= 1.1 ? '#00ff9c' : '#94a3b8') + '">' + fmtNum(park.run, 2) + '</div><div class="pcard-stat-lbl">PARK</div></div>' +
-        '</div>' +
-        // Expandable factors
-        '<details class="pcard-details">' +
-          '<summary class="pcard-expand">View 10-Factor Breakdown</summary>' +
           '<div class="factor-grid">' + factors.map(function(f) {
             return '<div class="factor-chip"><div class="f-label">' + f.label + '</div><div class="f-value" style="color:' + f.color + '">' + f.value + '</div></div>';
           }).join('') + '</div>' +
           '<div class="synopsis">' + synParts.join(' ') + '</div>' +
-        '</details>' +
+          '<button class="button" onclick="event.stopPropagation();toggleScoutReport(\'' + cardId + '\')" style="margin-top:12px;width:100%">Close Report</button>' +
+        '</div>' +
       '</div>';
     }).join('') +
+    '</div>' +
     '</section>';
 }
 
@@ -971,3 +978,18 @@ window.handleDKDrop = handleDKDrop;
 window.handleDKFile = handleDKFile;
 window.loadFantasyLabsSalaries = loadFantasyLabsSalaries;
 window.autoPullDKSalaries = autoPullDKSalaries;
+
+// Toggle scouting report visibility
+function toggleScoutReport(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  if (el.style.display === 'none') {
+    // Close all others first
+    document.querySelectorAll('.scout-report').forEach(function(r) { r.style.display = 'none'; });
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    el.style.display = 'none';
+  }
+}
+window.toggleScoutReport = toggleScoutReport;

@@ -1481,3 +1481,218 @@ body::before {
   border: 2px solid;
   font-size: 20px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DFS CARD — Dark fantasy card with batter silhouette
+   Click to reveal full scouting report
+   ═══════════════════════════════════════════════════════════════ */
+
+.dfs-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.dfs-card {
+  cursor: pointer;
+  position: relative;
+}
+.dfs-card-inner {
+  border-radius: 16px;
+  border: 1px solid rgba(30,41,59,.5);
+  background: linear-gradient(180deg, #0d1828 0%, #070d16 100%);
+  overflow: hidden;
+  transition: all .3s cubic-bezier(.22,1,.36,1);
+  position: relative;
+}
+.dfs-card-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  border: 1px solid var(--glow);
+  opacity: .15;
+  pointer-events: none;
+}
+.dfs-card-inner::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, var(--glow-dim), transparent 60%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.dfs-card:hover .dfs-card-inner {
+  transform: translateY(-6px);
+  border-color: var(--glow);
+  box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 20px var(--glow-dim);
+}
+.dfs-card:hover .dfs-card-inner::after { opacity: 1; }
+.dfs-card:hover .dfs-card-inner::before { opacity: .4; }
+
+/* Header: team + pos */
+.dfs-card-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px 0;
+  position: relative;
+  z-index: 1;
+}
+.dfs-card-team {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--glow);
+  text-transform: uppercase;
+}
+.dfs-card-pos {
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Grade badge */
+.dfs-card-grade-badge {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 28px;
+  font-weight: 900;
+  z-index: 2;
+  line-height: 1;
+}
+
+/* Batter body */
+.dfs-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  min-height: 140px;
+  position: relative;
+  z-index: 1;
+}
+.dfs-batter-svg {
+  width: 80px;
+  height: 104px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.5));
+}
+
+/* Name */
+.dfs-card-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0 10px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  z-index: 1;
+}
+
+/* Bottom stats */
+.dfs-card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid rgba(30,41,59,.4);
+  background: rgba(6,14,26,.5);
+  position: relative;
+  z-index: 1;
+}
+.dfs-card-stat {
+  padding: 8px 12px;
+  text-align: center;
+}
+.dfs-card-stat:first-child {
+  border-right: 1px solid rgba(30,41,59,.3);
+}
+.dfs-stat-label {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #475569;
+  text-transform: uppercase;
+}
+.dfs-stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+.dfs-stat-value.gold { color: #ffd000; }
+
+/* Score bar at very bottom */
+.dfs-card-score-bar {
+  height: 3px;
+  background: rgba(30,41,59,.5);
+}
+.dfs-card-score-fill {
+  height: 100%;
+  transition: width .8s ease;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Scouting Report (hidden, shows on click) */
+.scout-report {
+  margin-bottom: 16px;
+  grid-column: 1 / -1;
+  animation: fadeInUp .3s ease;
+}
+.scout-report-inner {
+  border-radius: 18px;
+  border: 1px solid rgba(0,255,156,.15);
+  background: linear-gradient(180deg, rgba(13,24,40,.98), rgba(8,16,28,.99));
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4), 0 0 20px rgba(0,255,156,.04);
+}
+.scout-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(30,41,59,.4);
+}
+.scout-report-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.scout-report-meta {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+.scout-report-grade {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .dfs-card-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .dfs-card-body { min-height: 120px; }
+  .dfs-batter-svg { width: 60px; height: 78px; }
+}
+@media (max-width: 600px) {
+  .dfs-card-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
