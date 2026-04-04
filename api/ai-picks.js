@@ -45,16 +45,21 @@ export default async function handler(req, res) {
 
   const dkRules = `
 DK MLB CLASSIC RULES:
-- Salary cap: $50,000 (MUST NOT exceed)
-- Roster: 10 players — 2 Pitchers (P), 1 Catcher (C), 1 First Baseman (1B), 1 Second Baseman (2B), 1 Third Baseman (3B), 1 Shortstop (SS), 3 Outfielders (OF)
-- Must include players from at least 2 different MLB games
-- Max 5 hitters from any one team
-- SCORING — Hitters: Single +3, Double +5, Triple +8, HR +10, RBI +2, Run +2, BB +2, HBP +2, SB +5
-- SCORING — Pitchers: Out +0.75, K +2, Win +4, ER -2, H -0.6, BB -0.6, HBP -0.6, CG +2.5, CGSO +2.5, No-Hit +5
-- Pitcher hitting stats DO NOT count. Hitter pitching stats DO NOT count.`;
+- Salary cap: $50,000 MAXIMUM. YOUR LINEUP TOTAL MUST BE UNDER $50,000.
+- Average salary per player: $5,000 (10 players x $5,000 = $50,000)
+- If you pick 2 pitchers at $9,000 each ($18,000), you only have $32,000 left for 8 hitters = $4,000 average per hitter.
+- DO NOT pick more than 3 players above $5,500 salary.
+- Roster: 2P, 1C, 1 1B, 1 2B, 1 3B, 1 SS, 3 OF
+- SCORING — Hitters: 1B +3, 2B +5, 3B +8, HR +10, RBI +2, R +2, BB +2, HBP +2, SB +5
+- SCORING — Pitchers: Out +0.75, K +2, W +4, ER -2, H -0.6, BB -0.6, HBP -0.6`;
 
   const prompts = {
-    picks: `You are the #1 MLB DFS optimizer. Build the BEST possible DraftKings MLB Classic lineup for today.
+    picks: `You are an MLB DFS optimizer. Build 3 DraftKings Classic lineups.
+
+CRITICAL SALARY RULE: Total MUST be $50,000 or less. Add up every salary and verify.
+- 2 pitchers around $7,000-$9,000 each = ~$16,000-$18,000 on pitchers
+- 8 hitters averaging $4,000 each = ~$32,000 on hitters
+- MIX expensive stars ($5,000+) with budget plays ($2,800-$3,500)
 
 Slate (${date}):
 ${slate}
@@ -62,47 +67,31 @@ ${dkContext}
 
 ${dkRules}
 
-BUILD EXACTLY 3 DIFFERENT LINEUPS, each with all 10 roster spots filled. Each lineup must use different core stacks for lineup diversity.
+Build 3 lineups. For EACH lineup list all 10 players in this EXACT format:
+P1: Name (TEAM) $SALARY
+P2: Name (TEAM) $SALARY
+C: Name (TEAM) $SALARY
+1B: Name (TEAM) $SALARY
+2B: Name (TEAM) $SALARY
+3B: Name (TEAM) $SALARY
+SS: Name (TEAM) $SALARY
+OF1: Name (TEAM) $SALARY
+OF2: Name (TEAM) $SALARY
+OF3: Name (TEAM) $SALARY
+TOTAL: $XXXXX (MUST BE UNDER $50,000)
 
-LINEUP 1 — CASH/SAFE (highest floor):
-P1: [Name] ([Team]) - $[Salary] - [Why]
-P2: [Name] ([Team]) - $[Salary] - [Why]
-C: [Name] ([Team]) - $[Salary] - [Why]
-1B: [Name] ([Team]) - $[Salary] - [Why]
-2B: [Name] ([Team]) - $[Salary] - [Why]
-3B: [Name] ([Team]) - $[Salary] - [Why]
-SS: [Name] ([Team]) - $[Salary] - [Why]
-OF1: [Name] ([Team]) - $[Salary] - [Why]
-OF2: [Name] ([Team]) - $[Salary] - [Why]
-OF3: [Name] ([Team]) - $[Salary] - [Why]
-TOTAL: $[sum] (≤$50,000) | PROJ: [pts] | STACK: [team]
+Use ONLY players and salaries from the data above. ADD UP THE SALARIES CAREFULLY. Each lineup must use different stacks.`,
 
-LINEUP 2 — GPP/TOURNAMENT (highest ceiling):
-[Same 10-slot format]
-TOTAL: $[sum] (≤$50,000) | PROJ: [pts] | STACK: [team]
-
-LINEUP 3 — CONTRARIAN (low ownership, high upside):
-[Same 10-slot format]
-TOTAL: $[sum] (≤$50,000) | PROJ: [pts] | STACK: [team]
-
-Use EXACT DK salaries provided. Verify each total ≤ $50,000. Each lineup must use a DIFFERENT primary stack team. Prioritize: ceiling, correlation, park factors, pitcher matchups, ownership leverage. Be specific with matchup reasoning.`,
-
-    stacks: `You are the #1 MLB GPP specialist. Slate (${date}):
+    stacks: `MLB GPP specialist. Slate (${date}):
 ${slate}
 ${dkContext}
 
 ${dkRules}
 
-Build 3 COMPLETE 10-player DraftKings Classic lineups optimized for GPP tournaments.
-
-For EACH lineup show all 10 slots (P1, P2, C, 1B, 2B, 3B, SS, OF1, OF2, OF3) with:
-- Player name, team, salary, and projected DK points
-- Total salary (must be ≤ $50,000)
-- Core stack (which team, how many players)
-- Bring-back (correlation from opposing team)
-- Why this lineup wins a GPP (ownership leverage, ceiling, correlation)
-
-Use EXACT DK salaries. Verify each total ≤ $50K.`,
+Build 3 GPP tournament lineups. SALARY MUST BE UNDER $50,000.
+Mix 2-3 expensive players with budget plays to stay under cap.
+Format: P1: Name (TEAM) $SALARY ... TOTAL: $XXXXX
+ADD UP ALL SALARIES AND VERIFY UNDER $50,000.`,
 
     edges: `Sharp MLB DFS edge finder. Slate (${date}):
 ${slate}
