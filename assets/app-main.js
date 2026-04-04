@@ -647,69 +647,87 @@ function renderGames() {
 // ─── TAB 2: PITCHING EDGE ─────────────────────────────────────────────────────
 function renderPitching() {
   if (!state.games.length) return '<div class="empty">No games loaded.</div>';
-  const pitchers = state.games.flatMap(g => [
+  var pitchers = state.games.flatMap(function(g) { return [
     { p: g.awayPitcher, game: g, side: 'away', opp: g.home.abbr, team: g.away.abbr },
     { p: g.homePitcher, game: g, side: 'home', opp: g.away.abbr, team: g.home.abbr }
-  ]).filter(x => x.p && x.p.name && x.p.name !== 'TBD')
-   .map(x => ({ ...x, rank: pitcherEdgeRank(x.p, x.game, x.side), tend: pitcherTendencies(x.p) }))
-   .sort((a, b) => b.rank - a.rank);
+  ]; }).filter(function(x) { return x.p && x.p.name && x.p.name !== 'TBD'; })
+   .map(function(x) { return Object.assign({}, x, { rank: pitcherEdgeRank(x.p, x.game, x.side), tend: pitcherTendencies(x.p) }); })
+   .sort(function(a, b) { return b.rank - a.rank; });
+
+  // Grade pitchers A-F based on rank
+  function pitcherGrade(rank) {
+    if (rank >= 80) return { letter: 'A+', color: '#00ff9c' };
+    if (rank >= 70) return { letter: 'A', color: '#00e88a' };
+    if (rank >= 60) return { letter: 'B+', color: '#ffd000' };
+    if (rank >= 50) return { letter: 'B', color: '#f59e0b' };
+    if (rank >= 40) return { letter: 'C', color: '#ff9f43' };
+    if (rank >= 30) return { letter: 'D', color: '#ff5f6d' };
+    return { letter: 'F', color: '#ff3b3b' };
+  }
+
+  var tc = {NYY:'#003087',BOS:'#BD3039',LAD:'#005A9C',ATL:'#CE1141',HOU:'#EB6E1F',NYM:'#002D72',PHI:'#E81828',SD:'#2F241D',SF:'#FD5A1E',CHC:'#0E3386',STL:'#C41E3A',MIL:'#FFC52F',CIN:'#C6011F',PIT:'#FDB827',ARI:'#A71930',COL:'#33006F',MIA:'#00A3E0',WSH:'#AB0003',TB:'#092C5C',BAL:'#DF4601',CLE:'#00385D',DET:'#0C2340',KC:'#004687',MIN:'#002B5C',CWS:'#27251F',TEX:'#003278',LAA:'#BA0021',SEA:'#0C2C56',OAK:'#003831',TOR:'#134A8E',ATH:'#003831'};
 
   return '<section>' +
-    '<div class="section-title"><h2>\u26BE PITCHING EDGE</h2><div class="meta">' + pitchers.length + ' pitchers ranked by matchup edge \u00B7 Arsenal + Velocity + Prior Matchups</div></div>' +
-    pitchers.map((x, i) => {
-      const p = x.p;
-      const era = Number(p.era || 4.3), k9 = Number(p.k9 || 8.6), whip = Number(p.whip || 1.3), hr9 = Number(p.hr9 || 1.15);
-      const weak = pitcherWeakness(p);
-      const park = parkFor(x.game.venue.name);
-      const eraColor = era <= 3.0 ? '#00ff9c' : era <= 4.0 ? '#ffd000' : '#ff3b3b';
-      const k9Color = k9 >= 10 ? '#00ff9c' : k9 >= 8 ? '#ffd000' : '#ff3b3b';
-      const whipColor = whip <= 1.1 ? '#00ff9c' : whip <= 1.3 ? '#ffd000' : '#ff3b3b';
-      const hr9Color = hr9 <= 1.0 ? '#00ff9c' : hr9 <= 1.2 ? '#ffd000' : '#ff3b3b';
+    '<div class="section-title"><h2>\u26BE PITCHING EDGE</h2><div class="meta">' + pitchers.length + ' pitchers graded A-F \u00B7 Click for scouting report</div></div>' +
+    '<div class="dfs-card-grid">' +
+    pitchers.map(function(x, i) {
+      var p = x.p;
+      var era = Number(p.era || 4.3), k9 = Number(p.k9 || 8.6), whip = Number(p.whip || 1.3), hr9 = Number(p.hr9 || 1.15);
+      var weak = pitcherWeakness(p);
+      var g = pitcherGrade(x.rank);
+      var tColor = tc[x.team] || '#1e293b';
+      var dk = getDKSalary(p.name);
+      var pitImg = (typeof getPitcherAvatar === 'function') ? getPitcherAvatar(x.team) : '';
+      var cardId = 'pcard-' + i;
 
-      return '<div class="card pitcher-card" style="margin-bottom:14px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:start">' +
-          '<div>' +
-            '<div style="font-size:12px;color:var(--muted);font-weight:700">#' + (i + 1) + ' \u00B7 ' + x.team + ' \u00B7 ' + x.side.toUpperCase() + ' \u00B7 vs ' + x.opp + '</div>' +
-            '<div class="pitcher-name">' + escapeHtml(p.name) + '</div>' +
-            '<div class="pitcher-team">' + (p.pitchHand || 'R') + 'HP \u00B7 ' + (p.w || 0) + '-' + (p.l || 0) + ' \u00B7 ' + (p.ip || '-') + ' IP \u00B7 ' + escapeHtml(x.game.venue.name) + '</div>' +
+      return '<div class="dfs-card" style="--glow:' + g.color + ';--glow-dim:' + g.color + '22;--tc:' + tColor + '" onclick="toggleScoutReport(\'' + cardId + '\')">' +
+        '<div class="dfs-card-inner">' +
+          '<div class="dfs-card-header">' +
+            '<span class="dfs-card-team">' + x.team + '</span>' +
+            '<span class="dfs-card-pos">' + (p.pitchHand || 'R') + 'HP</span>' +
           '</div>' +
-          '<div style="text-align:right">' +
-            '<div style="font-family:Barlow Condensed;font-size:42px;font-weight:900;color:' + (x.rank >= 70 ? '#00ff9c' : x.rank >= 50 ? '#ffd000' : '#ff3b3b') + '">' + x.rank + '</div>' +
-            '<div style="font-size:11px;color:var(--muted)">EDGE RANK</div>' +
+          '<div class="dfs-card-grade-badge" style="color:' + g.color + '">' + g.letter + '</div>' +
+          '<div class="dfs-card-body">' +
+            (pitImg ? '<img src="' + pitImg + '" class="dfs-batter-img" style="border-radius:10px" loading="lazy" />' : '') +
           '</div>' +
-        '</div>' +
-        '<div class="pitcher-stats">' +
-          '<div class="pitcher-stat"><div class="label">ERA</div><div class="value" style="color:' + eraColor + '">' + fmtNum(era, 2) + '</div></div>' +
-          '<div class="pitcher-stat"><div class="label">K/9</div><div class="value" style="color:' + k9Color + '">' + fmtNum(k9, 1) + '</div></div>' +
-          '<div class="pitcher-stat"><div class="label">WHIP</div><div class="value" style="color:' + whipColor + '">' + fmtNum(whip, 2) + '</div></div>' +
-          '<div class="pitcher-stat"><div class="label">HR/9</div><div class="value" style="color:' + hr9Color + '">' + fmtNum(hr9, 2) + '</div></div>' +
-        '</div>' +
-        // Matchup analysis section
-        '<div style="margin-top:12px;padding:12px;border-radius:12px;background:rgba(6,14,26,.4);border:1px solid rgba(30,41,59,.4)">' +
-          '<div style="font-size:10px;color:var(--muted);font-weight:800;letter-spacing:1px;margin-bottom:8px">MATCHUP ANALYSIS vs ' + x.opp + '</div>' +
-          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">' +
-            '<div><span style="color:var(--muted)">Vulnerability:</span> <strong style="color:' + (weak >= 70 ? '#00ff9c' : weak >= 55 ? '#ffd000' : '#ff3b3b') + '">' + weak + '/100</strong></div>' +
-            '<div><span style="color:var(--muted)">Profile:</span> <strong>' + escapeHtml(x.tend.profile) + '</strong></div>' +
-            '<div><span style="color:var(--muted)">Exp IP:</span> <strong>' + fmtNum(x.tend.expIP, 1) + '</strong></div>' +
-            '<div><span style="color:var(--muted)">Attack Score:</span> <strong style="color:' + (x.tend.attack >= 65 ? '#00ff9c' : x.tend.attack >= 50 ? '#ffd000' : '#ff3b3b') + '">' + x.tend.attack + '/90</strong></div>' +
-            '<div><span style="color:var(--muted)">Hand:</span> <strong>' + (p.pitchHand || 'R') + 'HP</strong></div>' +
-            '<div><span style="color:var(--muted)">Park:</span> <strong>' + fmtNum(park.run, 2) + 'x run</strong></div>' +
+          '<div class="dfs-card-name">' + escapeHtml(p.name) + '</div>' +
+          '<div style="text-align:center;padding:0 10px 6px;font-size:11px;color:#475569">vs ' + x.opp + ' \u00B7 ' + escapeHtml(x.game.venue.name) + '</div>' +
+          '<div class="dfs-card-stats" style="grid-template-columns:repeat(4,1fr)">' +
+            '<div class="dfs-card-stat"><div class="dfs-stat-label">ERA</div><div class="dfs-stat-value" style="color:' + (era <= 3.0 ? '#00ff9c' : era <= 4.0 ? '#ffd000' : '#ff3b3b') + '">' + fmtNum(era, 2) + '</div></div>' +
+            '<div class="dfs-card-stat"><div class="dfs-stat-label">K/9</div><div class="dfs-stat-value" style="color:' + (k9 >= 10 ? '#00ff9c' : k9 >= 8 ? '#ffd000' : '#ff3b3b') + '">' + fmtNum(k9, 1) + '</div></div>' +
+            '<div class="dfs-card-stat"><div class="dfs-stat-label">WHIP</div><div class="dfs-stat-value" style="color:' + (whip <= 1.1 ? '#00ff9c' : whip <= 1.3 ? '#ffd000' : '#ff3b3b') + '">' + fmtNum(whip, 2) + '</div></div>' +
+            '<div class="dfs-card-stat"><div class="dfs-stat-label">SALARY</div><div class="dfs-stat-value gold">' + (dk ? '$' + dk.salary.toLocaleString() : '-') + '</div></div>' +
           '</div>' +
+          '<div class="dfs-card-score-bar"><div class="dfs-card-score-fill" style="width:' + x.rank + '%;background:' + g.color + '"></div></div>' +
         '</div>' +
-        // Platoon matchup
-        '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
-          '<span class="tag ' + (weak >= 70 ? 'smash' : weak >= 55 ? 'strong' : weak >= 45 ? 'watch' : 'fade') + '">' + (weak >= 70 ? '\u{1F525} SMASH SPOT' : weak >= 55 ? 'ATTACKABLE' : weak >= 45 ? 'HOLD' : '\u{1F6E1} ACE') + '</span>' +
-          (p.pitchHand === 'L' ? '<span class="tag strong">LHP \u2014 Stack RHB</span>' : '<span class="tag watch">RHP \u2014 Stack LHB</span>') +
-          (park.hr >= 1.15 ? '<span class="tag smash">\u{1F525} HR PARK</span>' : '') +
-          (park.run <= 0.92 ? '<span class="tag fade">\u2744 PITCHER PARK</span>' : '') +
-          (x.tend.expIP <= 5.0 ? '<span class="tag strong">SHORT OUTING \u2014 Bullpen game</span>' : '') +
-          (hr9 >= 1.3 ? '<span class="tag smash">HR PRONE</span>' : '') +
-          (k9 >= 10 ? '<span class="tag fade">\u26A0 HIGH STRIKEOUT</span>' : (k9 <= 6.5 ? '<span class="tag smash">LOW K \u2014 Contact friendly</span>' : '')) +
+      '</div>' +
+      // Hidden scouting report
+      '<div class="scout-report" id="' + cardId + '" style="display:none">' +
+        '<div class="scout-report-inner">' +
+          '<div class="scout-report-header">' +
+            '<div>' +
+              '<div class="scout-report-name">' + escapeHtml(p.name) + '</div>' +
+              '<div class="scout-report-meta">' + (p.pitchHand || 'R') + 'HP \u00B7 ' + x.team + ' \u00B7 ' + (p.w||0) + '-' + (p.l||0) + ' \u00B7 ' + (p.ip||'-') + ' IP \u00B7 vs ' + x.opp + ' \u00B7 ' + escapeHtml(x.game.venue.name) + '</div>' +
+            '</div>' +
+            '<div class="scout-report-grade" style="color:' + g.color + '">' + g.letter + ' <span style="font-size:16px;color:var(--muted)">' + x.rank + '/99</span></div>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">' +
+            '<div class="stat-box"><div class="label">Vulnerability</div><div class="value" style="color:' + (weak >= 70 ? '#00ff9c' : weak >= 55 ? '#ffd000' : '#ff3b3b') + '">' + weak + '</div></div>' +
+            '<div class="stat-box"><div class="label">Profile</div><div class="value" style="font-size:16px">' + escapeHtml(x.tend.profile) + '</div></div>' +
+            '<div class="stat-box"><div class="label">Exp IP</div><div class="value">' + fmtNum(x.tend.expIP, 1) + '</div></div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' +
+            '<span class="tag ' + (weak >= 70 ? 'smash' : weak >= 55 ? 'strong' : weak >= 45 ? 'watch' : 'fade') + '">' + (weak >= 70 ? '\u{1F525} SMASH SPOT' : weak >= 55 ? 'ATTACKABLE' : weak >= 45 ? 'HOLD' : '\u{1F6E1} ACE') + '</span>' +
+            (p.pitchHand === 'L' ? '<span class="tag strong">LHP \u2014 Stack RHB</span>' : '<span class="tag watch">RHP \u2014 Stack LHB</span>') +
+            (hr9 >= 1.3 ? '<span class="tag smash">HR PRONE</span>' : '') +
+            (k9 >= 10 ? '<span class="tag fade">\u26A0 HIGH K</span>' : '') +
+          '</div>' +
+          '<div class="synopsis">' + (x.tend.notes.length ? x.tend.notes.map(function(n) { return escapeHtml(n); }).join('. ') + '.' : 'Standard matchup profile.') + ' Attack score: ' + x.tend.attack + '/90.</div>' +
+          '<button class="button" onclick="event.stopPropagation();toggleScoutReport(\'' + cardId + '\')" style="margin-top:12px;width:100%">Close Report</button>' +
         '</div>' +
-        (x.tend.notes.length ? '<div style="font-size:12px;color:var(--muted);margin-top:8px">' + x.tend.notes.map(function(n) { return escapeHtml(n); }).join(' \u00B7 ') + '</div>' : '') +
       '</div>';
     }).join('') +
-    '</section>';
+    '</div></section>';
 }
 
 // ─── TAB 3: SCOUTING ──────────────────────────────────────────────────────────
