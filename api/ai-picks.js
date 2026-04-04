@@ -22,19 +22,25 @@ export default async function handler(req, res) {
   if (dkSalaries && dkSalaries.length > 0) {
     const byPos = {};
     dkSalaries.forEach(p => {
-      if (!byPos[p.pos]) byPos[p.pos] = [];
-      byPos[p.pos].push(p);
+      // Normalize position: SP/RP/P all go to SP bucket
+      let pos = (p.pos || 'OF').toUpperCase();
+      if (pos === 'RP' || pos === 'P') pos = 'SP';
+      if (!byPos[pos]) byPos[pos] = [];
+      byPos[pos].push(p);
     });
     const posOrder = ['SP', 'C', '1B', '2B', '3B', 'SS', 'OF'];
     const lines = [];
     posOrder.forEach(pos => {
-      const players = (byPos[pos] || []).slice(0, pos === 'SP' ? 6 : pos === 'OF' ? 8 : 5);
+      const players = (byPos[pos] || []).sort((a,b) => (b.salary||0) - (a.salary||0)).slice(0, pos === 'SP' ? 10 : pos === 'OF' ? 12 : 6);
       if (players.length) {
-        lines.push(pos + ': ' + players.map(p => `${p.name} (${p.team}) $${(p.salary || 0).toLocaleString()} ${p.avgPts ? p.avgPts.toFixed(1) + 'pts' : ''}`).join(', '));
+        lines.push(pos + ': ' + players.map(p => `${p.name} (${p.team}) $${(p.salary || 0).toLocaleString()}${p.avgPts ? ' ' + Number(p.avgPts).toFixed(1) + 'pts' : ''}`).join(', '));
       }
     });
-    const budget = dkSalaries.filter(p => (p.salary || 9999) < 3600).slice(0, 8).map(p => `${p.name} $${p.salary}`).join(', ');
-    dkContext = '\n\nDRAFTKINGS PRICING (salary cap $50,000 — must pick 2 SP, 1 C, 1 1B, 1 2B, 1 3B, 1 SS, 3 OF):\n' + lines.join('\n') + (budget ? '\nBudget plays under $3,600: ' + budget : '');
+    const budget = dkSalaries.filter(p => (p.salary || 9999) < 3600 && (p.salary || 0) > 0).slice(0, 10).map(p => `${p.name} (${(p.pos||'').toUpperCase()}) $${p.salary}`).join(', ');
+    const totalPlayers = dkSalaries.filter(p => p.salary > 0).length;
+    dkContext = `\n\nDRAFTKINGS SALARY DATA (${totalPlayers} players, salary cap $50,000):\n` + lines.join('\n') + (budget ? '\nBudget plays under $3,600: ' + budget : '');
+  } else {
+    dkContext = '\n\nNO SALARY DATA PROVIDED — use general knowledge of typical DK pricing.';
   }
 
   const dkRules = `

@@ -1837,19 +1837,29 @@ async function generateAIPicks() {
       park: parkFor(g.venue.name)
     }));
     // Build salary data — prefer players with real salaries (>$0)
-    // Merge from state.dkSalaries AND hardcoded DK_PLAYERS
     var salaryMap = {};
-    // First: hardcoded DK_PLAYERS (always have real salaries)
-    if (typeof DK_PLAYERS !== 'undefined') {
+    // First: hardcoded DK_PLAYERS (always have real salaries from dk-salaries-inject.js)
+    if (typeof DK_PLAYERS !== 'undefined' && Array.isArray(DK_PLAYERS)) {
       DK_PLAYERS.forEach(function(p) {
         if (p.salary > 0) salaryMap[p.name.toLowerCase()] = { name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts || 0 };
       });
     }
-    // Then: state.dkSalaries (only if salary > 0, don't overwrite real data with $0)
+    // Also check window.DK_PLAYERS
+    if (typeof window !== 'undefined' && window.DK_PLAYERS && Array.isArray(window.DK_PLAYERS)) {
+      window.DK_PLAYERS.forEach(function(p) {
+        if (p.salary > 0 && !salaryMap[p.name.toLowerCase()]) {
+          salaryMap[p.name.toLowerCase()] = { name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts || 0 };
+        }
+      });
+    }
+    // Then: state.dkSalaries (only if salary > 0)
     Object.values(state.dkSalaries || {}).forEach(function(p) {
-      if (p.salary > 0) salaryMap[p.name.toLowerCase()] = { name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts || 0 };
+      if (p.salary > 0 && !salaryMap[(p.name || '').toLowerCase()]) {
+        salaryMap[(p.name || '').toLowerCase()] = { name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts || 0 };
+      }
     });
-    var dkSals = Object.values(salaryMap).sort(function(a,b) { return b.salary - a.salary; }).slice(0, 120);
+    var dkSals = Object.values(salaryMap).sort(function(a,b) { return b.salary - a.salary; }).slice(0, 150);
+    console.log('[AI Picks] Sending ' + dkSals.length + ' players with salaries. Top: ' + (dkSals[0] ? dkSals[0].name + ' $' + dkSals[0].salary : 'none'));
     const resp = await fetch('/api/ai-picks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
