@@ -1836,9 +1836,20 @@ async function generateAIPicks() {
       awayEra: g.awayPitcher.era, homeEra: g.homePitcher.era,
       park: parkFor(g.venue.name)
     }));
-    const dkSals = Object.values(state.dkSalaries || {}).slice(0, 100).map(p => ({
-      name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts
-    }));
+    // Build salary data — prefer players with real salaries (>$0)
+    // Merge from state.dkSalaries AND hardcoded DK_PLAYERS
+    var salaryMap = {};
+    // First: hardcoded DK_PLAYERS (always have real salaries)
+    if (typeof DK_PLAYERS !== 'undefined') {
+      DK_PLAYERS.forEach(function(p) {
+        if (p.salary > 0) salaryMap[p.name.toLowerCase()] = { name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts || 0 };
+      });
+    }
+    // Then: state.dkSalaries (only if salary > 0, don't overwrite real data with $0)
+    Object.values(state.dkSalaries || {}).forEach(function(p) {
+      if (p.salary > 0) salaryMap[p.name.toLowerCase()] = { name: p.name, pos: p.pos, salary: p.salary, team: p.team, avgPts: p.avgPts || 0 };
+    });
+    var dkSals = Object.values(salaryMap).sort(function(a,b) { return b.salary - a.salary; }).slice(0, 120);
     const resp = await fetch('/api/ai-picks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
