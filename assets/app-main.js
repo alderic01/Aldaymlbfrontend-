@@ -43,6 +43,46 @@ function runScoreColor(score) {
   return '#ff3b3b';
 }
 
+// ─── PLAYER AVATAR IMAGE LOADER (Nano Banana 2) ──────────────────────────────
+var _avatarCache = JSON.parse(localStorage.getItem('mlb-edge-avatars') || '{}');
+var _avatarLoading = {};
+
+function getPlayerAvatar(name, team) {
+  var key = (name || '').toLowerCase() + '_' + (team || '').toUpperCase();
+  if (_avatarCache[key]) return _avatarCache[key];
+  // Trigger async load if not already loading
+  if (!_avatarLoading[key]) {
+    _avatarLoading[key] = true;
+    fetch('/api/player-avatar?name=' + encodeURIComponent(name) + '&team=' + encodeURIComponent(team))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.url) {
+          _avatarCache[key] = d.url;
+          // Save to localStorage (limit cache size)
+          var keys = Object.keys(_avatarCache);
+          if (keys.length > 200) {
+            keys.slice(0, keys.length - 200).forEach(function(k) { delete _avatarCache[k]; });
+          }
+          localStorage.setItem('mlb-edge-avatars', JSON.stringify(_avatarCache));
+          // Re-render to show the image
+          if (typeof render === 'function') render();
+        }
+      })
+      .catch(function() { _avatarLoading[key] = false; });
+  }
+  return null; // Not loaded yet, show SVG fallback
+}
+
+// ─── DFS BATTER — Uses AI image if available, SVG fallback ───────────────────
+function playerCardImage(id, teamColor, accentColor, jerseyNum, teamAbbr, playerName) {
+  var imgUrl = getPlayerAvatar(playerName, teamAbbr);
+  if (imgUrl) {
+    return '<img src="' + escapeHtml(imgUrl) + '" class="dfs-batter-img" alt="' + escapeHtml(playerName) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'" />' +
+      '<div style="display:none">' + batterSVG(id, teamColor, accentColor, jerseyNum, teamAbbr) + '</div>';
+  }
+  return batterSVG(id, teamColor, accentColor, jerseyNum, teamAbbr);
+}
+
 // ─── DFS BATTER CARTOON SVG — Team Uniform Style ─────────────────────────────
 function batterSVG(id, teamColor, accentColor, jerseyNum, teamAbbr) {
   var tc = teamColor || '#1e293b';
@@ -549,7 +589,7 @@ function renderScouting() {
           '<div class="dfs-card-grade-badge ' + gradeClass(letter) + '">' + letter + '</div>' +
           // Center: batter silhouette
           '<div class="dfs-card-body">' +
-            batterSVG('sc' + i, tColor, gradeColor, h.lineupOrder || '', h.team) +
+            playerCardImage('sc' + i, tColor, gradeColor, h.lineupOrder || '', h.team, h.name) +
           '</div>' +
           // Name
           '<div class="dfs-card-name">' + escapeHtml(h.name) + '</div>' +
@@ -955,7 +995,7 @@ function renderBudgetBeasts() {
             '<div class="dfs-card-grade-badge" style="color:' + gColor + '">' + b.grade + '</div>' +
             // Batter silhouette
             '<div class="dfs-card-body">' +
-              batterSVG('bb' + i, tColor, gColor, '', b.team) +
+              playerCardImage('bb' + i, tColor, gColor, '', b.team, b.name) +
             '</div>' +
             // Name
             '<div class="dfs-card-name">' + escapeHtml(b.name) + '</div>' +

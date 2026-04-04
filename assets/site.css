@@ -1894,3 +1894,12 @@ body::before {
   min-height: 155px;
   padding: 4px 0;
 }
+
+/* AI-generated player avatar image */
+.dfs-batter-img {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,.6));
+  border-radius: 8px;
+}
