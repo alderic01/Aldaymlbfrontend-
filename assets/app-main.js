@@ -280,7 +280,7 @@ function renderDashboard() {
         allSorted.slice(0, 8).map(function(g) {
           var isLive = g.status === 'Live';
           var isFinal = g.status === 'Final';
-          return '<div class="dash-game ' + (isLive ? 'live' : (isFinal ? 'final' : '')) + '" data-game="' + g.gamePk + '">' +
+          return '<div class="dash-game ' + (isLive ? 'live' : (isFinal ? 'final' : '')) + '" data-game="' + g.gamePk + '" onclick="openGameStack(' + g.gamePk + ')" style="cursor:pointer">' +
             '<div class="dash-game-status">' + (isLive ? '<span class="dash-live-dot"></span> LIVE' : (isFinal ? 'FINAL' : fmtTime(g.gameDate))) + '</div>' +
             '<div class="dash-game-teams">' +
               '<div class="dash-game-row"><span class="dash-team">' + g.away.abbr + '</span><span class="dash-score">' + g.away.score + '</span></div>' +
@@ -383,8 +383,210 @@ function renderDashboard() {
 
     '</div>' +
 
+    // Game Stack Panel (shows when a game is clicked)
+    (state._dashGameStack ? renderGameStackPanel(state._dashGameStack) : '') +
+
   '</div>';
 }
+
+// ─── GAME STACK GENERATOR (per-game optimal lineup) ───────────────────────────
+function openGameStack(gamePk) {
+  var game = state.games.find(function(g) { return g.gamePk === Number(gamePk); });
+  if (!game) return;
+
+  var CAP = 50000;
+  var park = parkFor(game.venue.name);
+  var m = getMarket(game);
+  var awayEdge = teamEdgeScore(game, 'away');
+  var homeEdge = teamEdgeScore(game, 'home');
+
+  // Build pool from ONLY this game's teams
+  var awayKey = (game.away.abbr || '').toUpperCase();
+  var homeKey = (game.home.abbr || '').toUpperCase();
+  var pool = [];
+
+  // Pitchers from this game
+  [{p:game.awayPitcher,team:awayKey,side:'away',oppEdge:homeEdge},
+   {p:game.homePitcher,team:homeKey,side:'home',oppEdge:awayEdge}].forEach(function(x) {
+    if (!x.p || !x.p.name || x.p.name === 'TBD') return;
+    var dk = getDKSalary(x.p.name);
+    var salary = dk ? dk.salary : 8000;
+    if (salary < 1000) salary = 8000;
+    var pts = dkProjectPitcher(x.p, x.oppEdge, park);
+    pool.push({name:x.p.name,team:x.team,pos:'P',salary:salary,proj:pts,isPitcher:true,
+      opp:x.side==='away'?homeKey:awayKey});
+  });
+
+  // Hitters from DK salary data for this game's teams
+  var salarySource = Object.values(state.dkSalaries || {});
+  if (typeof DK_PLAYERS !== 'undefined') {
+    DK_PLAYERS.forEach(function(p) {
+      if (p.salary > 0 && !salarySource.some(function(s) { return s.name && s.name.toLowerCase() === p.name.toLowerCase(); })) {
+        salarySource.push(p);
+      }
+    });
+  }
+
+  salarySource.forEach(function(dk) {
+    if (!dk.salary || dk.salary < 2000) return;
+    if (/^(SP|RP|P)$/i.test(dk.pos || '')) return;
+    var teamKey = (dk.team || '').toUpperCase();
+    if (teamKey !== awayKey && teamKey !== homeKey) return;
+    if (pool.some(function(p) { return p.name.toLowerCase() === dk.name.toLowerCase(); })) return;
+    var isHome = teamKey === homeKey;
+    var oppP = isHome ? game.awayPitcher : game.homePitcher;
+    var pts = dkProjectHitter({avg:.260,ops:.740,slg:.420,obp:.330,hr:15,sb:5,rbi:50,pa:400,batSide:'R',name:dk.name}, oppP||{}, park, m, isHome);
+    if (dk.avgPts > pts) pts = dk.avgPts;
+    pool.push({name:dk.name,team:dk.team,pos:(dk.pos||'OF').toUpperCase(),salary:dk.salary,proj:pts,isPitcher:false,
+      opp:isHome?awayKey:homeKey});
+  });
+
+  // Sort by projection
+  pool.sort(function(a, b) { return b.proj - a.proj; });
+
+  // Build 2 stacks: away-focused and home-focused
+  var stacks = [];
+  [awayKey, homeKey].forEach(function(stackTeam) {
+    var SLOTS = [
+      {label:'P',pos:'P',isPitcher:true},{label:'P',pos:'P',isPitcher:true},
+      {label:'C',pos:'C'},{label:'1B',pos:'1B'},{label:'2B',pos:'2B'},{label:'3B',pos:'3B'},{label:'SS',pos:'SS'},
+      {label:'OF',pos:'OF'},{label:'OF',pos:'OF'},{label:'OF',pos:'OF'}
+    ];
+
+    // Position check
+    function fits(p, slot) {
+      if (slot.isPitcher) return p.isPitcher;
+      if (p.isPitcher) return false;
+      var allPos = p.pos.toUpperCase().split(/[\/,]/);
+      if (slot.pos === 'OF') return allPos.some(function(pp) { return pp==='OF'||pp==='CF'||pp==='LF'||pp==='RF'; });
+      return allPos.some(function(pp) { return pp === slot.pos; });
+    }
+
+    // Boost stack team
+    var boosted = pool.map(function(p) {
+      return Object.assign({}, p, { _proj: p.proj + ((p.team || '').toUpperCase() === stackTeam ? 4 : 0) });
+    }).sort(function(a, b) { return b._proj - a._proj; });
+
+    var lineup = [], used = {}, salaryUsed = 0;
+    SLOTS.forEach(function(slot) {
+      var slotsLeft = SLOTS.length - lineup.length - 1;
+      var maxForThis = CAP - salaryUsed - (slotsLeft * 2000);
+      for (var i = 0; i < boosted.length; i++) {
+        var p = boosted[i];
+        if (used[p.name] || p.salary > maxForThis) continue;
+        if (!fits(p, slot)) continue;
+        lineup.push(Object.assign({}, p, {slotLabel: slot.label}));
+        used[p.name] = true;
+        salaryUsed += p.salary;
+        break;
+      }
+    });
+
+    // Upgrade pass
+    var remaining = CAP - salaryUsed;
+    var rounds = 0;
+    while (remaining > 500 && rounds < 30) {
+      rounds++;
+      var cheapIdx = -1, cheapSal = Infinity;
+      for (var ci = 0; ci < lineup.length; ci++) {
+        if (lineup[ci].salary < cheapSal) { cheapSal = lineup[ci].salary; cheapIdx = ci; }
+      }
+      if (cheapIdx < 0) break;
+      var cheap = lineup[cheapIdx];
+      var maxBudget = cheap.salary + remaining;
+      var upgrade = null;
+      for (var ui = 0; ui < boosted.length; ui++) {
+        var u = boosted[ui];
+        if (used[u.name] || u.salary > maxBudget || u.salary <= cheap.salary || u.proj <= cheap.proj) continue;
+        if (!fits(u, {pos:cheap.slotLabel, isPitcher:cheap.isPitcher})) continue;
+        upgrade = u;
+        break;
+      }
+      if (!upgrade) break;
+      delete used[cheap.name]; used[upgrade.name] = true;
+      salaryUsed = salaryUsed - cheap.salary + upgrade.salary;
+      remaining = CAP - salaryUsed;
+      lineup[cheapIdx] = Object.assign({}, upgrade, {slotLabel: cheap.slotLabel});
+    }
+
+    var totalSalary = lineup.reduce(function(s,p){return s+p.salary;},0);
+    var totalProj = lineup.reduce(function(s,p){return s+p.proj;},0);
+    var stackCount = lineup.filter(function(p) { return (p.team||'').toUpperCase() === stackTeam; }).length;
+
+    stacks.push({
+      stackTeam: stackTeam,
+      lineup: lineup,
+      totalSalary: totalSalary,
+      remaining: CAP - totalSalary,
+      totalProj: Math.round(totalProj * 10) / 10,
+      stackCount: stackCount,
+      valid: lineup.length === 10 && totalSalary <= CAP
+    });
+  });
+
+  state._dashGameStack = {
+    game: game,
+    awayStack: stacks[0],
+    homeStack: stacks[1],
+    park: park,
+    awayEdge: awayEdge,
+    homeEdge: homeEdge
+  };
+  if (typeof render === 'function') render();
+}
+
+function renderGameStackPanel(data) {
+  var g = data.game;
+  var teamImg = typeof getTeamAvatar === 'function' ? getTeamAvatar : function() { return ''; };
+
+  function stackHTML(stack, label) {
+    if (!stack || !stack.lineup.length) return '<div class="card empty">No players found for ' + label + '</div>';
+    return '<div class="lineup-card" style="margin-bottom:14px">' +
+      '<div class="lineup-header">' +
+        '<div class="lineup-label">' + label + ' \u00B7 ' + stack.stackTeam + ' STACK (' + stack.stackCount + ' players)</div>' +
+        '<div class="lineup-total"><strong style="color:#ffd000">' + stack.totalProj + ' pts</strong> \u00B7 $' + stack.totalSalary.toLocaleString() + ' \u00B7 ' + (stack.valid ? '\u2705' : '\u274C') + '</div>' +
+      '</div>' +
+      '<div class="opt-row opt-header"><div class="opt-cell">POS</div><div class="opt-cell">PLAYER</div><div class="opt-cell">TEAM</div><div class="opt-cell">SALARY</div><div class="opt-cell">PROJ</div><div class="opt-cell">IMG</div></div>' +
+      stack.lineup.map(function(p) {
+        var img = teamImg(p.team);
+        var isStack = (p.team || '').toUpperCase() === stack.stackTeam;
+        return '<div class="opt-row" style="' + (isStack ? 'background:rgba(0,255,156,.03)' : '') + '">' +
+          '<div class="opt-cell opt-pos">' + p.slotLabel + '</div>' +
+          '<div class="opt-cell opt-name">' + escapeHtml(p.name) + (isStack ? ' \u{1F525}' : '') + '</div>' +
+          '<div class="opt-cell">' + p.team + '</div>' +
+          '<div class="opt-cell opt-salary">$' + p.salary.toLocaleString() + '</div>' +
+          '<div class="opt-cell opt-proj">' + p.proj.toFixed(1) + '</div>' +
+          '<div class="opt-cell">' + (img ? '<img src="' + img + '" style="width:28px;height:28px;border-radius:6px;object-fit:cover" />' : '') + '</div>' +
+        '</div>';
+      }).join('') +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(30,41,59,.4);background:rgba(6,14,26,.4)">' +
+        '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (stack.totalSalary <= 50000 ? '#00ff9c' : '#ff3b3b') + '">$' + stack.totalSalary.toLocaleString() + '</div><div class="pcard-stat-lbl">SALARY</div></div>' +
+        '<div class="pcard-stat"><div class="pcard-stat-val" style="color:#ffd000">$' + stack.remaining.toLocaleString() + '</div><div class="pcard-stat-lbl">REMAINING</div></div>' +
+        '<div class="pcard-stat"><div class="pcard-stat-val" style="color:#00ff9c">' + stack.totalProj + '</div><div class="pcard-stat-lbl">PROJ PTS</div></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  return '<div class="dash-section" style="margin-top:20px">' +
+    '<div class="dash-header">' +
+      '<span style="font-size:18px">\u{1F3AF}</span> GAME STACK: ' + g.away.abbr + ' @ ' + g.home.abbr +
+      ' <span class="dash-count">' + escapeHtml(g.venue.name) + ' \u00B7 ' + fmtTime(g.gameDate) + '</span>' +
+      '<button class="button" onclick="state._dashGameStack=null;if(typeof render===\'function\')render()" style="margin-left:auto;font-size:11px">\u2716 Close</button>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;padding:0 36px">' +
+      '<div class="stat-box"><div class="label">' + g.away.abbr + ' SP</div><div class="value" style="font-size:18px">' + escapeHtml(g.awayPitcher.name) + '</div><div class="detail">ERA ' + fmtNum(g.awayPitcher.era, 2) + '</div></div>' +
+      '<div class="stat-box"><div class="label">' + g.home.abbr + ' SP</div><div class="value" style="font-size:18px">' + escapeHtml(g.homePitcher.name) + '</div><div class="detail">ERA ' + fmtNum(g.homePitcher.era, 2) + '</div></div>' +
+      '<div class="stat-box"><div class="label">PARK</div><div class="value" style="font-size:18px">' + fmtNum(data.park.run, 2) + 'x</div><div class="detail">Run factor</div></div>' +
+      '<div class="stat-box"><div class="label">EDGE</div><div class="value" style="font-size:18px;color:#00ff9c">' + Math.max(data.awayEdge, data.homeEdge) + '</div><div class="detail">' + (data.awayEdge > data.homeEdge ? g.away.abbr : g.home.abbr) + ' favored</div></div>' +
+    '</div>' +
+    '<div style="padding:0 36px">' +
+      stackHTML(data.awayStack, g.away.abbr + ' STACK') +
+      stackHTML(data.homeStack, g.home.abbr + ' STACK') +
+    '</div>' +
+  '</div>';
+}
+
+window.openGameStack = openGameStack;
 
 // ─── TAB 1: GAMES ──────────────────────────────────────────────────────────────
 function renderGames() {
