@@ -67,6 +67,7 @@ function render() {
     case 'stacks': view.innerHTML = renderStacks(); break;
     case 'aistack': view.innerHTML = renderAIStack(); break;
     case 'optimizer': view.innerHTML = renderOptimizer(); break;
+    case 'overunder': view.innerHTML = renderOverUnder(); break;
     case 'alerts': view.innerHTML = renderAlerts(); break;
     case 'pricing': view.innerHTML = renderPricing(); break;
     case 'settings': view.innerHTML = renderSettings(); break;
@@ -538,6 +539,188 @@ function renderAIStack() {
       '</div>'
     ).join('') : (!state.aiResult && !state.aiLoading ? '<div class="card empty">Click "Generate AI Lineups" to build 5 optimized lineups. Requires DK salaries synced.</div>' : '')) +
     '</section>';
+}
+
+// ─── OVER/UNDER PARLAYS TAB ───────────────────────────────────────────────────
+
+function projectPlayerProps(h, oppP, park, market, isHome) {
+  var era = Number(oppP.era || 4.3), whip = Number(oppP.whip || 1.3), k9 = Number(oppP.k9 || 8.6), hr9 = Number(oppP.hr9 || 1.15);
+  var avg = Number(h.avg || .250), ops = Number(h.ops || .720), slg = Number(h.slg || .400), hr = Number(h.hr || 0), pa = Number(h.pa || 1);
+  var total = Number(market.total || 8.5);
+  var parkRun = Number(park.run || 1), parkHr = Number(park.hr || 1);
+  var homeBoost = isHome ? 1.05 : 0.95;
+
+  // Projected per-game stats based on season rates + matchup adjustments
+  var gamesPlayed = Math.max(1, pa / 4.2); // estimate games from PA
+  var hitsPerGame = avg * 4 * homeBoost * (whip >= 1.3 ? 1.08 : 0.95);
+  var hrsPerGame = (hr / gamesPlayed) * parkHr * (hr9 >= 1.2 ? 1.15 : 0.9) * homeBoost;
+  var rbisPerGame = (hitsPerGame * 0.35 + hrsPerGame * 1.3) * (total / 8.5);
+  var runsPerGame = (hitsPerGame * 0.4 + hrsPerGame * 0.9) * (total / 8.5) * parkRun;
+  var totalBases = hitsPerGame * 1.0 + (slg - avg) * 4 * homeBoost * (hr9 >= 1.2 ? 1.1 : 0.95);
+  var walks = (Number(h.obp || .320) - avg) * 4 * (whip >= 1.35 ? 1.15 : 0.9);
+  var stolenBases = Number(h.sb || 0) / Math.max(1, gamesPlayed) * homeBoost;
+  var hitsRunsRbis = hitsPerGame + runsPerGame + rbisPerGame;
+  var fantasyScore = hitsPerGame * 3 + totalBases * 1.5 + hrsPerGame * 10 + rbisPerGame * 2 + runsPerGame * 2 + walks * 2 + stolenBases * 5;
+
+  return {
+    hits: { proj: hitsPerGame, line: 0.5, label: 'Hits' },
+    runs: { proj: runsPerGame, line: 0.5, label: 'Runs' },
+    rbis: { proj: rbisPerGame, line: 0.5, label: 'RBIs' },
+    hrs: { proj: hrsPerGame, line: 0.5, label: 'Home Runs' },
+    totalBases: { proj: totalBases, line: 1.5, label: 'Total Bases' },
+    hitsRunsRbis: { proj: hitsRunsRbis, line: 2.5, label: 'H+R+RBI' },
+    walks: { proj: walks, line: 0.5, label: 'Walks' },
+    stolenBases: { proj: stolenBases, line: 0.5, label: 'Stolen Bases' },
+    fantasyScore: { proj: fantasyScore, line: 15, label: 'Hitter Fantasy Score' }
+  };
+}
+
+function projectPitcherProps(p, oppTeamEdge, park) {
+  var era = Number(p.era || 4.3), whip = Number(p.whip || 1.3), k9 = Number(p.k9 || 8.6), hr9 = Number(p.hr9 || 1.15);
+  var expIP = starterProjection(p);
+  var parkRun = Number(park.run || 1);
+
+  var strikeouts = (k9 / 9) * expIP * (oppTeamEdge <= 55 ? 1.05 : 0.9);
+  var outs = expIP * 3;
+  var hitsAllowed = whip * expIP * 0.7 * parkRun;
+  var earnedRuns = (era / 9) * expIP * parkRun;
+  var firstInningRuns = (era / 9) * 1 * (whip >= 1.3 ? 1.2 : 0.85) * parkRun;
+  var pitcherFantasy = expIP * 2.25 + strikeouts * 2 - earnedRuns * 2 - hitsAllowed * 0.6 + (era <= 3.5 ? 4 : 0);
+
+  return {
+    strikeouts: { proj: strikeouts, line: 5.5, label: 'Strikeouts' },
+    outs: { proj: outs, line: 16.5, label: 'Pitching Outs' },
+    hitsAllowed: { proj: hitsAllowed, line: 5.5, label: 'Hits Allowed' },
+    earnedRuns: { proj: earnedRuns, line: 2.5, label: 'Earned Runs' },
+    firstInningRuns: { proj: firstInningRuns, line: 0.5, label: '1st Inning Runs' },
+    pitcherFantasy: { proj: pitcherFantasy, line: 20, label: 'Pitcher Fantasy Score' }
+  };
+}
+
+function ouVerdict(proj, line) {
+  var diff = proj - line;
+  var pct = Math.min(95, Math.max(5, 50 + diff * 30));
+  var pick = pct >= 55 ? 'OVER' : (pct <= 45 ? 'UNDER' : 'PUSH');
+  var confidence = Math.abs(pct - 50);
+  var stars = confidence >= 30 ? 5 : confidence >= 20 ? 4 : confidence >= 12 ? 3 : confidence >= 5 ? 2 : 1;
+  return { pick: pick, pct: Math.round(pct), confidence: confidence, stars: stars };
+}
+
+function renderOverUnder() {
+  if (!state.games.length) return '<div class="empty">Load games first to see Over/Under projections.</div>';
+
+  // Filter mode
+  var filterMode = state._ouFilter || 'all';
+
+  // Build all player props
+  var hitterProps = [];
+  var pitcherProps = [];
+
+  state.games.forEach(function(g) {
+    var park = parkFor(g.venue.name);
+    var m = getMarket(g);
+    var awayEdge = teamEdgeScore(g, 'away'), homeEdge = teamEdgeScore(g, 'home');
+
+    // Pitchers
+    if (g.awayPitcher && g.awayPitcher.name && g.awayPitcher.name !== 'TBD') {
+      var pp = projectPitcherProps(g.awayPitcher, homeEdge, park);
+      Object.keys(pp).forEach(function(k) {
+        var prop = pp[k];
+        var v = ouVerdict(prop.proj, prop.line);
+        pitcherProps.push({ name: g.awayPitcher.name, team: g.away.abbr, opp: g.home.abbr, venue: g.venue.name, prop: prop.label, proj: prop.proj, line: prop.line, pick: v.pick, pct: v.pct, stars: v.stars, confidence: v.confidence, type: 'pitcher' });
+      });
+    }
+    if (g.homePitcher && g.homePitcher.name && g.homePitcher.name !== 'TBD') {
+      var pp2 = projectPitcherProps(g.homePitcher, awayEdge, park);
+      Object.keys(pp2).forEach(function(k) {
+        var prop = pp2[k];
+        var v = ouVerdict(prop.proj, prop.line);
+        pitcherProps.push({ name: g.homePitcher.name, team: g.home.abbr, opp: g.away.abbr, venue: g.venue.name, prop: prop.label, proj: prop.proj, line: prop.line, pick: v.pick, pct: v.pct, stars: v.stars, confidence: v.confidence, type: 'pitcher' });
+      });
+    }
+
+    // Hitters (from selected game only for performance)
+    if (state.selectedGameData && g.gamePk === state.selectedGamePk) {
+      var sg = state.selectedGameData;
+      [].concat(sg.awayHitters || []).concat(sg.homeHitters || []).forEach(function(h) {
+        var isHome = (sg.homeHitters || []).indexOf(h) >= 0;
+        var oppP = isHome ? sg.awayPitcher : sg.homePitcher;
+        var hp = projectPlayerProps(h, oppP, park, m, isHome);
+        Object.keys(hp).forEach(function(k) {
+          var prop = hp[k];
+          var v = ouVerdict(prop.proj, prop.line);
+          hitterProps.push({ name: h.name, team: isHome ? sg.home.abbr : sg.away.abbr, opp: isHome ? sg.away.abbr : sg.home.abbr, pos: h.pos || '-', venue: g.venue.name, prop: prop.label, proj: prop.proj, line: prop.line, pick: v.pick, pct: v.pct, stars: v.stars, confidence: v.confidence, type: 'hitter' });
+        });
+      });
+    }
+  });
+
+  // Sort by confidence (best picks first)
+  pitcherProps.sort(function(a, b) { return b.confidence - a.confidence; });
+  hitterProps.sort(function(a, b) { return b.confidence - a.confidence; });
+
+  var allProps = filterMode === 'pitchers' ? pitcherProps : (filterMode === 'hitters' ? hitterProps : pitcherProps.concat(hitterProps));
+  allProps.sort(function(a, b) { return b.confidence - a.confidence; });
+
+  // Best parlay picks (top confidence)
+  var bestPicks = allProps.filter(function(p) { return p.confidence >= 15; }).slice(0, 8);
+
+  return '<section>' +
+    '<div class="section-title"><h2>\u{1F3B0} OVER/UNDER PARLAYS</h2><div class="meta">Player prop projections \u00B7 Vegas lines + stats-based analysis \u00B7 ' + allProps.length + ' props</div></div>' +
+
+    // Filter buttons
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' +
+      '<button class="button ' + (filterMode === 'all' ? 'primary' : '') + '" onclick="state._ouFilter=\'all\';if(typeof render===\'function\')render()">All Props</button>' +
+      '<button class="button ' + (filterMode === 'pitchers' ? 'primary' : '') + '" onclick="state._ouFilter=\'pitchers\';if(typeof render===\'function\')render()">\u26BE Pitcher Props</button>' +
+      '<button class="button ' + (filterMode === 'hitters' ? 'primary' : '') + '" onclick="state._ouFilter=\'hitters\';if(typeof render===\'function\')render()">\u{1F3CF} Hitter Props</button>' +
+    '</div>' +
+
+    // Best Parlay Picks
+    (bestPicks.length ? '<div class="dash-card" style="margin-bottom:16px"><div class="dash-card-title">\u{1F525} TOP PARLAY PICKS — Highest Confidence</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;padding:14px">' +
+        bestPicks.map(function(p) {
+          var pickColor = p.pick === 'OVER' ? '#00ff9c' : (p.pick === 'UNDER' ? '#59a9ff' : '#ffd000');
+          return '<div class="ou-pick-card" style="--ou-color:' + pickColor + '">' +
+            '<div class="ou-pick-top">' +
+              '<div><strong>' + escapeHtml(p.name) + '</strong> <span style="color:var(--muted);font-size:11px">' + p.team + '</span></div>' +
+              '<div class="ou-pick-verdict" style="color:' + pickColor + '">' + p.pick + '</div>' +
+            '</div>' +
+            '<div class="ou-pick-prop">' + p.prop + '</div>' +
+            '<div class="ou-pick-nums">' +
+              '<span>Line: <strong>' + p.line.toFixed(1) + '</strong></span>' +
+              '<span>Proj: <strong style="color:' + pickColor + '">' + p.proj.toFixed(2) + '</strong></span>' +
+              '<span>' + '\u2B50'.repeat(p.stars) + '</span>' +
+            '</div>' +
+            '<div class="ou-pick-bar"><div class="ou-pick-fill" style="width:' + p.pct + '%;background:' + pickColor + '"></div></div>' +
+          '</div>';
+        }).join('') +
+      '</div></div>' : '') +
+
+    // Full Props Table
+    '<div class="dash-card">' +
+      '<div class="dash-card-title">ALL PLAYER PROPS</div>' +
+      '<div class="table-wrap"><table class="ou-table">' +
+        '<thead><tr><th>Player</th><th>Team</th><th>Prop</th><th>Line</th><th>Proj</th><th>Pick</th><th>Conf</th><th>Rating</th></tr></thead>' +
+        '<tbody>' +
+          allProps.slice(0, 80).map(function(p) {
+            var pickColor = p.pick === 'OVER' ? '#00ff9c' : (p.pick === 'UNDER' ? '#59a9ff' : '#ffd000');
+            return '<tr>' +
+              '<td><strong>' + escapeHtml(p.name) + '</strong></td>' +
+              '<td>' + p.team + '</td>' +
+              '<td style="font-size:12px">' + p.prop + '</td>' +
+              '<td class="mono">' + p.line.toFixed(1) + '</td>' +
+              '<td class="mono" style="color:' + pickColor + ';font-weight:800">' + p.proj.toFixed(2) + '</td>' +
+              '<td><span class="ou-tag" style="background:' + pickColor + '22;color:' + pickColor + ';border:1px solid ' + pickColor + '44">' + p.pick + '</span></td>' +
+              '<td class="mono">' + p.pct + '%</td>' +
+              '<td>' + '\u2B50'.repeat(p.stars) + '</td>' +
+            '</tr>';
+          }).join('') +
+        '</tbody>' +
+      '</table></div>' +
+    '</div>' +
+
+    (!hitterProps.length ? '<div style="color:var(--muted);font-size:13px;margin-top:12px;text-align:center">Select a game from the Games tab to see hitter props. Pitcher props shown for all games.</div>' : '') +
+  '</section>';
 }
 
 // ─── TAB 6: OPTIMIZER ─────────────────────────────────────────────────────────
