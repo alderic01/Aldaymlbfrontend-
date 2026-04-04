@@ -53,66 +53,71 @@ export default async function handler(req, res) {
   const prompt = `A bold cartoon mascot-style baseball player avatar in a full mid-swing batting stance, bat fully extended, powerful follow-through. Wearing a ${teamData.name} uniform with ${teamData.primary} and ${teamData.secondary} colors, ${teamData.emblem} on cap and jersey. ${teamData.pinstripe ? 'White pinstripe uniform.' : 'Solid color uniform.'} Batting helmet, cleats. Clean dark background, flat vector illustration style, strong outlines, bright colors. No text, no watermarks, 1:1 square format.`;
 
   try {
-    // Try Gemini Imagen API
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GOOGLE_KEY}`;
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        instances: [{ prompt: prompt }],
-        parameters: { sampleCount: 1, aspectRatio: '1:1' }
-      })
-    });
+    // Try image generation models in order of preference
+    const imageModels = [
+      'gemini-3.1-flash-image-preview',  // Nano Banana 2
+      'gemini-2.5-flash-image',          // Nano Banana
+      'gemini-3-pro-image-preview',      // Nano Banana Pro
+    ];
 
-    if (!resp.ok) {
-      // Fallback: try Gemini generateContent with image generation
-      // Try multiple image-capable models
-      const imageModels = [
-        'gemini-2.0-flash-preview-image-generation',
-        'gemini-2.0-flash-exp-image-generation',
-        'gemini-1.5-flash'
-      ];
-      let resp2 = null;
-      for (const model of imageModels) {
-        const url2 = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_KEY}`;
-        resp2 = await fetch(url2, {
+    let imageUrl = null;
+    let lastError = '';
+
+    for (const model of imageModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_KEY}`;
+        const resp = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: 'Generate an image: ' + prompt }] }],
+            contents: [{ parts: [{ text: prompt }] }],
             generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
           })
         });
-        if (resp2.ok) break;
-      }
 
-      if (!resp2.ok) {
-        const errBody = await resp2.text().catch(() => '');
-        return res.status(200).json({ error: `Google AI returned ${resp2.status}`, detail: errBody.substring(0, 300) });
-      }
+        if (!resp.ok) {
+          lastError = `${model}: ${resp.status}`;
+          continue;
+        }
 
-      const data2 = await resp2.json();
-      // Look for inline image data in the response
-      const parts = data2.candidates?.[0]?.content?.parts || [];
-      const imgPart = parts.find(p => p.inlineData);
-      if (imgPart && imgPart.inlineData) {
-        const dataUrl = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
-        cache[cacheKey] = dataUrl;
-        return res.status(200).json({ url: dataUrl, player: name, team: team, source: 'gemini' });
-      }
+        const data = await resp.json();
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        const imgPart = parts.find(p => p.inlineData);
 
-      return res.status(200).json({ error: 'No image generated', response: JSON.stringify(data2).substring(0, 500) });
+        if (imgPart && imgPart.inlineData) {
+          imageUrl = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+          cache[cacheKey] = imageUrl;
+          return res.status(200).json({ url: imageUrl, player: name, team: team, source: model });
+        }
+        lastError = `${model}: no image in response`;
+      } catch (e) {
+        lastError = `${model}: ${e.message}`;
+      }
     }
 
-    const data = await resp.json();
-    const predictions = data.predictions || [];
-    if (predictions.length && predictions[0].bytesBase64Encoded) {
-      const dataUrl = `data:image/png;base64,${predictions[0].bytesBase64Encoded}`;
-      cache[cacheKey] = dataUrl;
-      return res.status(200).json({ url: dataUrl, player: name, team: team, source: 'imagen' });
-    }
+    // Fallback: try Imagen 4
+    try {
+      const imgUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${GOOGLE_KEY}`;
+      const imgResp = await fetch(imgUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instances: [{ prompt: prompt }],
+          parameters: { sampleCount: 1, aspectRatio: '1:1' }
+        })
+      });
+      if (imgResp.ok) {
+        const imgData = await imgResp.json();
+        const predictions = imgData.predictions || [];
+        if (predictions.length && predictions[0].bytesBase64Encoded) {
+          imageUrl = `data:image/png;base64,${predictions[0].bytesBase64Encoded}`;
+          cache[cacheKey] = imageUrl;
+          return res.status(200).json({ url: imageUrl, player: name, team: team, source: 'imagen-4' });
+        }
+      }
+    } catch (e) { lastError += ` | imagen-4: ${e.message}`; }
 
-    return res.status(200).json({ error: 'No image in response', data: JSON.stringify(data).substring(0, 500) });
+    return res.status(200).json({ error: 'All models failed', detail: lastError });
   } catch (err) {
     return res.status(200).json({ error: err.message });
   }
