@@ -46,31 +46,44 @@ function runScoreColor(score) {
 // ─── PLAYER AVATAR IMAGE LOADER (Nano Banana 2) ──────────────────────────────
 var _avatarCache = JSON.parse(localStorage.getItem('mlb-edge-avatars') || '{}');
 var _avatarLoading = {};
+var _avatarQueue = [];
+var _avatarProcessing = false;
+
+function _processAvatarQueue() {
+  if (_avatarProcessing || !_avatarQueue.length) return;
+  _avatarProcessing = true;
+  var item = _avatarQueue.shift();
+  fetch('/api/player-avatar?name=' + encodeURIComponent(item.name) + '&team=' + encodeURIComponent(item.team))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.url && d.url.length > 50) {
+        _avatarCache[item.key] = d.url;
+        var keys = Object.keys(_avatarCache);
+        if (keys.length > 100) {
+          keys.slice(0, keys.length - 100).forEach(function(k) { delete _avatarCache[k]; });
+        }
+        try { localStorage.setItem('mlb-edge-avatars', JSON.stringify(_avatarCache)); } catch(e) {}
+        if (typeof render === 'function') render();
+      }
+    })
+    .catch(function() {})
+    .finally(function() {
+      _avatarProcessing = false;
+      // Wait 6 seconds between requests to avoid rate limit
+      if (_avatarQueue.length) setTimeout(_processAvatarQueue, 6000);
+    });
+}
 
 function getPlayerAvatar(name, team) {
   var key = (name || '').toLowerCase() + '_' + (team || '').toUpperCase();
   if (_avatarCache[key]) return _avatarCache[key];
-  // Trigger async load if not already loading
   if (!_avatarLoading[key]) {
     _avatarLoading[key] = true;
-    fetch('/api/player-avatar?name=' + encodeURIComponent(name) + '&team=' + encodeURIComponent(team))
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (d.url) {
-          _avatarCache[key] = d.url;
-          // Save to localStorage (limit cache size)
-          var keys = Object.keys(_avatarCache);
-          if (keys.length > 200) {
-            keys.slice(0, keys.length - 200).forEach(function(k) { delete _avatarCache[k]; });
-          }
-          localStorage.setItem('mlb-edge-avatars', JSON.stringify(_avatarCache));
-          // Re-render to show the image
-          if (typeof render === 'function') render();
-        }
-      })
-      .catch(function() { _avatarLoading[key] = false; });
+    _avatarQueue.push({ name: name, team: team, key: key });
+    // Only process if not already running
+    if (!_avatarProcessing) _processAvatarQueue();
   }
-  return null; // Not loaded yet, show SVG fallback
+  return null;
 }
 
 // ─── DFS BATTER — Uses AI image if available, SVG fallback ───────────────────
