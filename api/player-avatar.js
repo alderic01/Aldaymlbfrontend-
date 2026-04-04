@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 
   try {
     // Try Gemini Imagen API
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GOOGLE_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GOOGLE_KEY}`;
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
 
     if (!resp.ok) {
       // Fallback: try Gemini generateContent with image generation
-      const url2 = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_KEY}`;
+      const url2 = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_KEY}`;
       const resp2 = await fetch(url2, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
