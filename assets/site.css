@@ -1883,3 +1883,14 @@ body::before {
 .dfs-card-body {
   min-height: 150px;
 }
+
+/* Cartoon batter SVG — larger viewBox */
+.dfs-batter-svg {
+  width: 90px;
+  height: 130px;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,.6));
+}
+.dfs-card-body {
+  min-height: 155px;
+  padding: 4px 0;
+}

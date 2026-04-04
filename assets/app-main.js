@@ -43,55 +43,114 @@ function runScoreColor(score) {
   return '#ff3b3b';
 }
 
-// ─── DFS BATTER SILHOUETTE SVG ────────────────────────────────────────────────
-function batterSVG(id, teamColor, accentColor, jerseyNum) {
+// ─── DFS BATTER CARTOON SVG — Team Uniform Style ─────────────────────────────
+function batterSVG(id, teamColor, accentColor, jerseyNum, teamAbbr) {
   var tc = teamColor || '#1e293b';
   var ac = accentColor || '#00ff9c';
   var num = jerseyNum || '';
-  return '<svg viewBox="0 0 100 140" class="dfs-batter-svg" fill="none">' +
+  var abbr = (teamAbbr || '').substring(0, 3);
+
+  // Team uniform data: [hatColor, hatLetter, uniformAccent, socks, pinstripe]
+  var uniforms = {
+    NYY:['#1c2841','NY','#1c2841','#1c2841',true],BOS:['#BD3039','B','#BD3039','#BD3039',false],
+    LAD:['#005A9C','LA','#005A9C','#005A9C',false],ATL:['#CE1141','A','#CE1141','#CE1141',false],
+    HOU:['#002D62','H','#EB6E1F','#EB6E1F',false],NYM:['#002D72','NY','#002D72','#FF5910',true],
+    PHI:['#E81828','P','#E81828','#E81828',true],SD:['#2F241D','SD','#FFC425','#2F241D',false],
+    SF:['#FD5A1E','SF','#FD5A1E','#27251F',false],CHC:['#0E3386','C','#CC3433','#CC3433',true],
+    STL:['#C41E3A','STL','#C41E3A','#C41E3A',false],MIL:['#12284B','M','#FFC52F','#12284B',false],
+    CIN:['#C6011F','C','#C6011F','#C6011F',false],PIT:['#27251F','P','#FDB827','#FDB827',false],
+    ARI:['#A71930','A','#A71930','#E3D4AD',false],COL:['#33006F','CR','#33006F','#C4CED4',true],
+    MIA:['#00A3E0','M','#00A3E0','#EF3340',false],WSH:['#AB0003','W','#AB0003','#AB0003',false],
+    TB:['#092C5C','TB','#092C5C','#8FBCE6',false],BAL:['#DF4601','O','#DF4601','#DF4601',false],
+    CLE:['#00385D','C','#E31937','#00385D',false],DET:['#0C2340','D','#0C2340','#0C2340',false],
+    KC:['#004687','KC','#004687','#004687',false],MIN:['#002B5C','M','#D31145','#002B5C',true],
+    CWS:['#27251F','S','#27251F','#27251F',true],TEX:['#003278','T','#C0111F','#003278',false],
+    LAA:['#BA0021','A','#BA0021','#BA0021',false],SEA:['#0C2C56','S','#005C5C','#0C2C56',false],
+    OAK:['#003831','A','#003831','#EFB21E',false],TOR:['#134A8E','T','#134A8E','#134A8E',false],
+    ATH:['#003831','A','#003831','#EFB21E',false]
+  };
+  var u = uniforms[abbr] || ['#1e293b', abbr.charAt(0) || '?', tc, tc, false];
+  var hatC = u[0], hatLtr = u[1], uniAccent = u[2], socksC = u[3], pinstripe = u[4];
+
+  // Skin tones — rotate based on id hash for variety
+  var skinTones = ['#F5D6B8', '#D4A574', '#8D5524', '#C68642', '#E8B98A', '#6B4226'];
+  var hash = 0;
+  for (var si = 0; si < id.length; si++) hash = ((hash << 5) - hash + id.charCodeAt(si)) | 0;
+  var skin = skinTones[Math.abs(hash) % skinTones.length];
+  var skinDark = skinTones[Math.min(skinTones.length - 1, (Math.abs(hash) % skinTones.length) + 1)];
+
+  return '<svg viewBox="0 0 120 160" class="dfs-batter-svg" fill="none">' +
     '<defs>' +
-      '<linearGradient id="bg' + id + '" x1="50" y1="0" x2="50" y2="140" gradientUnits="userSpaceOnUse">' +
-        '<stop offset="0" stop-color="#c0c8d4" stop-opacity=".6"/>' +
-        '<stop offset=".5" stop-color="#8896a8" stop-opacity=".4"/>' +
-        '<stop offset="1" stop-color="#4a5568" stop-opacity=".2"/>' +
-      '</linearGradient>' +
-      '<linearGradient id="body' + id + '" x1="40" y1="30" x2="60" y2="120" gradientUnits="userSpaceOnUse">' +
-        '<stop offset="0" stop-color="#d0d8e4" stop-opacity=".7"/>' +
-        '<stop offset="1" stop-color="#6b7a8d" stop-opacity=".35"/>' +
-      '</linearGradient>' +
-      '<linearGradient id="bat' + id + '" x1="0" y1="0" x2="1" y2="1">' +
-        '<stop offset="0" stop-color="#e8d8b0" stop-opacity=".9"/>' +
-        '<stop offset="1" stop-color="#a08850" stop-opacity=".7"/>' +
-      '</linearGradient>' +
+      '<linearGradient id="uni' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0f0f0"/><stop offset="1" stop-color="#d8d8d8"/></linearGradient>' +
+      '<linearGradient id="bat' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8d8a8"/><stop offset=".5" stop-color="#c4a860"/><stop offset="1" stop-color="#a08840"/></linearGradient>' +
     '</defs>' +
-    // Helmet
-    '<ellipse cx="42" cy="22" rx="14" ry="15" fill="url(#bg' + id + ')" stroke="' + ac + '" stroke-width="1" stroke-opacity=".4"/>' +
-    '<ellipse cx="42" cy="19" rx="15" ry="8" fill="' + tc + '" opacity=".5"/>' +
-    // Head/face
-    '<circle cx="42" cy="26" r="10" fill="url(#bg' + id + ')"/>' +
-    // Body — batting stance, leaning forward
-    '<path d="M30 48c0-6 4-12 12-12s14 6 14 12v32c0 3-2 5-5 5H35c-3 0-5-2-5-5V48z" fill="url(#body' + id + ')" stroke="' + ac + '" stroke-width=".8" stroke-opacity=".25"/>' +
-    // Front arm (reaching to bat)
-    '<path d="M44 44c4-2 10-4 16-2" stroke="url(#body' + id + ')" stroke-width="6" stroke-linecap="round"/>' +
-    // Back arm
-    '<path d="M34 46c-3-1-6-3-8-2" stroke="url(#body' + id + ')" stroke-width="5" stroke-linecap="round"/>' +
-    // Bat — angled up in stance
-    '<rect x="58" y="14" width="4" height="52" rx="2" transform="rotate(20 58 14)" fill="url(#bat' + id + ')" stroke="#c8b070" stroke-width=".5" stroke-opacity=".4"/>' +
-    // Bat knob
-    '<circle cx="55" cy="62" r="3" fill="#a08850" opacity=".7"/>' +
-    // Front leg
-    '<path d="M38 83l-6 32" stroke="url(#body' + id + ')" stroke-width="7" stroke-linecap="round"/>' +
-    // Back leg
-    '<path d="M46 83l8 30" stroke="url(#body' + id + ')" stroke-width="7" stroke-linecap="round"/>' +
-    // Front shoe
-    '<ellipse cx="30" cy="116" rx="8" ry="4" fill="#333" opacity=".7"/>' +
-    // Back shoe
-    '<ellipse cx="56" cy="114" rx="8" ry="4" fill="#333" opacity=".7"/>' +
+
+    // === HAT (team color with brim) ===
+    '<ellipse cx="52" cy="24" rx="18" ry="10" fill="' + hatC + '"/>' +
+    '<path d="M34 24c0-10 8-18 18-18s18 8 18 18" fill="' + hatC + '"/>' +
+    '<ellipse cx="52" cy="24" rx="22" ry="5" fill="' + hatC + '" opacity=".9"/>' +
+    // Hat letter
+    '<text x="52" y="20" text-anchor="middle" font-size="12" font-weight="900" fill="white" font-family="Barlow Condensed" opacity=".9">' + hatLtr + '</text>' +
+
+    // === HEAD + FACE ===
+    '<circle cx="52" cy="32" r="12" fill="' + skin + '"/>' +
+    // Eyes
+    '<circle cx="48" cy="30" r="1.5" fill="#222"/>' +
+    '<circle cx="56" cy="30" r="1.5" fill="#222"/>' +
+    // Mouth (determined look)
+    '<path d="M48 36 Q52 38 56 36" stroke="#222" stroke-width="1" fill="none"/>' +
+
+    // === NECK ===
+    '<rect x="48" y="43" width="8" height="6" rx="2" fill="' + skin + '"/>' +
+
+    // === BODY (jersey — white with team pinstripes + accent) ===
+    '<path d="M34 52c0-4 6-8 18-8s18 4 18 8v36c0 3-3 6-6 6H40c-3 0-6-3-6-6V52z" fill="url(#uni' + id + ')" stroke="' + uniAccent + '" stroke-width="1" stroke-opacity=".4"/>' +
+    // Pinstripes
+    (pinstripe ? '<line x1="40" y1="46" x2="40" y2="92" stroke="' + uniAccent + '" stroke-width=".5" opacity=".3"/>' +
+      '<line x1="46" y1="44" x2="46" y2="92" stroke="' + uniAccent + '" stroke-width=".5" opacity=".3"/>' +
+      '<line x1="52" y1="44" x2="52" y2="92" stroke="' + uniAccent + '" stroke-width=".5" opacity=".3"/>' +
+      '<line x1="58" y1="44" x2="58" y2="92" stroke="' + uniAccent + '" stroke-width=".5" opacity=".3"/>' +
+      '<line x1="64" y1="46" x2="64" y2="92" stroke="' + uniAccent + '" stroke-width=".5" opacity=".3"/>' : '') +
     // Jersey number
-    '<text x="38" y="70" text-anchor="middle" font-size="16" font-weight="900" fill="' + ac + '" opacity=".7" font-family="Barlow Condensed">' + num + '</text>' +
-    // Fire icons for high grades (rendered via CSS glow instead)
+    '<text x="52" y="76" text-anchor="middle" font-size="18" font-weight="900" fill="' + uniAccent + '" font-family="Barlow Condensed" opacity=".8">' + num + '</text>' +
+    // Belt
+    '<rect x="34" y="86" width="36" height="4" rx="1" fill="' + uniAccent + '" opacity=".7"/>' +
+    '<rect x="50" y="85" width="4" height="6" rx="1" fill="#d4a000" opacity=".8"/>' +
+
+    // === ARMS (skin + batting stance) ===
+    // Back arm (raised, holding bat)
+    '<path d="M36 54c-6-2-12-6-14-4" stroke="' + skin + '" stroke-width="7" stroke-linecap="round"/>' +
+    '<path d="M22 50c-2-4 0-10 4-14" stroke="' + skin + '" stroke-width="6" stroke-linecap="round"/>' +
+    // Front arm (extended)
+    '<path d="M66 56c6-4 14-6 18-4" stroke="' + skin + '" stroke-width="7" stroke-linecap="round"/>' +
+    // Gloves
+    '<circle cx="22" cy="50" r="4" fill="' + uniAccent + '" opacity=".7"/>' +
+    '<circle cx="84" cy="52" r="4" fill="' + uniAccent + '" opacity=".7"/>' +
+
+    // === BAT ===
+    '<rect x="18" y="10" width="4.5" height="56" rx="2" transform="rotate(-30 18 10)" fill="url(#bat' + id + ')" stroke="#b09850" stroke-width=".5"/>' +
+    // Bat knob
+    '<circle cx="24" cy="52" r="3.5" fill="#8a6830"/>' +
+    // Bat barrel end
+    '<ellipse cx="8" cy="18" rx="4" ry="3" fill="#c4a860" transform="rotate(-30 8 18)"/>' +
+
+    // === PANTS (white, same as jersey) ===
+    // Front leg (stride)
+    '<path d="M40 90l-10 38" stroke="#e8e8e8" stroke-width="10" stroke-linecap="round"/>' +
+    // Back leg
+    '<path d="M56 90l10 34" stroke="#e8e8e8" stroke-width="10" stroke-linecap="round"/>' +
+
+    // === SOCKS (team color) ===
+    '<path d="M28 124l-2 6" stroke="' + socksC + '" stroke-width="10" stroke-linecap="round"/>' +
+    '<path d="M68 120l2 6" stroke="' + socksC + '" stroke-width="10" stroke-linecap="round"/>' +
+
+    // === CLEATS ===
+    '<ellipse cx="24" cy="134" rx="10" ry="5" fill="#222"/>' +
+    '<ellipse cx="72" cy="130" rx="10" ry="5" fill="#222"/>' +
+
   '</svg>';
 }
+
 
 // ─── RENDER DISPATCHER ─────────────────────────────────────────────────────────
 function render() {
@@ -490,7 +549,7 @@ function renderScouting() {
           '<div class="dfs-card-grade-badge ' + gradeClass(letter) + '">' + letter + '</div>' +
           // Center: batter silhouette
           '<div class="dfs-card-body">' +
-            batterSVG('sc' + i, tColor, gradeColor, h.lineupOrder || '') +
+            batterSVG('sc' + i, tColor, gradeColor, h.lineupOrder || '', h.team) +
           '</div>' +
           // Name
           '<div class="dfs-card-name">' + escapeHtml(h.name) + '</div>' +
@@ -896,7 +955,7 @@ function renderBudgetBeasts() {
             '<div class="dfs-card-grade-badge" style="color:' + gColor + '">' + b.grade + '</div>' +
             // Batter silhouette
             '<div class="dfs-card-body">' +
-              batterSVG('bb' + i, tColor, gColor, '') +
+              batterSVG('bb' + i, tColor, gColor, '', b.team) +
             '</div>' +
             // Name
             '<div class="dfs-card-name">' + escapeHtml(b.name) + '</div>' +
