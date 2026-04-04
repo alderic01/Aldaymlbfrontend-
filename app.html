@@ -87,6 +87,10 @@ function claimAccess(){
     </div>
     <div class="toolbar">
       <span id="planBadge"></span>
+      <select id="slateSelect" class="field small-field" onchange="if(typeof switchSlate==='function')switchSlate(this.value)" style="font-weight:800;color:#ffd000">
+        <option value="early">EARLY (4PM)</option>
+        <option value="main">MAIN (7PM)</option>
+      </select>
       <span id="dateDisplay" class="date-display"></span>
       <span id="statusDot" class="status-dot"></span>
       <button class="button" onclick="if(typeof refreshSlate==='function')refreshSlate()" id="refreshBtn">&#8635; Refresh</button>
@@ -174,6 +178,7 @@ function claimAccess(){
 <script src="./assets/app-core.js"></script>
 <script src="./assets/app-main.js"></script>
 <script src="./assets/dk-salaries-inject.js"></script>
+<script src="./assets/dk-slate-main.js"></script>
 <script src="./assets/savant-bridge.js"></script>
 <script src="./assets/mlb-advanced-grading.js"></script>
 </body>

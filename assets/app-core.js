@@ -978,4 +978,52 @@ window.addAlert = addAlert;
 window.markAlertsRead = markAlertsRead;
 window.generateSlateAlerts = generateSlateAlerts;
 window.syncPlayerProps = syncPlayerProps;
+
+// ─── Slate Selector ──────────────────────────────────────────────────────────
+state.activeSlate = 'early';
+
+function switchSlate(slateId) {
+  state.activeSlate = slateId;
+  console.log('[Slate] Switching to:', slateId);
+
+  if (slateId === 'main' && typeof DK_SLATE_MAIN !== 'undefined') {
+    // Load main slate players into DK salaries
+    var newSalaries = {};
+    DK_SLATE_MAIN.players.forEach(function(p) {
+      if (p.salary > 0) {
+        newSalaries[p.name.toLowerCase()] = {
+          name: p.name, salary: p.salary, pos: p.pos,
+          team: p.team, avgPts: p.avgPts || 0
+        };
+      }
+    });
+    state.dkSalaries = newSalaries;
+    state.dkSalaryDate = DK_SLATE_MAIN.date;
+    state.dkSyncStatus = { status: 'ok', updatedAt: new Date().toISOString(), error: '' };
+    localStorage.setItem('mlb-edge-dk-salaries', JSON.stringify(state.dkSalaries));
+    console.log('[Slate] Loaded MAIN slate:', Object.keys(newSalaries).length, 'players');
+  } else {
+    // Load early slate from DK_PLAYERS (dk-salaries-inject.js)
+    if (typeof DK_PLAYERS !== 'undefined') {
+      var earlySalaries = {};
+      DK_PLAYERS.forEach(function(p) {
+        if (p.salary > 0) {
+          earlySalaries[p.name.toLowerCase()] = {
+            name: p.name, salary: p.salary, pos: p.pos,
+            team: p.team, avgPts: p.avgPts || 0
+          };
+        }
+      });
+      state.dkSalaries = earlySalaries;
+      state.dkSalaryDate = DK_SLATE_DATE || '04/04/2026';
+      state.dkSyncStatus = { status: 'ok', updatedAt: new Date().toISOString(), error: '' };
+      localStorage.setItem('mlb-edge-dk-salaries', JSON.stringify(state.dkSalaries));
+      console.log('[Slate] Loaded EARLY slate:', Object.keys(earlySalaries).length, 'players');
+    }
+  }
+
+  // Re-render
+  if (typeof render === 'function') render();
+}
+window.switchSlate = switchSlate;
 window.getPlayerPropLine = getPlayerPropLine;
