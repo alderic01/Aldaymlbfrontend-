@@ -1931,3 +1931,9 @@ body::before {
 .dash-game-btn.live {
   border-color: rgba(255,59,59,.3);
 }
+
+/* Ensure main content is above body::before overlay */
+.main-content { position: relative; z-index: 1; }
+.topbar { position: relative; z-index: 50; }
+.sidebar { position: relative; z-index: 10; }
+.dash-game-btn { position: relative; z-index: 2; }

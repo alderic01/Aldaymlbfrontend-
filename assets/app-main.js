@@ -393,9 +393,18 @@ function renderDashboard() {
 // ─── GAME STACK GENERATOR (per-game optimal lineup) ───────────────────────────
 function openGameStack(gamePk) {
   try {
-  console.log('[GameStack] Opening game:', gamePk);
+  console.log('[GameStack] Opening game:', gamePk, 'Total games:', state.games.length);
   var game = state.games.find(function(g) { return g.gamePk === Number(gamePk); });
-  if (!game) { console.log('[GameStack] Game not found:', gamePk); return; }
+  if (!game) {
+    // Try string match
+    game = state.games.find(function(g) { return String(g.gamePk) === String(gamePk); });
+  }
+  if (!game && state.games.length > 0) {
+    // Fallback: use first game
+    console.log('[GameStack] gamePk not found, using first game. Available:', state.games.map(function(g){return g.gamePk}).join(','));
+    game = state.games[0];
+  }
+  if (!game) { console.log('[GameStack] No games available'); return; }
 
   var CAP = 50000;
   var park = parkFor(game.venue.name);
