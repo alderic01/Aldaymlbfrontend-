@@ -68,6 +68,7 @@ function render() {
     case 'aistack': view.innerHTML = renderAIStack(); break;
     case 'optimizer': view.innerHTML = renderOptimizer(); break;
     case 'overunder': view.innerHTML = renderOverUnder(); break;
+    case 'budget': view.innerHTML = renderBudgetBeasts(); break;
     case 'alerts': view.innerHTML = renderAlerts(); break;
     case 'pricing': view.innerHTML = renderPricing(); break;
     case 'settings': view.innerHTML = renderSettings(); break;
@@ -725,6 +726,182 @@ function renderOverUnder() {
     (!hitterProps.length ? '<div style="color:var(--muted);font-size:13px;margin-top:12px;text-align:center">Select a game from the Games tab to see hitter props. Pitcher props shown for all games.</div>' : '') +
   '</section>';
 }
+
+// ─── BUDGET BEASTS TAB ────────────────────────────────────────────────────────
+
+state._budgetMax = state._budgetMax || 3500;
+
+function getBudgetBeasts(maxSal) {
+  var beasts = [];
+  var pool = Object.values(state.dkSalaries || {});
+  if (!pool.length) return beasts;
+
+  pool.forEach(function(dk) {
+    if (!dk.salary || dk.salary > maxSal || dk.salary < 2000) return;
+    if (/^(SP|RP|P)$/i.test(dk.pos || '')) return;
+
+    var teamKey = (dk.team || '').toUpperCase();
+    // Find the game this player is in
+    var gameCtx = null;
+    state.games.forEach(function(g) {
+      if ((g.away.abbr || '').toUpperCase() === teamKey || (g.home.abbr || '').toUpperCase() === teamKey) gameCtx = g;
+    });
+    if (!gameCtx) return;
+
+    var isHome = (gameCtx.home.abbr || '').toUpperCase() === teamKey;
+    var oppP = isHome ? gameCtx.awayPitcher : gameCtx.homePitcher;
+    var park = parkFor(gameCtx.venue.name);
+    var m = getMarket(gameCtx);
+    var pWeak = pitcherWeakness(oppP || {});
+    var handEdge = handednessEdge('R', (oppP || {}).pitchHand || 'R');
+
+    // Score this beast
+    var matchupScore = pWeak * 0.4 + (park.run || 1) * 20 + (park.hr || 1) * 15;
+    matchupScore += handEdge > 0 ? 8 : -3;
+    matchupScore += isHome ? 5 : 0;
+    matchupScore += Number(m.total || 8.5) > 9 ? 6 : 0;
+    var valueScore = matchupScore / (dk.salary / 1000);
+    var projPts = dk.avgPts || (matchupScore * 0.18);
+
+    // Grade
+    var grade = valueScore >= 18 ? 'A+' : valueScore >= 14 ? 'A' : valueScore >= 11 ? 'B+' : valueScore >= 8 ? 'B' : 'C';
+    var gradeColor = grade === 'A+' ? '#00ff9c' : grade === 'A' ? '#00e88a' : grade === 'B+' ? '#ffd000' : grade === 'B' ? '#f59e0b' : '#94a3b8';
+
+    beasts.push({
+      name: dk.name, team: dk.team, pos: dk.pos, salary: dk.salary,
+      avgPts: projPts, matchupScore: Math.round(matchupScore),
+      valueScore: Math.round(valueScore * 10) / 10,
+      grade: grade, gradeColor: gradeColor,
+      oppPitcher: oppP ? oppP.name : 'TBD', pWeak: pWeak,
+      venue: gameCtx.venue.name, parkRun: park.run, parkHr: park.hr,
+      isHome: isHome, handEdge: handEdge,
+      total: Number(m.total || 0), opp: isHome ? gameCtx.away.abbr : gameCtx.home.abbr
+    });
+  });
+
+  // Also check graded hitters from selected game
+  if (state.selectedGameData) {
+    var sg = state.selectedGameData;
+    [].concat(sg.awayHitters || []).concat(sg.homeHitters || []).forEach(function(h) {
+      var dk = getDKSalary(h.name);
+      if (!dk || dk.salary > maxSal || dk.salary < 2000) return;
+      if (beasts.some(function(b) { return b.name.toLowerCase() === h.name.toLowerCase(); })) return;
+      var isHome = (sg.homeHitters || []).indexOf(h) >= 0;
+      var oppP = isHome ? sg.awayPitcher : sg.homePitcher;
+      var pWeak = pitcherWeakness(oppP || {});
+      var park = parkFor(sg.venue.name);
+      var score = h.grade ? h.grade.score : 50;
+      var valueScore = score / (dk.salary / 1000);
+      var grade = score >= 88 ? 'A+' : score >= 78 ? 'A' : score >= 68 ? 'B+' : score >= 56 ? 'B' : 'C';
+      var gradeColor = grade === 'A+' ? '#00ff9c' : grade === 'A' ? '#00e88a' : grade === 'B+' ? '#ffd000' : '#f59e0b';
+      beasts.push({
+        name: h.name, team: dk.team, pos: dk.pos || h.pos, salary: dk.salary,
+        avgPts: dk.avgPts || score * 0.4, matchupScore: score,
+        valueScore: Math.round(valueScore * 10) / 10,
+        grade: grade, gradeColor: gradeColor,
+        oppPitcher: oppP ? oppP.name : 'TBD', pWeak: pWeak,
+        venue: sg.venue.name, parkRun: park.run, parkHr: park.hr,
+        isHome: isHome, handEdge: 0, total: 0,
+        opp: isHome ? sg.away.abbr : sg.home.abbr
+      });
+    });
+  }
+
+  beasts.sort(function(a, b) { return b.valueScore - a.valueScore; });
+  return beasts;
+}
+
+function renderBudgetBeasts() {
+  var maxSal = state._budgetMax || 3500;
+  var beasts = getBudgetBeasts(maxSal);
+
+  // Team colors for cards
+  var tc = {NYY:'#003087',BOS:'#BD3039',LAD:'#005A9C',ATL:'#CE1141',HOU:'#EB6E1F',NYM:'#002D72',PHI:'#E81828',SD:'#2F241D',SF:'#FD5A1E',CHC:'#0E3386',STL:'#C41E3A',MIL:'#FFC52F',CIN:'#C6011F',PIT:'#FDB827',ARI:'#A71930',COL:'#33006F',MIA:'#00A3E0',WSH:'#AB0003',TB:'#092C5C',BAL:'#DF4601',CLE:'#00385D',DET:'#0C2340',KC:'#004687',MIN:'#002B5C',CWS:'#27251F',TEX:'#003278',LAA:'#BA0021',SEA:'#0C2C56',OAK:'#003831',TOR:'#134A8E',ATH:'#003831'};
+
+  return '<section>' +
+    '<div class="section-title"><h2>\u{1F4B0} BUDGET BEASTS</h2><div class="meta">Best value plays under $' + maxSal.toLocaleString() + ' \u00B7 ' + beasts.length + ' players found</div></div>' +
+
+    // Salary slider
+    '<div class="dash-card" style="margin-bottom:20px">' +
+      '<div style="padding:20px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+          '<div style="font-family:Barlow Condensed;font-size:20px;font-weight:800;letter-spacing:1px">MAX SALARY</div>' +
+          '<div id="budgetDisplay" style="font-family:JetBrains Mono;font-size:32px;font-weight:900;color:#ffd000">$' + maxSal.toLocaleString() + '</div>' +
+        '</div>' +
+        '<input type="range" id="budgetSlider" min="2000" max="3500" step="100" value="' + maxSal + '" oninput="updateBudgetSlider(this.value)" class="budget-slider" />' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px">' +
+          '<span>$2,000</span><span>$2,500</span><span>$3,000</span><span>$3,500</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // Beast cards grid
+    (beasts.length ? '<div class="dfs-card-grid">' +
+      beasts.slice(0, 20).map(function(b, i) {
+        var tColor = tc[b.team] || '#1e293b';
+        var gColor = b.gradeColor;
+        var gDim = gColor + '22';
+        return '<div class="dfs-card" style="--glow:' + gColor + ';--glow-dim:' + gDim + ';--tc:' + tColor + '">' +
+          '<div class="dfs-card-inner">' +
+            // Header
+            '<div class="dfs-card-header">' +
+              '<span class="dfs-card-team">' + escapeHtml(b.team) + '</span>' +
+              '<span class="dfs-card-pos">' + escapeHtml(b.pos || '-') + '</span>' +
+            '</div>' +
+            // Grade badge
+            '<div class="dfs-card-grade-badge" style="color:' + gColor + '">' + b.grade + '</div>' +
+            // Batter silhouette
+            '<div class="dfs-card-body">' +
+              '<svg viewBox="0 0 100 130" class="dfs-batter-svg" fill="none">' +
+                '<defs><linearGradient id="bb' + i + '" x1="50" y1="0" x2="50" y2="130" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="' + tColor + '" stop-opacity=".3"/><stop offset="1" stop-color="' + tColor + '" stop-opacity=".05"/></linearGradient></defs>' +
+                '<circle cx="50" cy="26" r="16" fill="url(#bb' + i + ')" stroke="' + gColor + '" stroke-width="1.5" stroke-opacity=".5"/>' +
+                '<path d="M32 56c0-10 8-18 18-18s18 8 18 18v38c0 3-2.5 5.5-5.5 5.5h-25c-3 0-5.5-2.5-5.5-5.5V56z" fill="url(#bb' + i + ')" stroke="' + gColor + '" stroke-width="1" stroke-opacity=".3"/>' +
+                '<rect x="66" y="36" width="5" height="48" rx="2.5" transform="rotate(25 66 36)" fill="' + gColor + '" opacity=".4"/>' +
+              '</svg>' +
+            '</div>' +
+            // Name
+            '<div class="dfs-card-name">' + escapeHtml(b.name) + '</div>' +
+            // Matchup info
+            '<div style="text-align:center;padding:0 10px 8px;font-size:11px;color:#475569">' +
+              'vs ' + escapeHtml(b.oppPitcher) + ' (' + b.opp + ')' +
+              (b.pWeak >= 65 ? ' <span style="color:#00ff9c">\u{1F525}</span>' : '') +
+            '</div>' +
+            // Stats row
+            '<div class="dfs-card-stats" style="grid-template-columns:1fr 1fr 1fr">' +
+              '<div class="dfs-card-stat"><div class="dfs-stat-label">SALARY</div><div class="dfs-stat-value gold">$' + b.salary.toLocaleString() + '</div></div>' +
+              '<div class="dfs-card-stat"><div class="dfs-stat-label">VALUE</div><div class="dfs-stat-value" style="color:' + gColor + '">' + b.valueScore + '</div></div>' +
+              '<div class="dfs-card-stat"><div class="dfs-stat-label">P.WEAK</div><div class="dfs-stat-value" style="color:' + (b.pWeak >= 65 ? '#00ff9c' : b.pWeak >= 50 ? '#ffd000' : '#ff3b3b') + '">' + b.pWeak + '</div></div>' +
+            '</div>' +
+            // Score bar
+            '<div class="dfs-card-score-bar"><div class="dfs-card-score-fill" style="width:' + Math.min(100, b.matchupScore) + '%;background:' + gColor + '"></div></div>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>' : '<div class="card empty">No budget plays found. Try increasing the salary cap or load more games.</div>') +
+
+    // Why these picks section
+    (beasts.length >= 3 ? '<div class="dash-card" style="margin-top:20px"><div class="dash-card-title">\u{1F4A1} WHY THESE BEASTS</div>' +
+      '<div style="padding:16px;font-size:13px;color:#94a3b8;line-height:1.7">' +
+        'Budget Beasts are ranked by <strong style="color:#ffd000">VALUE SCORE</strong> — matchup quality divided by salary cost. ' +
+        'High value scores mean you\'re getting elite matchup exposure at minimum salary. ' +
+        'Key factors: <strong style="color:#00ff9c">pitcher weakness</strong> (high ERA/WHIP opponent), ' +
+        '<strong style="color:#00ff9c">park factor</strong> (hitter-friendly venues), ' +
+        '<strong style="color:#00ff9c">platoon advantage</strong>, and <strong style="color:#00ff9c">Vegas total</strong> (high-scoring games). ' +
+        'Use these to fill your cheap slots and stack expensive arms + bats elsewhere.' +
+      '</div></div>' : '') +
+
+  '</section>';
+}
+
+function updateBudgetSlider(val) {
+  state._budgetMax = Number(val);
+  var display = document.getElementById('budgetDisplay');
+  if (display) display.textContent = '$' + Number(val).toLocaleString();
+  // Debounce the re-render
+  clearTimeout(state._budgetTimer);
+  state._budgetTimer = setTimeout(function() { if (typeof render === 'function') render(); }, 200);
+}
+window.updateBudgetSlider = updateBudgetSlider;
 
 // ─── TAB 6: OPTIMIZER ─────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
