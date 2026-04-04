@@ -562,16 +562,18 @@ function projectPlayerProps(h, oppP, park, market, isHome) {
   var hitsRunsRbis = hitsPerGame + runsPerGame + rbisPerGame;
   var fantasyScore = hitsPerGame * 3 + totalBases * 1.5 + hrsPerGame * 10 + rbisPerGame * 2 + runsPerGame * 2 + walks * 2 + stolenBases * 5;
 
+  // Use live Vegas lines if available, fallback to defaults
+  var name = h.name || '';
   return {
-    hits: { proj: hitsPerGame, line: 0.5, label: 'Hits' },
-    runs: { proj: runsPerGame, line: 0.5, label: 'Runs' },
-    rbis: { proj: rbisPerGame, line: 0.5, label: 'RBIs' },
-    hrs: { proj: hrsPerGame, line: 0.5, label: 'Home Runs' },
-    totalBases: { proj: totalBases, line: 1.5, label: 'Total Bases' },
-    hitsRunsRbis: { proj: hitsRunsRbis, line: 2.5, label: 'H+R+RBI' },
-    walks: { proj: walks, line: 0.5, label: 'Walks' },
-    stolenBases: { proj: stolenBases, line: 0.5, label: 'Stolen Bases' },
-    fantasyScore: { proj: fantasyScore, line: 15, label: 'Hitter Fantasy Score' }
+    hits: { proj: hitsPerGame, line: getPlayerPropLine(name, 'hits') || 0.5, label: 'Hits', live: !!getPlayerPropLine(name, 'hits') },
+    runs: { proj: runsPerGame, line: getPlayerPropLine(name, 'runs_scored') || 0.5, label: 'Runs', live: !!getPlayerPropLine(name, 'runs_scored') },
+    rbis: { proj: rbisPerGame, line: getPlayerPropLine(name, 'rbis') || 0.5, label: 'RBIs', live: !!getPlayerPropLine(name, 'rbis') },
+    hrs: { proj: hrsPerGame, line: getPlayerPropLine(name, 'home_runs') || 0.5, label: 'Home Runs', live: !!getPlayerPropLine(name, 'home_runs') },
+    totalBases: { proj: totalBases, line: getPlayerPropLine(name, 'total_bases') || 1.5, label: 'Total Bases', live: !!getPlayerPropLine(name, 'total_bases') },
+    hitsRunsRbis: { proj: hitsRunsRbis, line: getPlayerPropLine(name, 'hits_runs_rbis') || 2.5, label: 'H+R+RBI', live: !!getPlayerPropLine(name, 'hits_runs_rbis') },
+    walks: { proj: walks, line: getPlayerPropLine(name, 'walks') || 0.5, label: 'Walks', live: !!getPlayerPropLine(name, 'walks') },
+    stolenBases: { proj: stolenBases, line: getPlayerPropLine(name, 'stolen_bases') || 0.5, label: 'Stolen Bases', live: !!getPlayerPropLine(name, 'stolen_bases') },
+    fantasyScore: { proj: fantasyScore, line: 15, label: 'Hitter Fantasy Score', live: false }
   };
 }
 
@@ -587,13 +589,14 @@ function projectPitcherProps(p, oppTeamEdge, park) {
   var firstInningRuns = (era / 9) * 1 * (whip >= 1.3 ? 1.2 : 0.85) * parkRun;
   var pitcherFantasy = expIP * 2.25 + strikeouts * 2 - earnedRuns * 2 - hitsAllowed * 0.6 + (era <= 3.5 ? 4 : 0);
 
+  var name = p.name || '';
   return {
-    strikeouts: { proj: strikeouts, line: 5.5, label: 'Strikeouts' },
-    outs: { proj: outs, line: 16.5, label: 'Pitching Outs' },
-    hitsAllowed: { proj: hitsAllowed, line: 5.5, label: 'Hits Allowed' },
-    earnedRuns: { proj: earnedRuns, line: 2.5, label: 'Earned Runs' },
-    firstInningRuns: { proj: firstInningRuns, line: 0.5, label: '1st Inning Runs' },
-    pitcherFantasy: { proj: pitcherFantasy, line: 20, label: 'Pitcher Fantasy Score' }
+    strikeouts: { proj: strikeouts, line: getPlayerPropLine(name, 'strikeouts') || 5.5, label: 'Strikeouts', live: !!getPlayerPropLine(name, 'strikeouts') },
+    outs: { proj: outs, line: getPlayerPropLine(name, 'outs') || 16.5, label: 'Pitching Outs', live: !!getPlayerPropLine(name, 'outs') },
+    hitsAllowed: { proj: hitsAllowed, line: getPlayerPropLine(name, 'hits_allowed') || 5.5, label: 'Hits Allowed', live: !!getPlayerPropLine(name, 'hits_allowed') },
+    earnedRuns: { proj: earnedRuns, line: getPlayerPropLine(name, 'earned_runs') || 2.5, label: 'Earned Runs', live: !!getPlayerPropLine(name, 'earned_runs') },
+    firstInningRuns: { proj: firstInningRuns, line: 0.5, label: '1st Inning Runs', live: false },
+    pitcherFantasy: { proj: pitcherFantasy, line: 20, label: 'Pitcher Fantasy Score', live: false }
   };
 }
 
@@ -627,7 +630,7 @@ function renderOverUnder() {
       Object.keys(pp).forEach(function(k) {
         var prop = pp[k];
         var v = ouVerdict(prop.proj, prop.line);
-        pitcherProps.push({ name: g.awayPitcher.name, team: g.away.abbr, opp: g.home.abbr, venue: g.venue.name, prop: prop.label, proj: prop.proj, line: prop.line, pick: v.pick, pct: v.pct, stars: v.stars, confidence: v.confidence, type: 'pitcher' });
+        pitcherProps.push({ name: g.awayPitcher.name, team: g.away.abbr, opp: g.home.abbr, venue: g.venue.name, prop: prop.label, proj: prop.proj, line: prop.line, pick: v.pick, pct: v.pct, stars: v.stars, confidence: v.confidence, type: 'pitcher', live: prop.live });
       });
     }
     if (g.homePitcher && g.homePitcher.name && g.homePitcher.name !== 'TBD') {
@@ -635,7 +638,7 @@ function renderOverUnder() {
       Object.keys(pp2).forEach(function(k) {
         var prop = pp2[k];
         var v = ouVerdict(prop.proj, prop.line);
-        pitcherProps.push({ name: g.homePitcher.name, team: g.home.abbr, opp: g.away.abbr, venue: g.venue.name, prop: prop.label, proj: prop.proj, line: prop.line, pick: v.pick, pct: v.pct, stars: v.stars, confidence: v.confidence, type: 'pitcher' });
+        pitcherProps.push({ name: g.homePitcher.name, team: g.home.abbr, opp: g.away.abbr, venue: g.venue.name, prop: prop.label, proj: prop.proj, line: prop.line, pick: v.pick, pct: v.pct, stars: v.stars, confidence: v.confidence, type: 'pitcher', live: prop.live });
       });
     }
 
@@ -708,7 +711,7 @@ function renderOverUnder() {
               '<td><strong>' + escapeHtml(p.name) + '</strong></td>' +
               '<td>' + p.team + '</td>' +
               '<td style="font-size:12px">' + p.prop + '</td>' +
-              '<td class="mono">' + p.line.toFixed(1) + '</td>' +
+              '<td class="mono">' + p.line.toFixed(1) + (p.live ? ' <span style="font-size:9px;color:#00ff9c;font-weight:800">LIVE</span>' : '') + '</td>' +
               '<td class="mono" style="color:' + pickColor + ';font-weight:800">' + p.proj.toFixed(2) + '</td>' +
               '<td><span class="ou-tag" style="background:' + pickColor + '22;color:' + pickColor + ';border:1px solid ' + pickColor + '44">' + p.pick + '</span></td>' +
               '<td class="mono">' + p.pct + '%</td>' +

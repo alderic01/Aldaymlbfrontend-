@@ -42,7 +42,7 @@ const TEAM_NAME_ALIASES={
   'los angeles angels':'los angeles angels','la angels':'los angeles angels',
   'arizona d-backs':'arizona diamondbacks','dbacks':'arizona diamondbacks','diamondbacks':'arizona diamondbacks'
 };
-const ODDS_API_KEY='30b9f498731b8fa9f78a6aefd7764f3a';
+const ODDS_API_KEY='dc199f784d8f6207d8ce12a0bd10ff44';
 const state={
   tab:'dashboard',selectedDate:new Date().toISOString().slice(0,10),season:new Date().getFullYear(),
   loading:false,games:[],selectedGamePk:null,selectedGameData:null,stackRows:[],teamEdges:[],
@@ -389,6 +389,74 @@ async function syncOddsForSlate(){
   render();
 }
 
+// ─── Live Player Props from The Odds API ────────────────────────────────────
+state.playerProps = state.playerProps || {};
+state.playerPropsStatus = state.playerPropsStatus || { status: 'idle' };
+
+async function syncPlayerProps() {
+  state.playerPropsStatus = { status: 'loading' };
+  try {
+    var apiKey = state.apiConfig.oddsApiKey || ODDS_API_KEY;
+    var region = state.apiConfig.oddsRegion || 'us';
+    var markets = [
+      'batter_hits','batter_total_bases','batter_rbis','batter_runs_scored',
+      'batter_home_runs','batter_walks','batter_stolen_bases',
+      'batter_hits_runs_rbis',
+      'pitcher_strikeouts','pitcher_outs','pitcher_hits_allowed',
+      'pitcher_earned_runs'
+    ].join(',');
+    var url = 'https://api.the-odds-api.com/v4/sports/baseball_mlb/events/?apiKey=' + apiKey + '&regions=' + region + '&markets=' + markets + '&oddsFormat=american';
+    var resp = await fetch(url);
+    if (!resp.ok) {
+      // Try alternate endpoint format
+      url = 'https://api.the-odds-api.com/v4/sports/baseball_mlb/odds/?apiKey=' + apiKey + '&regions=' + region + '&markets=' + markets + '&oddsFormat=american';
+      resp = await fetch(url);
+    }
+    if (!resp.ok) throw new Error('Props API returned ' + resp.status);
+    var data = await resp.json();
+    var events = Array.isArray(data) ? data : (data.data || []);
+
+    var props = {};
+    events.forEach(function(ev) {
+      var bms = ev.bookmakers || [];
+      bms.forEach(function(bm) {
+        (bm.markets || []).forEach(function(mkt) {
+          (mkt.outcomes || []).forEach(function(o) {
+            var playerName = (o.description || o.name || '').toLowerCase();
+            if (!playerName) return;
+            if (!props[playerName]) props[playerName] = {};
+            var propKey = mkt.key.replace('batter_', '').replace('pitcher_', '');
+            if (!props[playerName][propKey]) props[playerName][propKey] = [];
+            props[playerName][propKey].push({
+              book: bm.title || bm.key,
+              name: o.name,
+              point: o.point,
+              price: o.price,
+              market: mkt.key
+            });
+          });
+        });
+      });
+    });
+
+    state.playerProps = props;
+    state.playerPropsStatus = { status: 'ok', updatedAt: new Date().toISOString(), count: Object.keys(props).length };
+    console.log('[Props] Loaded player props for ' + Object.keys(props).length + ' players');
+  } catch (err) {
+    state.playerPropsStatus = { status: 'error', error: err.message };
+    console.warn('[Props] Failed:', err.message);
+  }
+}
+
+function getPlayerPropLine(playerName, propKey) {
+  var key = (playerName || '').toLowerCase();
+  var p = state.playerProps[key];
+  if (!p || !p[propKey] || !p[propKey].length) return null;
+  // Get the first Over line
+  var over = p[propKey].find(function(o) { return o.name === 'Over'; });
+  return over ? over.point : p[propKey][0].point;
+}
+
 async function syncDKSalaries(){
   const base=String(state.apiConfig.proxyBaseUrl||'https://newest-mlb-1.onrender.com').replace(/\/$/,'');
   state.dkSyncStatus={status:'loading',updatedAt:null,error:''};
@@ -686,6 +754,7 @@ async function loadSlate(){
     if(state.selectedGamePk)await loadSelectedGame(state.selectedGamePk);
     if(state.apiConfig.autoSyncWeather||state.apiConfig.autoSyncOdds)try{await syncLiveFeeds();}catch(e){console.warn(e);}
     try{if(typeof autoPullDKSalaries==='function')await autoPullDKSalaries();else await syncDKSalaries();}catch(e){console.warn('DK sync:',e);}
+    try{await syncPlayerProps();}catch(e){console.warn('Props sync:',e);}
   }catch(err){console.error(err);state.games=[];state.stackRows=[];state.teamEdges=[];state.selectedGameData=null;}
   finally{state.loading=false;buildHero();if(typeof render==='function')render();}
 }
@@ -908,3 +977,5 @@ window.buildStackRecommendation = buildStackRecommendation;
 window.addAlert = addAlert;
 window.markAlertsRead = markAlertsRead;
 window.generateSlateAlerts = generateSlateAlerts;
+window.syncPlayerProps = syncPlayerProps;
+window.getPlayerPropLine = getPlayerPropLine;
