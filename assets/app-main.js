@@ -1037,18 +1037,34 @@ function runEliteOptimizer() {
       });
     }
 
-    // Also pull from DK salary pool for games we haven't loaded hitters for
+    // Pull ALL hitters from DK salary data for this game's teams
     Object.values(state.dkSalaries || {}).forEach(function(dk) {
       if (!dk.salary || dk.salary < 2000) return;
-      if (/^(SP|RP|P)$/i.test(dk.pos || '')) return;
       var teamKey = (dk.team || '').toUpperCase();
       if ((g.away.abbr || '').toUpperCase() !== teamKey && (g.home.abbr || '').toUpperCase() !== teamKey) return;
       if (pool.some(function(p) { return p.name.toLowerCase() === dk.name.toLowerCase(); })) return;
+      var isPitch = /^(SP|RP|P)$/i.test(dk.pos || '');
+      if (isPitch) return; // pitchers already added from game data
       var isHome = (g.home.abbr || '').toUpperCase() === teamKey;
       var oppP = isHome ? g.awayPitcher : g.homePitcher;
       var pts = dk.avgPts || (dk.salary / 1000 * 2.5);
       pool.push({ name: dk.name, team: dk.team, pos: (dk.pos || 'OF').toUpperCase(), salary: dk.salary, proj: pts, gamePk: g.gamePk, isPitcher: false, grade: 50 });
     });
+
+    // Also pull from hardcoded DK_PLAYERS (dk-salaries-inject.js) which has correct positions
+    if (typeof DK_PLAYERS !== 'undefined') {
+      DK_PLAYERS.forEach(function(dk) {
+        if (!dk.salary || dk.salary < 2000) return;
+        var teamKey = (dk.team || '').toUpperCase();
+        if ((g.away.abbr || '').toUpperCase() !== teamKey && (g.home.abbr || '').toUpperCase() !== teamKey) return;
+        if (pool.some(function(p) { return p.name.toLowerCase() === dk.name.toLowerCase(); })) return;
+        var isPitch = /^(SP|RP|P)$/i.test(dk.pos || '');
+        if (isPitch) return;
+        var isHome = (g.home.abbr || '').toUpperCase() === teamKey;
+        var pts = dk.avgPts || (dk.salary / 1000 * 2.5);
+        pool.push({ name: dk.name, team: dk.team, pos: (dk.pos || dk.rosterPos || 'OF').toUpperCase(), salary: dk.salary, proj: pts, gamePk: g.gamePk, isPitcher: false, grade: 50 });
+      });
+    }
   });
 
   // De-duplicate
@@ -1059,6 +1075,11 @@ function runEliteOptimizer() {
     seen[k] = true;
     return true;
   });
+
+  // Debug: log position breakdown
+  var posCounts = {};
+  pool.forEach(function(p) { var pp = p.pos; posCounts[pp] = (posCounts[pp] || 0) + 1; });
+  console.log('[Optimizer] Pool:', pool.length, 'players. Positions:', JSON.stringify(posCounts));
 
   // Stack boost
   if (stackTeam) {
@@ -1098,15 +1119,27 @@ function runEliteOptimizer() {
         if (used[p.name]) continue;
         if (p.salary > maxForThis) continue;
 
-        // Position match
+        // Position match — handle multi-position (e.g. "C/1B", "1B/OF", "SS/2B")
         if (slot.isPitcher) {
           if (!p.isPitcher) continue;
         } else {
           if (p.isPitcher) continue;
-          var ppos = p.pos.replace(/\/.*/,'');
-          if (slot.pos === 'OF') { if (ppos !== 'OF' && ppos !== 'CF' && ppos !== 'LF' && ppos !== 'RF') continue; }
-          else if (slot.pos === 'C') { if (ppos !== 'C') continue; }
-          else { if (ppos !== slot.pos) continue; }
+          var allPos = p.pos.toUpperCase().split(/[\/,]/);
+          var matched = false;
+          if (slot.pos === 'OF') {
+            matched = allPos.some(function(pp) { return pp === 'OF' || pp === 'CF' || pp === 'LF' || pp === 'RF'; });
+          } else if (slot.pos === 'C') {
+            matched = allPos.some(function(pp) { return pp === 'C'; });
+          } else if (slot.pos === '1B') {
+            matched = allPos.some(function(pp) { return pp === '1B'; });
+          } else if (slot.pos === '2B') {
+            matched = allPos.some(function(pp) { return pp === '2B'; });
+          } else if (slot.pos === '3B') {
+            matched = allPos.some(function(pp) { return pp === '3B'; });
+          } else if (slot.pos === 'SS') {
+            matched = allPos.some(function(pp) { return pp === 'SS'; });
+          }
+          if (!matched) continue;
         }
 
         // Max 5 hitters per team
