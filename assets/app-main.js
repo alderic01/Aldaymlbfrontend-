@@ -391,8 +391,10 @@ function renderDashboard() {
 
 // ─── GAME STACK GENERATOR (per-game optimal lineup) ───────────────────────────
 function openGameStack(gamePk) {
+  try {
+  console.log('[GameStack] Opening game:', gamePk);
   var game = state.games.find(function(g) { return g.gamePk === Number(gamePk); });
-  if (!game) return;
+  if (!game) { console.log('[GameStack] Game not found:', gamePk); return; }
 
   var CAP = 50000;
   var park = parkFor(game.venue.name);
@@ -532,7 +534,9 @@ function openGameStack(gamePk) {
     awayEdge: awayEdge,
     homeEdge: homeEdge
   };
+  console.log('[GameStack] Built stacks:', stacks[0]?.lineup?.length, 'away +', stacks[1]?.lineup?.length, 'home players');
   if (typeof render === 'function') render();
+  } catch(err) { console.error('[GameStack] Error:', err.message, err.stack); }
 }
 
 function renderGameStackPanel(data) {
