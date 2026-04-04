@@ -727,44 +727,298 @@ function renderOverUnder() {
 }
 
 // ─── TAB 6: OPTIMIZER ─────────────────────────────────────────────────────────
-function renderOptimizer() {
-  return '<section>' +
-    '<div class="section-title"><h2>\u{1F527} DK LINEUP OPTIMIZER</h2><div class="meta">DraftKings $50,000 salary cap \u00B7 10 players</div></div>' +
-    '<div class="card" style="padding:20px;margin-bottom:16px">' +
-      '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">' +
-        '<label style="flex:1;min-width:200px"><span style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;display:block;margin-bottom:6px">STACK TEAM (optional)</span>' +
-          '<select id="optStackTeam" class="field" style="width:100%">' +
-            '<option value="">No stack preference</option>' +
-            state.games.map(g => '<option value="' + g.home.abbr + '">' + g.home.abbr + '</option><option value="' + g.away.abbr + '">' + g.away.abbr + '</option>').join('') +
-          '</select></label>' +
-        '<button class="button primary" onclick="runOptimizer()" style="height:42px">\u{1F3AF} Optimize Lineup</button>' +
-      '</div>' +
-    '</div>' +
-    (state.optimizerResult ? renderOptimizerResult(state.optimizerResult) : '<div class="card empty">Click Optimize to generate the best DraftKings lineup.</div>') +
-    '</section>';
+// ═══════════════════════════════════════════════════════════════════════════════
+// DK MLB CLASSIC OPTIMIZER — Exact Scoring + Constraints
+// $50K cap, 2P/C/1B/2B/3B/SS/3OF, 2-game min, 5-hitter max per team
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function dkProjectHitter(h, oppP, park, market, isHome) {
+  var avg = Number(h.avg || .250), slg = Number(h.slg || .400), obp = Number(h.obp || .320);
+  var hr = Number(h.hr || 0), sb = Number(h.sb || 0), pa = Math.max(1, Number(h.pa || 200));
+  var rbi = Number(h.rbi || 0), runs = Number(h.ops || .720) > 0 ? Number(h.rbi || 0) * 0.8 : 0;
+  var era = Number(oppP.era || 4.3), whip = Number(oppP.whip || 1.3), hr9 = Number(oppP.hr9 || 1.15);
+  var total = Number(market.total || 8.5);
+  var pkR = Number(park.run || 1), pkH = Number(park.hr || 1);
+  var hb = isHome ? 1.04 : 0.96;
+  var gp = Math.max(1, pa / 4.1);
+  // Per-game rates
+  var hpg = avg * 4 * hb * (whip >= 1.3 ? 1.06 : 0.96);
+  var singlesR = hpg * (1 - (slg - avg) / Math.max(.001, slg));
+  var xbhR = hpg - singlesR;
+  var doublesR = xbhR * 0.55;
+  var triplesR = xbhR * 0.05;
+  var hrR = (hr / gp) * pkH * (hr9 >= 1.2 ? 1.12 : 0.92) * hb;
+  var rbiR = (rbi / gp) * (total / 8.5) * hb * pkR;
+  var runsR = rbiR * 0.85;
+  var bbR = (obp - avg) * 4 * (whip >= 1.35 ? 1.1 : 0.9);
+  var hbpR = 0.08;
+  var sbR = (sb / gp) * hb;
+  // DK Scoring
+  var pts = singlesR * 3 + doublesR * 5 + triplesR * 8 + hrR * 10 + rbiR * 2 + runsR * 2 + bbR * 2 + hbpR * 2 + sbR * 5;
+  return Math.round(pts * 100) / 100;
 }
 
-function renderOptimizerResult(r) {
-  if (!r) return '';
-  return '<div class="lineup-card">' +
-    '<div class="lineup-header">' +
-      '<div class="lineup-label">OPTIMIZED LINEUP</div>' +
-      '<div class="lineup-total">$' + r.totalSalary.toLocaleString() + ' / $50,000 \u00B7 ' + fmtNum(r.projScore, 1) + ' proj \u00B7 ' + (r.valid ? '\u2705 Valid' : '\u274C Invalid') + '</div>' +
-    '</div>' +
-    r.lineup.map(p =>
-      '<div class="lineup-row">' +
-        '<div class="lineup-pos">' + escapeHtml(p.slotLabel || p.pos) + '</div>' +
-        '<div><strong>' + escapeHtml(p.name) + '</strong> \u00B7 ' + escapeHtml(p.team) + ' \u00B7 Grade ' + p.score + '/99</div>' +
-        '<div style="color:#ffd000;font-family:JetBrains Mono;font-weight:700">$' + (p.salary || 0).toLocaleString() + '</div>' +
-      '</div>'
-    ).join('') +
-    '</div>' +
-    '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">' +
-      '<div class="stat-box" style="flex:1"><div class="label">SALARY USED</div><div class="value" style="color:' + (r.totalSalary <= 50000 ? '#00ff9c' : '#ff3b3b') + '">$' + r.totalSalary.toLocaleString() + '</div></div>' +
-      '<div class="stat-box" style="flex:1"><div class="label">REMAINING</div><div class="value" style="color:#ffd000">$' + r.remaining.toLocaleString() + '</div></div>' +
-      '<div class="stat-box" style="flex:1"><div class="label">PROJECTED</div><div class="value">' + fmtNum(r.projScore, 1) + '</div><div class="detail">fantasy points</div></div>' +
-    '</div>';
+function dkProjectPitcher(p, oppEdge, park) {
+  var era = Number(p.era || 4.3), whip = Number(p.whip || 1.3), k9 = Number(p.k9 || 8.6), hr9 = Number(p.hr9 || 1.15);
+  var expIP = starterProjection(p);
+  var pkR = Number(park.run || 1);
+  var outs = expIP * 3;
+  var ks = (k9 / 9) * expIP * (oppEdge <= 55 ? 1.04 : 0.92);
+  var er = (era / 9) * expIP * pkR;
+  var ha = whip * expIP * 0.68 * pkR;
+  var bba = whip * expIP * 0.32;
+  var hbp = 0.15;
+  var winProb = era <= 3.5 ? 0.55 : era <= 4.0 ? 0.48 : era <= 4.5 ? 0.40 : 0.30;
+  var cgProb = expIP >= 7.5 ? 0.04 : 0;
+  // DK Scoring
+  var pts = outs * 0.75 + ks * 2 + winProb * 4 - er * 2 - ha * 0.6 - bba * 0.6 - hbp * 0.6 + cgProb * 5;
+  return Math.round(pts * 100) / 100;
 }
+
+function runEliteOptimizer() {
+  var CAP = 50000;
+  var SLOTS = [
+    {id:'P1',label:'P',pos:'P',isPitcher:true},{id:'P2',label:'P',pos:'P',isPitcher:true},
+    {id:'C',label:'C',pos:'C'},{id:'1B',label:'1B',pos:'1B'},
+    {id:'2B',label:'2B',pos:'2B'},{id:'3B',label:'3B',pos:'3B'},
+    {id:'SS',label:'SS',pos:'SS'},
+    {id:'OF1',label:'OF',pos:'OF'},{id:'OF2',label:'OF',pos:'OF'},{id:'OF3',label:'OF',pos:'OF'}
+  ];
+
+  var stackTeam = (document.getElementById('optStackTeam') || {}).value || '';
+  var numLineups = Number((document.getElementById('optNumLineups') || {}).value) || 3;
+
+  // Build player pool with DK projections
+  var pool = [];
+  state.games.forEach(function(g) {
+    var park = parkFor(g.venue.name);
+    var m = getMarket(g);
+    var awayEdge = teamEdgeScore(g, 'away'), homeEdge = teamEdgeScore(g, 'home');
+
+    // Pitchers
+    [{ p: g.awayPitcher, team: g.away.abbr, side: 'away', oppEdge: homeEdge },
+     { p: g.homePitcher, team: g.home.abbr, side: 'home', oppEdge: awayEdge }].forEach(function(x) {
+      if (!x.p || !x.p.name || x.p.name === 'TBD') return;
+      var dk = getDKSalary(x.p.name);
+      var salary = dk ? dk.salary : 8000;
+      if (salary < 1000) salary = 8000;
+      var pts = dkProjectPitcher(x.p, x.oppEdge, park);
+      pool.push({ name: x.p.name, team: x.team, pos: 'P', salary: salary, proj: pts, gamePk: g.gamePk, isPitcher: true, grade: pitcherEdgeRank(x.p, g, x.side) });
+    });
+
+    // Hitters
+    if (state.selectedGameData && g.gamePk === state.selectedGamePk) {
+      var sg = state.selectedGameData;
+      [].concat(sg.awayHitters || []).concat(sg.homeHitters || []).forEach(function(h) {
+        var isHome = (sg.homeHitters || []).indexOf(h) >= 0;
+        var oppP = isHome ? sg.awayPitcher : sg.homePitcher;
+        var dk = getDKSalary(h.name);
+        var salary = dk ? dk.salary : 4000;
+        if (salary < 1000) salary = 4000;
+        var pos = (dk ? dk.pos : h.pos) || 'OF';
+        var pts = dkProjectHitter(h, oppP, park, m, isHome);
+        pool.push({ name: h.name, team: isHome ? sg.home.abbr : sg.away.abbr, pos: pos.toUpperCase(), salary: salary, proj: pts, gamePk: g.gamePk, isPitcher: false, grade: h.grade ? h.grade.score : 50 });
+      });
+    }
+
+    // Also pull from DK salary pool for games we haven't loaded hitters for
+    Object.values(state.dkSalaries || {}).forEach(function(dk) {
+      if (!dk.salary || dk.salary < 2000) return;
+      if (/^(SP|RP|P)$/i.test(dk.pos || '')) return;
+      var teamKey = (dk.team || '').toUpperCase();
+      if ((g.away.abbr || '').toUpperCase() !== teamKey && (g.home.abbr || '').toUpperCase() !== teamKey) return;
+      if (pool.some(function(p) { return p.name.toLowerCase() === dk.name.toLowerCase(); })) return;
+      var isHome = (g.home.abbr || '').toUpperCase() === teamKey;
+      var oppP = isHome ? g.awayPitcher : g.homePitcher;
+      var pts = dk.avgPts || (dk.salary / 1000 * 2.5);
+      pool.push({ name: dk.name, team: dk.team, pos: (dk.pos || 'OF').toUpperCase(), salary: dk.salary, proj: pts, gamePk: g.gamePk, isPitcher: false, grade: 50 });
+    });
+  });
+
+  // De-duplicate
+  var seen = {};
+  pool = pool.filter(function(p) {
+    var k = p.name.toLowerCase();
+    if (seen[k]) return false;
+    seen[k] = true;
+    return true;
+  });
+
+  // Stack boost
+  if (stackTeam) {
+    pool.forEach(function(p) {
+      if (p.team.toUpperCase() === stackTeam.toUpperCase() && !p.isPitcher) p.proj += 3;
+    });
+  }
+
+  // Sort by projection value (proj per $1K)
+  pool.sort(function(a, b) { return (b.proj / (b.salary / 1000)) - (a.proj / (a.salary / 1000)); });
+
+  // Generate multiple lineups
+  var lineups = [];
+  for (var li = 0; li < numLineups; li++) {
+    var lineup = [];
+    var used = {};
+    var salaryUsed = 0;
+    var teamCounts = {};
+    var gameSet = {};
+
+    // For diversity, slightly randomize order after first lineup
+    var sortedPool = pool.slice();
+    if (li > 0) {
+      sortedPool.forEach(function(p) { p._rnd = p.proj * (0.85 + Math.random() * 0.3); });
+      sortedPool.sort(function(a, b) { return (b._rnd / (b.salary / 1000)) - (a._rnd / (a.salary / 1000)); });
+    }
+
+    for (var si = 0; si < SLOTS.length; si++) {
+      var slot = SLOTS[si];
+      var slotsLeft = SLOTS.length - lineup.length - 1;
+      var minReserve = slotsLeft * 2000;
+      var maxForThis = CAP - salaryUsed - minReserve;
+
+      var pick = null;
+      for (var pi = 0; pi < sortedPool.length; pi++) {
+        var p = sortedPool[pi];
+        if (used[p.name]) continue;
+        if (p.salary > maxForThis) continue;
+
+        // Position match
+        if (slot.isPitcher) {
+          if (!p.isPitcher) continue;
+        } else {
+          if (p.isPitcher) continue;
+          var ppos = p.pos.replace(/\/.*/,'');
+          if (slot.pos === 'OF') { if (ppos !== 'OF' && ppos !== 'CF' && ppos !== 'LF' && ppos !== 'RF') continue; }
+          else if (slot.pos === 'C') { if (ppos !== 'C') continue; }
+          else { if (ppos !== slot.pos) continue; }
+        }
+
+        // Max 5 hitters per team
+        if (!p.isPitcher && (teamCounts[p.team] || 0) >= 5) continue;
+
+        pick = p;
+        break;
+      }
+
+      if (pick) {
+        lineup.push({ ...pick, slotLabel: slot.label, slotId: slot.id });
+        used[pick.name] = true;
+        salaryUsed += pick.salary;
+        if (!pick.isPitcher) teamCounts[pick.team] = (teamCounts[pick.team] || 0) + 1;
+        gameSet[pick.gamePk] = true;
+      }
+    }
+
+    // Validate: 2+ games
+    var gameCount = Object.keys(gameSet).length;
+    var totalSalary = lineup.reduce(function(s, p) { return s + p.salary; }, 0);
+    var totalProj = lineup.reduce(function(s, p) { return s + p.proj; }, 0);
+
+    lineups.push({
+      lineup: lineup,
+      totalSalary: totalSalary,
+      remaining: CAP - totalSalary,
+      totalProj: Math.round(totalProj * 10) / 10,
+      valid: lineup.length === 10 && totalSalary <= CAP && gameCount >= 2,
+      gameCount: gameCount,
+      teamCounts: teamCounts,
+      stackTeam: stackTeam
+    });
+  }
+
+  state.optimizerResults = lineups;
+  if (typeof render === 'function') render();
+}
+
+function renderOptimizer() {
+  var dkCount = Object.keys(state.dkSalaries || {}).length;
+  var results = state.optimizerResults || [];
+
+  // Unique teams for stack selector
+  var teams = [];
+  state.games.forEach(function(g) {
+    if (teams.indexOf(g.away.abbr) < 0) teams.push(g.away.abbr);
+    if (teams.indexOf(g.home.abbr) < 0) teams.push(g.home.abbr);
+  });
+  teams.sort();
+
+  return '<section>' +
+    '<div class="section-title"><h2>\u{1F3AF} DK MLB CLASSIC OPTIMIZER</h2><div class="meta">$50,000 salary cap \u00B7 2P/C/1B/2B/3B/SS/3OF \u00B7 DraftKings exact scoring</div></div>' +
+
+    // Controls
+    '<div class="dash-card" style="margin-bottom:16px">' +
+      '<div style="padding:20px">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;align-items:end">' +
+          '<label style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px"><span style="display:block;margin-bottom:6px">STACK TEAM</span>' +
+            '<select id="optStackTeam" class="field" style="width:100%">' +
+              '<option value="">No preference</option>' +
+              teams.map(function(t) { return '<option value="' + t + '">' + t + '</option>'; }).join('') +
+            '</select></label>' +
+          '<label style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px"><span style="display:block;margin-bottom:6px"># LINEUPS</span>' +
+            '<select id="optNumLineups" class="field" style="width:100%">' +
+              '<option value="1">1 Lineup</option><option value="3" selected>3 Lineups</option><option value="5">5 Lineups</option><option value="10">10 Lineups</option>' +
+            '</select></label>' +
+          '<div style="font-size:11px;color:var(--muted)">' +
+            '<div>' + dkCount + ' DK players loaded</div>' +
+            '<div>' + state.games.length + ' games on slate</div>' +
+          '</div>' +
+          '<button class="button primary" onclick="runEliteOptimizer()" style="height:44px;font-size:15px;padding:0 28px">\u{1F3AF} OPTIMIZE</button>' +
+        '</div>' +
+        // Scoring reference
+        '<details style="margin-top:14px">' +
+          '<summary style="font-size:11px;color:var(--muted);cursor:pointer;font-weight:700">DK CLASSIC SCORING RULES</summary>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px;font-size:12px;color:var(--muted)">' +
+            '<div><strong style="color:#e8f0fa">HITTERS</strong><br>Single +3 \u00B7 Double +5 \u00B7 Triple +8 \u00B7 HR +10<br>RBI +2 \u00B7 Run +2 \u00B7 BB +2 \u00B7 HBP +2 \u00B7 SB +5</div>' +
+            '<div><strong style="color:#e8f0fa">PITCHERS</strong><br>Out +0.75 \u00B7 K +2 \u00B7 Win +4<br>ER -2 \u00B7 H -0.6 \u00B7 BB -0.6 \u00B7 HBP -0.6<br>CG +2.5 \u00B7 CGSO +2.5 \u00B7 No-Hit +5</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#334155;margin-top:8px">Constraints: $50K cap \u00B7 2+ games \u00B7 Max 5 hitters/team \u00B7 10 roster spots</div>' +
+        '</details>' +
+      '</div>' +
+    '</div>' +
+
+    // Results
+    (results.length ? results.map(function(r, idx) {
+      return '<div class="lineup-card" style="margin-bottom:16px">' +
+        '<div class="lineup-header">' +
+          '<div class="lineup-label">LINEUP ' + (idx + 1) + (r.stackTeam ? ' \u00B7 ' + r.stackTeam + ' STACK' : '') + '</div>' +
+          '<div class="lineup-total">' +
+            '<span style="color:' + (r.valid ? '#00ff9c' : '#ff3b3b') + '">' + (r.valid ? '\u2705' : '\u274C') + '</span> ' +
+            '$' + r.totalSalary.toLocaleString() + '/$50K \u00B7 ' +
+            '<strong style="color:#ffd000">' + r.totalProj + ' pts</strong> \u00B7 ' +
+            r.gameCount + ' games' +
+          '</div>' +
+        '</div>' +
+        // Column headers
+        '<div class="opt-row opt-header">' +
+          '<div class="opt-cell">POS</div><div class="opt-cell">PLAYER</div><div class="opt-cell">TEAM</div><div class="opt-cell">SALARY</div><div class="opt-cell">PROJ PTS</div><div class="opt-cell">GRADE</div>' +
+        '</div>' +
+        r.lineup.map(function(p) {
+          var gradeColor = p.grade >= 80 ? '#00ff9c' : p.grade >= 65 ? '#ffd000' : '#94a3b8';
+          return '<div class="opt-row">' +
+            '<div class="opt-cell opt-pos">' + p.slotLabel + '</div>' +
+            '<div class="opt-cell opt-name">' + escapeHtml(p.name) + '</div>' +
+            '<div class="opt-cell">' + p.team + '</div>' +
+            '<div class="opt-cell opt-salary">$' + p.salary.toLocaleString() + '</div>' +
+            '<div class="opt-cell opt-proj">' + p.proj.toFixed(1) + '</div>' +
+            '<div class="opt-cell" style="color:' + gradeColor + '">' + p.grade + '</div>' +
+          '</div>';
+        }).join('') +
+        // Summary bar
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(30,41,59,.4);background:rgba(6,14,26,.4)">' +
+          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:' + (r.totalSalary <= 50000 ? '#00ff9c' : '#ff3b3b') + '">$' + r.totalSalary.toLocaleString() + '</div><div class="pcard-stat-lbl">SALARY</div></div>' +
+          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:#ffd000">$' + r.remaining.toLocaleString() + '</div><div class="pcard-stat-lbl">REMAINING</div></div>' +
+          '<div class="pcard-stat"><div class="pcard-stat-val" style="color:#00ff9c">' + r.totalProj + '</div><div class="pcard-stat-lbl">PROJ PTS</div></div>' +
+          '<div class="pcard-stat"><div class="pcard-stat-val">' + r.gameCount + '</div><div class="pcard-stat-lbl">GAMES</div></div>' +
+        '</div>' +
+      '</div>';
+    }).join('') : '<div class="card empty">Click OPTIMIZE to generate lineups. Load games and DK salaries first.</div>') +
+
+  '</section>';
+}
+
+// Keep old function name for backward compat
+function runOptimizer() { runEliteOptimizer(); }
+function renderOptimizerResult() { return ''; }
 
 // ─── TAB 7: ALERTS ────────────────────────────────────────────────────────────
 function renderAlerts() {
@@ -1152,6 +1406,7 @@ document.addEventListener('DOMContentLoaded', function () {
 window.render = render;
 window.generateAIPicks = generateAIPicks;
 window.runOptimizer = runOptimizer;
+window.runEliteOptimizer = runEliteOptimizer;
 window.refreshAlerts = refreshAlerts;
 window.clearAlerts = clearAlerts;
 window.saveSettingsFromUI = saveSettingsFromUI;

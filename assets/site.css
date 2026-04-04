@@ -1780,3 +1780,53 @@ body::before {
   font-weight: 800;
   letter-spacing: 1px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   OPTIMIZER — DK Classic Lineup Builder
+   ═══════════════════════════════════════════════════════════════ */
+.opt-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 60px 90px 80px 60px;
+  gap: 8px;
+  padding: 10px 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(30,41,59,.25);
+  font-size: 13px;
+  transition: background .15s;
+}
+.opt-row:hover { background: rgba(0,255,156,.02); }
+.opt-row:nth-child(even) { background: rgba(6,14,26,.15); }
+.opt-row.opt-header {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #475569;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(30,41,59,.4);
+  background: rgba(6,14,26,.3);
+  padding: 8px 20px;
+}
+.opt-row.opt-header:hover { background: rgba(6,14,26,.3); }
+.opt-pos {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: 1px;
+}
+.opt-name { font-weight: 800; }
+.opt-salary {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #ffd000;
+}
+.opt-proj {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  color: #00ff9c;
+}
+@media (max-width: 700px) {
+  .opt-row { grid-template-columns: 40px 1fr 80px 70px; }
+  .opt-row .opt-cell:nth-child(3),
+  .opt-row .opt-cell:nth-child(6) { display: none; }
+}
