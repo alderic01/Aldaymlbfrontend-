@@ -1,4 +1,4 @@
-const NB_KEY = process.env.NANO_BANANA_KEY || 'sk-qSFeY0MZ0EUHZCZeuczNRVJJikLffUng';
+const GOOGLE_KEY = process.env.GOOGLE_AI_KEY || 'AIzaSyCPjCulnJhCYx-XAZOPK_zy5kTpISlAyVk';
 
 // Team uniform data for prompt generation
 const TEAMS = {
@@ -35,7 +35,6 @@ const TEAMS = {
   ATH: { name: 'Athletics', primary: 'Green', secondary: 'Gold', emblem: 'A logo', pinstripe: false },
 };
 
-// Simple in-memory cache (persists per Vercel cold start, ~5-15 min)
 const cache = {};
 
 export default async function handler(req, res) {
@@ -45,43 +44,65 @@ export default async function handler(req, res) {
   }
 
   const cacheKey = `${name.toLowerCase()}_${team.toUpperCase()}`;
-
-  // Check cache
   if (cache[cacheKey]) {
     return res.status(200).json({ url: cache[cacheKey], cached: true });
   }
 
   const teamData = TEAMS[team.toUpperCase()] || { name: team, primary: 'Gray', secondary: 'White', emblem: 'generic logo', pinstripe: false };
 
-  const prompt = `A bold cartoon mascot-style baseball player avatar in a full mid-swing batting stance, bat fully extended, powerful follow-through. Wearing a ${teamData.name} uniform with ${teamData.primary} and ${teamData.secondary} colors, ${teamData.emblem} on cap and jersey. ${teamData.pinstripe ? 'White pinstripe uniform.' : 'Solid color uniform.'} Batting helmet, cleats. Clean dark transparent background, flat vector illustration style, strong outlines, bright colors. No text, no watermarks, 1:1 square format.`;
+  const prompt = `A bold cartoon mascot-style baseball player avatar in a full mid-swing batting stance, bat fully extended, powerful follow-through. Wearing a ${teamData.name} uniform with ${teamData.primary} and ${teamData.secondary} colors, ${teamData.emblem} on cap and jersey. ${teamData.pinstripe ? 'White pinstripe uniform.' : 'Solid color uniform.'} Batting helmet, cleats. Clean dark background, flat vector illustration style, strong outlines, bright colors. No text, no watermarks, 1:1 square format.`;
 
   try {
-    const response = await fetch('https://nanobanana2.com/api/generate', {
+    // Try Gemini Imagen API
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GOOGLE_KEY}`;
+    const resp = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${NB_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: prompt,
-        model: 'nano-banana-2',
-        resolution: '1K'
+        instances: [{ prompt: prompt }],
+        parameters: { sampleCount: 1, aspectRatio: '1:1' }
       })
     });
 
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      return res.status(200).json({ error: `Nano Banana returned ${response.status}`, detail: errText });
+    if (!resp.ok) {
+      // Fallback: try Gemini generateContent with image generation
+      const url2 = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_KEY}`;
+      const resp2 = await fetch(url2, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Generate an image: ' + prompt }] }],
+          generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
+        })
+      });
+
+      if (!resp2.ok) {
+        const errBody = await resp2.text().catch(() => '');
+        return res.status(200).json({ error: `Google AI returned ${resp2.status}`, detail: errBody.substring(0, 300) });
+      }
+
+      const data2 = await resp2.json();
+      // Look for inline image data in the response
+      const parts = data2.candidates?.[0]?.content?.parts || [];
+      const imgPart = parts.find(p => p.inlineData);
+      if (imgPart && imgPart.inlineData) {
+        const dataUrl = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+        cache[cacheKey] = dataUrl;
+        return res.status(200).json({ url: dataUrl, player: name, team: team, source: 'gemini' });
+      }
+
+      return res.status(200).json({ error: 'No image generated', response: JSON.stringify(data2).substring(0, 500) });
     }
 
-    const data = await response.json();
-    const imageUrl = data.image_url || data.url || data.output || '';
-
-    if (imageUrl) {
-      cache[cacheKey] = imageUrl;
+    const data = await resp.json();
+    const predictions = data.predictions || [];
+    if (predictions.length && predictions[0].bytesBase64Encoded) {
+      const dataUrl = `data:image/png;base64,${predictions[0].bytesBase64Encoded}`;
+      cache[cacheKey] = dataUrl;
+      return res.status(200).json({ url: dataUrl, player: name, team: team, source: 'imagen' });
     }
 
-    return res.status(200).json({ url: imageUrl, player: name, team: team });
+    return res.status(200).json({ error: 'No image in response', data: JSON.stringify(data).substring(0, 500) });
   } catch (err) {
     return res.status(200).json({ error: err.message });
   }
